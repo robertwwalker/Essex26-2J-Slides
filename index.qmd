@@ -1,5 +1,5 @@
 ---
-title: "Essex Slides"
+title: "Essex Slides 2026 - 2J"
 bibliography: "bibliography.bib"
 nocite: |
      @*

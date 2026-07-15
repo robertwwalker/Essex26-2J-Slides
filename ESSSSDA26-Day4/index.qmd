@@ -1,13 +1,13 @@
 ---
 title: "Day 4: Cointegration"
 author: "Robert W. Walker"
-date: "July 24, 2025"
+date: "July 23, 2026"
 format: 
    revealjs:
      theme: [custom.scss]
      scrollable: true
      logo: AGSMlogo.jpeg
-     footer: "ESSSSDA25-2W: Heterogeneity and Dynamics"
+     footer: "ESSSSDA26-2J: Heterogeneity and Dynamics"
      multiplex:
        url: 'https://multiplex-5adl.onrender.com'
      self-contained: true

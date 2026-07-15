@@ -2,13 +2,13 @@
 title: "Day 1: Heterogeneity and Dynamics in Data"
 subtitle: "Linear Models and Summary"  
 author: "Robert W. Walker"
-date: "July 20, 2025"
+date: "July 20, 2026"
 format: 
    revealjs:
      theme: [custom.scss]
      scrollable: true
      logo: AGSMlogo.jpeg
-     footer: "ESSSSDA-25: Introduction and Summary"
+     footer: "ESSSSDA-26: Introduction and Summary"
      self-contained: true
      html-math-method: katex
      incremental: true

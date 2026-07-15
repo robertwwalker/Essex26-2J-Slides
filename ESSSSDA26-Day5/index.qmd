@@ -2,7 +2,7 @@
 title: "Day 5: Wrapping Up Time Series"
 subtitle: "Equation Balance"  
 author: "Robert W. Walker"
-date: "July 25, 2025"
+date: "July 24, 2026"
 format: 
    revealjs:
      theme: [custom.scss]
