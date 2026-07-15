@@ -1,0 +1,69 @@
+---
+title: "Essex Slides"
+bibliography: "bibliography.bib"
+nocite: |
+     @*
+author: "Robert W. Walker"
+format: 
+   html:
+     code-fold: true
+     code-copy: hover
+     code-block-border-left: true
+     df-print: paged
+     fig-format: retina
+     footnotes-hover: true
+     html-math-method: katex
+     mainfont: Playfair Display
+     toc: true
+     toc-title: Navigation
+     theme: simplex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+```
+
+## What's Here?
+
+
+```{r}
+library(tidyverse)
+Files <- dir()
+Files
+library(DT)
+Files.df <- data.frame(Files=Files) %>%
+  mutate(
+    Link=paste0(paste0(
+    '<a href=',
+    paste0("\"https://robertwwalker.github.io/Essex26-2J-Slides/",
+           Files,"\"", 
+           sep=""),
+    ' > ', sep=""),
+    str_remove(Files, "ESSSSDA26-"),
+    ' Slides</a>',
+    sep="")
+    ) %>% 
+  filter(startsWith(Files, "ESSSSDA26")) %>%
+  mutate(File=paste0(paste0(
+    '<a href=',
+    paste0("\"https://github.com/robertwwalker/Essex-slides/tree/main/",
+           Files,"/\"", 
+           sep=""),
+    ' > ', sep=""),
+    Files,
+    '</a>',
+    sep="")
+    ) %>% 
+  mutate(Week = as.numeric(str_remove(Files, "ESSSSDA26-Day"))) %>%
+  relocate(Week, .before = Files) %>%
+  arrange(Week) %>% select(-Files)
+datatable(Files.df, escape = FALSE)
+```
+
+
+# References
+
+```{r}
+knitr::write_bib(names(sessionInfo()$otherPkgs), file="bibliography.bib")
+```
+

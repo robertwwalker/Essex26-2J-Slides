@@ -1,0 +1,287 @@
+---
+title: "Does Preferential Hiring Compromise Merit?"
+subtitle: "Exact Matching and Nonparametrics in a Large Population of Data"
+author: "Robert W. Walker and Tim Johnson (AGSM/Willamette)"
+date: "July 30, 2025"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "Veterans' Preference and Educational Attainment"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=TRUE, comment=NA, prompt=FALSE, fig.height=6, fig.width=6.5, fig.retina = 3, dev = 'svg', dev.args = list(bg = "white"), eval=TRUE)
+library(tidyverse)
+library(kableExtra)
+```
+
+## A Personal Indulgence
+
+:::: {.columns}
+
+:::{.column width="50%"}
+
+::: callout-important
+Thank you to Royce, Ryan, Carolina, Alex, and everyone involved in honoring Harold with this series; it is a testament to him, his contributions to Essex, the Summer School, his discipline and social science, and to what great people y'all are. 🙏🙏🙏
+
+![](https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3enA3YWN2eno3ZXg0cnNtcnc2azV5dzkxZ2k2ZXBvbGFwd2lmaGEyYyZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/NsFDCblOHz9QI/giphy.gif)
+:::
+
+:::
+
+::: {.column width="50%"}
+- Harold was my friend, my teacher, one of my mentors, my co-teacher, my collaborator, and the reason, quite literally, that I became a political scientist. He introduced me to Essex last century, 1997. He made an indelible mark on my life. I am honored to give this. I hope he would approve...
+
+-   My co-author, Tim Johnson, is responsible for all the brilliance; I own the errors including not having published this years ago.
+:::
+
+::::
+
+# Does Preferential Hiring Compromise Merit?
+
+-   **No, almost surely not in this population.**
+
+## Abstract
+
+Managers fear that the preferential hiring of military veterans leads to the selection of employees who score worse on merit criteria. Using *all non-classified records* in the U.S. federal government's **Central Personnel Data File from 1973-1997**, we compare the educational backgrounds of employees who received veterans' preference benefits with the educational backgrounds of employees who did not receive veterans' preference.
+
+-   This is timely given what is happening among federal employees.  Hiring preferences are under assault by innuendo.
+
+
+## What We're Up To
+
+We eliminate uncertainty due to sampling variation with the population of *unclassified* data. This allows us to focus on the uncertainty surrounding which employees to compare in our analysis.
+
+-   Replicate prior evidence and media accounts that preference beneficiaries possess weaker educational credentials than non-recipients.
+
+-   Make this relationship disappear---and, in some instances, invert---when we account for employees' occupations and work circumstances, their **jobs**, using exact stratification.
+
+-   **Takeaway: The assessment of perceptions of hiring quality requires careful attention to the appropriate basis for comparing employees. Ending veterans preference because of differences in career trajectories or educational attainment is empirically unjustifiable.**
+
+## What is Veterans' Preference?
+
+-   van Riper's *History of the United States Civil Service* notes it is one of the oldest personnel policies in the federal government.
+
+-   Veterans' preference predates the competitive civil service exam according to the Merit Systems Protection Board.
+
+-   [Lewis (2012): Under the policy, eligible military veterans---as well as the spouses and mothers of veterans who were disabled or killed in combat---receive either added points on their federal service applications or hiring priority over candidates categorized in the same quality tier.]{style="color:black;"}
+
+## Prior Literature and a Changing Landscape
+
+Quite frankly, I have both positive and normative motivations that I must lay bare. The topic is of both public and academic interest.
+
+[![](./img/WaPo.png)](https://www.washingtonpost.com/news/federal-eye/wp/2014/04/14/feds-talk-how-do-you-feel-about-veterans-preference-for-federal-hiring/)
+
+## Federal Eye
+
+::::: columns
+::: {.column width="50%"}
+![Proponents](./img/Positives.png)
+:::
+
+::: {.column width="50%"}
+![Detractors](./img/Negatives.png)
+:::
+:::::
+
+## Academic Research is More Uniform
+
+In various forms for almost a century, Miller (1935), Ordway (1945), Lewis (2012) maintain that these procedures force managers to distribute jobs to preference recipients, even if other candidates appear to be more deserving of a position.
+
+-   Lewis (2012) analysed 1% samples of the U.S. Office of Personnel Management (OPM) Central Personnel Data File (CPDF) and found that military veterans enter federal service with less education than nonveterans. When considering new hires that perform \`\`white collar'' jobs, Lewis found that veterans were less likely than nonveterans to have completed college or to have earned a graduate degree. Furthermore, veterans averaged one year less education than their nonveteran peers.
+
+-   As an aside, 1% samples are pretty dangerous for extreme imbalance.
+
+## Related Literature
+
+-   Lewis 2012: 247: \`\`Federal personnel data for the past decade show that veteran new hires are older and less educated than nonveteran new hires, and that they do not advance as far in the first 15 years of their careers as nonveterans hired into the same grades at the same time, suggesting that veterans’ preference may be lowering the performance of the federal civil service.''
+
+-   Johnson and Walker (2018) use pay grade and pay increase data to show equivalent advancement tendencies for preference recipients and non-recipients when entry positions are rendered comparable.
+
+## The Data
+
+Unlike the 1% samples, in the summer of 2009, the National Archives and Records Administration (NARA) released a copy of the U.S. Office of Personnel Management's (OPM) Central Personnel Data File (CPDF) under a FOIA filed by Tim Johnson. This copy of the CPDF contained **all non-sensitive employee records from 1973 to 1997**. The data are a **person-year** panel with more than 3.8 million individual persons.
+
+## Key Variables
+
+-   **Education: takes one of 22 \[increasing\] ordered values**
+-   **Veterans' Preference: Six categories collapsed to four.**
+    1.  non-recipient of preference (i.e. 0-point preference);
+    2.  veteran receiving 5-point preference;
+    3.  veteran securing 10-point preference because of a service-connected disability or receipt of a Purple Heart;
+    4.  veteran obtaining a 10-point preference due to a compensable service-connected disability of 30 percent or less;
+    5.  spouse or mother of a veteran receiving 10-point preference;
+    6.  veteran receiving 10-point preference because of a compensable service-connected disability of 30 percent or more.
+-   **Combine categories 3, 4, and 6 into a common category, each employee is either a non-recipient of preference, a veteran receiving 5-point preference, a veteran receiving 10-point preference, or a veteran's spouse/mother receiving 10-point preference.**
+
+## Subset: First Year of Employment
+
+Past scholarship has claimed that veterans’ preference lowers the educational attainment of the federal service by preventing the acquisition of better-educated personnel.
+
+This yields 3.8 million employees in their first year of service.[^1]
+
+[^1]: We cannot determine, for 1973, whether someone started before that or in that year with our data. Thus, we focus only on employees with a first year of federal service in 1974 or after.  **We can only use 3.8 million people.**
+
+## The Empirics of Veterans' Preference and Education
+
+![[Table](./img/table1.png)](./img/table1.png)
+
+## A Graphical View
+
+![Figure 1](./img/Figure1.png)
+
+## Interpretation {background-image="./img/Figure1.png"}
+
+-   dark grey bar represents the proportion of the category shared by both recipients and non-recipients.
+-   black bars extending above the dark grey bars represent the proportion of non-recipients within the category in excess of the proportion of preference recipients.
+-   white bars represent the degree to which a higher proportion of preference recipients reside within the category.
+-   Education is increasing, left to right, e.g. more black bars on the right-hand side of the diagram means a higher percent of non-recipients possess greater levels of education.
+
+## Statistical tests
+
+-   Means: Common but not technically correct: two-sample t-tests \[Welch\]
+-   Medians: Wilcoxon rank-sum/Mann-Whitney U \[coin::wilcox_test\]
+
+The data are ordered; metric statistics are less than ideal. The Wilcoxon rank-sum simply ranks the data and assesses the sums of the ranks for preference recipients and non-recipients. There are three ways to obtain a probability measure for the null hypothesis of equality of medians: - **exact permutations**, - *simulation*, and - a normal approximation.
+
+## The one painful compromise
+
+-   The exact distribution is preferred.
+    -   Can't compute it for the huge stratum
+-   So we simulate with 1 million permutations for each stratum.
+    -   Then we invoke a root-n argument to approximate p-values to within 0.001 with which to form distributions over strata relying on asymptotic normality.
+    -   It's really important to emphasise that those *p-values* are an empirical probability measure because we have a population and some foundational inferential statistical issues are messy in this very unique example.
+
+## The Conventional Wisdom
+
+![Table 2](./img/Table2.png)
+
+- Negative signs -> preference recipients are lower
+- Positive signs -> preference recipients are higher.
+-   Enormous **negative** t-statistics/Wilcoxon z-statistics.
+-   Preference recipients have lower levels of education.
+
+## The Critical Issue: Whom to Compare?
+
+-   Preference recipients are not altogether common.
+-   It is quite likely that they are not randomly distributed through jobs in the federal service.
+
+![Table 1 Excerpt](./img/ClipTable.png)
+
+## The Counterfactual of Interest
+
+-   Key argument: the **job** is a hidden confounder.
+-   We are fortunate to have measures of five key characteristics of jobs.
+    -   Year of entry: the year the employee entered federal service
+    -   Duty station: where they are employed
+    -   Agency: the agency that employs them
+    -   Occupation: 1519 categories of work
+    -   Grade: GS grades are most common but there are others.
+
+## The Precise Question
+
+Our counterfactual of interest is defined by the job as opposed to the person.
+
+-   **Had veterans’ preference not played a role in installing the job’s incumbent, how would educational attainment differ for the holders of that job?**
+
+## Jobs as Years of Entry
+
+::::: columns
+::: {.column width="50%"}
+![Figure 2](./img/Figure2.png)
+:::
+
+::: {.column width="50%"}
+With caveats, when we retain all data, the conventional wisdom mostly holds though 10 point preference recipients are much higher in 1979 and 1980.
+
+*But... year doesn't seem like the best descriptor of a job.*
+
+**And year is the only variable that retains ALL data**
+:::
+:::::
+
+## Jobs as Occupations
+
+![Wilcoxon statistics for Occupations](./img/Figure3.png)
+
+## Jobs as Occupations: Clerk/Assistant \[303\]
+
+![Evidence](./img/Clerks-Table.png) The top two results have switched signs: 5-point and 10-point Veterans' Preference recipients have higher levels of education; the evidence for spouse/mother is a bit mixed.
+
+## Education for Clerk/Assistant \[303\]
+
+![Education by Preference Status for Clerk](./img/Figure4.png)
+
+Note the abundance of white on the right side of the figures. Higher education levels for preference recipients.
+
+## A Job as Year of Entry, Grade, Occupation, Duty Station, Agency
+
+![Most stringent job and education](./img/Figure5.png)
+
+## We still retain lots of comparable data
+
+![N by Stratum](./img/NByStratum.png){width="90%" height="50%"}
+
+Notes: The y-axis is censored at 200. The result from this is the top row of the next table.
+
+## All Definitions of Jobs
+
+![[All Results](./img/TableLast.png)](./img/TableLast.png){width="90%" height="90%"}
+
+-   **Grey and black cells contain greater than 20% with p-values less than 0.05.**
+-   **Italics and bold represent p\<0.05 in the omnibus column.**
+
+## Discussion
+
+- Prior evidence has led to what Pearl (2012, 176) calls a `distorted causal interpretation`. The broad universal association is quite different than the conditional associations when the job becomes the counterfactual. Though it is claimed that any deviations from merit screening permit less-qualified individuals to enter the federal service, merit screening is only one of many filters.
+
+- On balance, we find very little evidence that veterans' preference worsens the educational attainment of job incumbents.
+
+- **How could we account for the finding that veterans receiving preference appear to possess equal or greater education in many cases? The GI Bill comes to mind.**
+
+## Big Picture
+
+*Ala Pearl's discussion of Simpson's Paradox, given that veterans' preference accrues to veterans that have unique access to educational benefits, it is quite easy to see how a relationship in the aggregate showing lower levels of education among preference recipients should fail to replicate for at least some jobs if veterans distribute themselves across occupations differently than nonveterans and veteran status correlates with potential educational benefits.*
+
+# Punchline
+
+A DEI policy that has no discernible impacts on key elements of expected job performance. Combined with evidence about career trajectories, the belief that DEI policies lead to less qualified candidates is, in this case, quite mistaken.
+
+-   **There is little evidence, given reasonable definitions of a job, that incumbents with veterans' preference had lower educational attainment than those without preference; the reverse is more plausible.**
+
+# Thank you!
+
+## A Postscript
+
+-   Joint work with Justus Eaglesmith \[NARA\] and Tim Johnson.
+-   Can LLM's identify statistical distributions?
+-   No.
+
+## What did we do?
+
+1.  Sent a prompt to three variants of OpenAI LLM's \[gpt-4-0613, gpt-4-turbo-2024-04-09, and gpt-4o-2024-08-06\] containing a five number summary and a stem-leaf plot and ask for the distribution.
+2.  Record the response.
+
+## What distributions?
+
+![Distributions](./img/Dists.png)
+
+## The Prompt
+
+![Prompt](./img/Prompt.png)
+
+## The Results
+
+![Results](./img/LLMTab.jpg)
+
+# We would be unwise to trust this task to AI..
