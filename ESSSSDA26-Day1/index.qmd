@@ -159,7 +159,6 @@ Given a square matrix $A$ and a vector $\mathbf{x}$, we can claim that
 **Brief diversion on principal submatrices and (leading) principal minors toward a sufficient condition for characterizing definiteness.**
 
 
---
 **NB: The trace of a square matrix is the sum of its diagonal elements.**
 
 ## Enough Matrices: To Statistics
@@ -545,18 +544,469 @@ Consider $i \in N$ units observed at $t \in T$ points in time.  The normal cross
    + Chow test: F-test on pooled against split sample regression.  Perhaps iterated Chow tests using combinatoric algorithms over sizes.
    + Changepoint models, Regimes and Regime Switching and Mixtures
 
-## Convenience Samples and the Like
+# Cheng Hsiao
 
-- Hsiao isolates many of the central issues in panel data from the view of an econometrician.  The argument is a bit broader in the sense of repetition.
+## What Is Panel Data? — And Why the Explosion?
 
-- Berk and Freedman isolate important issues of particular relevance to the types of structures we will look at.
-   + Convenience samples are a fact of social scientific life.
-   + Treating the data as a population obviates inference.
-   + As-if and imaginary sampling mechanisms.  Uncertainty gets really hard.
-   + Imaginary populations and imaginary sampling designs: a fiction?
-   + What we do with them is our responsibility, but we should be fair.
-   + Getting more data gives us the ability, but also the need, to do much more.
+**Panel data** contain time-series observations for $N$ individuals across $T$ periods, yielding two dimensions: subscript $i$ (cross-section) and subscript $t$ (time). A cross-section is a panel with $T=1$; a time series is a panel with $N=1$.
 
+Growth in studies listing *"panel data"* (Social Sciences Citation Index):
+
+| 1986 | 2003 | 2004 |
+|------|------|------|
+| 29 | 580 | 687 |
+
+Three factors drive this explosion:
+
+1. **Data availability** — large panels now exist in developed and developing countries
+2. **Modelling capacity** — panel data can answer questions that cross-sections and time series cannot
+3. **Challenging methodology** — the data raise new econometric problems worth solving
+
+
+## Data Availability
+
+Collection is costly, yet panels are now widely accessible.
+
+**United States** — NLS (National Longitudinal Surveys, mid-1960s onward; 5 cohorts; thousands of variables on employment, health, education) and PSID (Panel Study of Income Dynamics, 1968–present; ~6,000 families, 15,000 individuals, 5,000+ variables).
+
+**Europe** — National surveys (Netherlands SEP, German GSOEP, British BHPS) plus, since 1994, the coordinated **European Community Household Panel (ECHP)** covering health, housing and income across member states.
+
+**Developing countries** — Kenya Primary School Deworming Project (75 schools, 30,000+ pupils, 1998–2001); World Bank–sponsored annual survey of 200 Chinese township and village enterprises (1984–1990).
+
+---
+
+## Advantages: Overview
+
+By blending **inter-individual differences** and **intra-individual dynamics**, panels outperform pure cross-sections or time series on three fronts:
+
+**(i) More accurate inference** — more degrees of freedom and less multicollinearity → more efficient estimates
+
+**(ii) Greater capacity to model human behaviour**
+
+- (a) Test complex behavioural hypotheses (heterogeneity vs. state dependence; treatment effects)
+- (b) Control for omitted time-invariant variables without instruments
+- (c) Estimate unrestricted distributed-lag dynamics
+- (d) Improve individual-level predictions by pooling
+- (e) Provide micro-foundations for aggregate analysis
+
+**(iii) Computational/inferential simplifications**
+
+- (a) Panel unit-root tests; (b) identification under measurement error; (c) dynamic Tobit models
+
+
+## Advantage (ii.a): Testing Complex Hypotheses
+
+**Ben-Porath (1973) puzzle.** A cross-section shows 50% of married women participate in the labour force. Two models fit equally:
+
+| Model | Implication |
+|---|---|
+| *Homogeneous* — each woman has a 50% annual chance | High turnover; ~2-year average job |
+| *Heterogeneous* — 50% always work, 50% never work | Zero turnover; status perfectly predicts future |
+
+A single cross-section cannot tell them apart. Panel data can, because individual histories reveal whether women switch in and out.
+
+**Three-Strikes Law — Difference-in-Differences (DiD).**
+Comparing California crime rates before/after the law confounds the law's effect with changing unemployment. Comparing CA vs. Oregon confounds state-specific differences. DiD takes both differences:
+
+$$(y_{CA,\text{after}} - y_{CA,\text{before}}) - (y_{OR,\text{after}} - y_{OR,\text{before}})$$
+
+> "This difference-in-difference method can work *only* if panel data are available."
+
+
+## Advantages (ii.b) & (ii.c): Omitted Variables and Dynamics
+
+**(ii.b) Controlling omitted variables — MaCurdy (1981) labour supply.**
+Log(hours) depends on log(wage) and log(marginal utility of initial wealth). Wealth is *unobserved* and *correlated with wages* → cross-section OLS is biased. But wealth is **time-invariant** for a given worker. First-differencing eliminates it:
+
+$$\Delta y_{it} = \beta\,\Delta x_{it} + \Delta u_{it}$$
+
+Hours growth now depends only on wage growth. No instrument needed — the panel structure does the work.
+
+**(ii.c) Uncovering dynamics — Pakes & Griliches (1984).**
+In a distributed-lag model $y_t = \sum_\tau \beta_\tau x_{t-\tau} + u_t$, time-series data force arbitrary constraints (Koyck, Almon) because lagged $x$'s are highly collinear. Cross-sectional variation across the $N$ units **breaks this collinearity**, allowing unrestricted estimation of the full lag structure.
+
+> "Economic behavior is inherently dynamic." — Nerlove (2002)
+
+
+## Advantages (ii.d) & (ii.e): Predictions and Micro-Foundations
+
+**(ii.d) More accurate individual predictions.**
+When behaviour is similar *conditional on observables*, pooling across individuals improves individual-level forecasts — especially when an individual's own history is short. Applications include Ontario electricity demand and Canadian long-distance telephone usage (Hsiao et al., 1989, 1993).
+
+**(ii.e) Micro-foundations for aggregate analysis.**
+Macroeconomists routinely assume a **representative agent**. If micro units are heterogeneous, this causes three problems:
+
+1. Aggregate time-series properties differ from micro-level ones (Granger 1990; Pesaran 2003)
+2. Policy evaluation from aggregate regressions can be **grossly misleading**
+3. Forecasting aggregate outcomes from aggregate data is *less accurate* than aggregating micro-equations (Hsiao, Shen & Fujiki 2005)
+
+Panels are ideal for testing homogeneity vs. heterogeneity — a question the representative-agent assumption simply assumes away.
+
+
+## Advantage (iii): Computational & Inferential Simplifications
+
+**(iii.a) Nonstationary time series.** With unit roots, OLS/MLE distributions are no longer normal (Dickey–Fuller 1979/81). When cross-sectional units are independent, the **CLT applies across $i$**: panel estimators remain asymptotically normal and Wald statistics remain $\chi^2$, enabling valid panel unit-root tests (Levin–Lin–Chu 2002; Im–Pesaran–Shin 2003).
+
+**(iii.b) Measurement errors.** Errors-in-variables can make a model underidentified in cross-section or time series. Panel data allow multiple transformations of the same data; each induces a **different, predictable shift** in the estimator, enabling identification otherwise impossible (Griliches & Hausman 1986; Biorn 1992).
+
+**(iii.c) Dynamic Tobit.** Dynamic censored models require integrating over unobserved $y^*_{i,t-1}$ — computationally infeasible with many missing values. Panel data permit restricting to observations where $y_{i,t-1}$ is *observed*, so $f(y_{it}\mid y_{i,t-1})$ reduces to the simple error density. No high-dimensional integration needed (Arellano, Bover & Labeaga 1999).
+
+
+## 3. Methodology: Heterogeneity and Parameter Decomposition
+
+Standard inference assumes a **common density** $f(y\mid\tilde{x};\tilde{\theta})$ for all $i$ and $t$. With panels this is typically wrong. Ignoring individual-specific effects $\alpha_i$ in a pooled regression:
+
+$$y_{it} = \alpha_i + \tilde{\beta}'\tilde{x}_{it} + u_{it}$$
+
+yields estimates that can be **biased in any direction** (Figures 1–3 in Hsiao 2005 show how pooled OLS can even reverse the sign of the true slope).
+
+The solution is to decompose the unknown heterogeneity $\tilde{\gamma}_{it}$ into:
+
+| Component | Varies across $i$? | Varies over $t$? | Examples |
+|---|---|---|---|
+| $\alpha_i$ | Yes | No | ability, gender, firm management |
+| $\lambda_t$ | No | Yes | prices, interest rates, macro shocks |
+| $\delta_{it}$ | Yes | Yes | firm profits, sales, capital stock |
+
+**Goal:** Treat $\tilde{\gamma}_{it}$ as *incidental parameters* and make valid inference on the *structural parameters* $\tilde{\beta}$ after controlling for them.
+
+
+## Fixed Effects, Random Effects & the Incidental Parameters Problem
+
+**Random Effects (RE):** Treat $\alpha_i$ as a random variable, integrate it out.
+*Pro:* Parameter count stays fixed as $N\to\infty$.
+*Con:* Requires correct specification of $f(\alpha_i\mid\tilde{x}_i)$; misspecification biases inference; may require $T$-dimensional integration.
+
+**Fixed Effects (FE):** Treat $\alpha_i$ as unknown constants.
+*Pro:* No distributional assumption needed.
+*Con:* With large $N$, small $T$, imprecisely estimated $\alpha_i$ contaminate inference on $\tilde{\beta}$ — the **incidental parameters problem**.
+
+**Eliminating incidental parameters:**
+
+- *Linear models:* First-differencing or within-demeaning removes time-invariant $\alpha_i$ exactly — no distribution assumed.
+- *Nonlinear models:* **No general rule.** Special structures are needed: conditional logit (Chamberlain 1980), maximum score (Manski 1987), trimmed LS (Honoré 1992).
+
+**The cost:** These nonlinear methods impose severe sample restrictions. In one welfare-recipient study (Hsiao et al. 2005), fewer than **10% of individuals** met the eligibility conditions.
+
+> Devising simple, efficient nonlinear panel FE estimators **remains an open challenge**.
+
+
+## Conclusions: Panel Data Are Powerful, Not Automatic
+
+> "Panel data are not a panacea. The power of panel data depends critically on the compatibility of the assumptions of the statistical tools with the data generating process."
+
+**Why panels?** They uniquely enable: DiD causal inference, first-differencing out unobservables, unrestricted lag estimation, improved individual forecasts, micro-foundations for macro, and solutions to nonstationarity and measurement error.
+
+**Four questions every analyst should ask (Hsiao's closing checklist):**
+
+1. Which of the advantages does *this* dataset and *this* question actually deliver?
+2. What are the panel's limitations — attrition, short $T$, clustering, selection?
+3. Are the statistical assumptions compatible with the real data-generating process?
+4. How can efficiency be further increased — pooling, GMM, Bayesian shrinkage?
+
+| Concept | Takeaway |
+|---|---|
+| Omitted time-invariant variables | First-difference or within-demean |
+| State dependence vs. heterogeneity | Only panel histories can distinguish them |
+| Representative agent | Testable — and often rejected — with panel data |
+| FE nonlinear models | Identified in theory; restrictive in practice |
+
+
+# Berk and Freedman (2003)
+
+## Core Thesis
+
+> When researchers apply conventional statistical inference to convenience samples,
+> they are making **substantial empirical commitments** about how the social world
+> operates — commitments that are rarely examined and often false.
+
+- Standard errors, *t*-tests, and *p*-values rest on mathematically precise assumptions
+- Using the arithmetic does not make those assumptions true
+- The research enterprise may be **distorted** by statistical technique, not helped by it
+
+
+
+## The Problem: Generalising from Sample to Population
+
+- Researchers routinely seek to generalise findings beyond the data at hand
+- Any dataset is one of many that could have been studied; uncertainty must be calibrated
+- Conventional tools — standard errors, confidence intervals, *p*-values — provide that calibration **only under specific, restrictive assumptions**
+- Chief among these: **random sampling**
+
+::: {.callout-note}
+**Random sampling** has a precise technical meaning: units drawn independently,
+each with equal probability. Achieving this in practice is extremely costly and rarely done.
+:::
+
+
+
+## Three Ways Researchers Treat Data
+
+| Strategy | What it assumes | Key problem |
+|---|---|---|
+| **Treat data as a population** | No inference needed; describe what is in front of you | Severely limits generalisation |
+| **Assume a real population, "as-if" random sample** | The convenience sample behaves like a random draw from a real population | Independence and constant probabilities almost certainly violated |
+| **Assume an imaginary population** | The data are a random sample from a population that "could have been produced by social processes" | The population has no empirical existence; the sampling mechanism is fictional |
+
+
+
+## Treating Data as a Population
+
+- Legitimate when all you care about are the data at hand (e.g., planning for current shelter residents)
+- No statistical inference is required — no sampling uncertainty exists
+- **Trade-off**: ability to generalise is **severely restricted**
+- Results describe *these* individuals; nothing is said about future residents or other shelters
+
+
+
+## The "As-If" Strategy: A Real Population
+
+**Shelter example:** Current residents treated as a random sample from all shelters in the area over the past year.
+
+Problems with this move:
+
+- Each member of the population needs equal probability of entering the sample — almost certainly untrue
+- Admission probabilities vary by season (family violence has seasonal patterns)
+- Admissions policies change in response to day-to-day shelter life → **independence fails**
+- Catchment areas, referral networks, and personal characteristics create heterogeneous selection probabilities
+
+
+
+## The Imaginary Population
+
+- When no real population can be defined, researchers invoke one that *could have* produced the data
+- **Two convenient fictions:**
+  1. The population has no empirical existence of its own
+  2. The sample was not in fact drawn at random
+
+> "At the risk of the obvious, inferences to imaginary populations are also imaginary."
+
+- Common in regression analysis: disturbance terms are treated as random samples from a distribution that is only defined *within* the model
+
+
+## When Statistical Issues Are Substantive
+
+**Example: Racial discrimination in probation citations**
+
+- 1,084 federal probationers: 34% Black
+- Of 119 cited for violations: 45% Black
+- Standard *t*-test gives *t* = 2.41, one-sided *p* = .01 → null rejected
+
+**The hidden assumption:** a race-neutral citation process would be *equivalent to random sampling* from the pool of probationers.
+
+But in practice:
+
+- Drug offence mix changed dramatically during the study period → probabilities vary over time
+- Supervision intensity varies by crime type and background → not all probationers face the same risk
+- Officers adjust behaviour based on past citations → **independence fails**
+
+
+## Why Independence Is So Fragile
+
+> If independence were the rule, criminal justice researchers would have little to study.
+
+- Criminal justice processes generate **structured dependence** by nature
+- Social proximity breeds similarity; proximity over time breeds serial correlation
+
+**Markov chain simulation (n = 100 cases):**
+
+| | Estimated SE | True SE | Bias |
+|---|---|---|---|
+| Simple (1-step Markov) | 0.038 | 0.058 | ~50% too small |
+| Complex (4-step Markov) | 0.038 | 0.062 | ~60% too small |
+
+The 4-step chain has first-order serial correlation of only **0.12** — nearly impossible to detect without a priori knowledge.
+
+
+## Consequences of Dependence
+
+- Conventional formula **underestimates** the true standard error when positive serial correlation is present
+- *t*-statistics inflate; findings appear significant when they are not
+- With **negative** dependence, the bias runs the other way — real effects are missed
+- **Neither direction is detectable** without knowing the data-generation mechanism
+
+> Even very large samples may not save the day if the dependence structure is complex or evolving.
+
+
+## Spatial Dependence
+
+- Dependence need not be temporal; **spatial structure** creates the same problems
+- E.g., crime rates across census tracts
+- The "right" measure of distance is non-obvious:
+  - Physical distance vs. travel time
+  - Barriers (freeways, parks, industrial zones) can break natural proximity
+  - Ethnic mix and social distance may matter more than geography
+- Spatial dependence is **equally damaging** to standard errors and equally hard to correct
+
+
+## Regression Models
+
+The textbook OLS setup assumes disturbances $\varepsilon_i$:
+
+- drawn **independently**
+- from a **common Gaussian** distribution with mean 0 and finite variance
+
+**The problem:**
+
+- The error distribution is defined only *within* the model; it cannot be studied empirically without assuming the model
+- Errors are treated as a random sample from an imaginary population
+- Minor correlations among the $\varepsilon_i$ can create **major bias** in estimated standard errors for coefficients
+- Structural equation models add technical complexity but preserve the same fictional assumptions underneath
+
+
+## Time Series Models
+
+The standard setup: $y_t = \mu_t + \varepsilon_t$ with $\varepsilon_t$ i.i.d.
+
+- Serial correlation in residuals is often too obvious to ignore
+- Common fix: assume $\varepsilon_t = \alpha \varepsilon_{t-1} + \delta_t$ where $\delta_t$ is i.i.d.
+
+> "Clearly, the game has not changed except for additional layers of technical complexity."
+
+- Each layer of elaboration introduces new imaginary populations and new unverifiable assumptions
+- The question "why should these assumptions hold?" is rarely asked, let alone answered
+
+
+## Meta-Analysis: The Problem Intensified
+
+Meta-analysis combines effect-size estimates across studies. Its core assumptions:
+
+- **(A) & (B):** Within each study, treatment and control subjects are i.i.d. random samples
+- **(C):** Treatment and control groups are independent of each other
+- **(D):** Studies are independent of one another
+
+**Each assumption fails:**
+
+- (A) & (B) fail even in randomised experiments (sampling without replacement induces dependence)
+- (C) fails because subjects cannot appear in both conditions
+- (D) fails because investigators are trained alike, read the same papers, and respond to the same funders
+
+
+## Meta-Analysis: Further Problems
+
+**Constant effect size assumption** ($\eta_1 = \eta_2 = \cdots = \eta_k = \eta$):
+
+- Requires one true treatment effect, scaled identically across all studies and outcome measures
+- Combining different outcomes (earnings, weeks employed, time to first job) under one standardised effect is arbitrary
+
+**Random-effects extension:**
+
+- Now the effect sizes are themselves a random sample from a super-population of effects
+- This imaginary super-population has no empirical existence
+
+**Publication bias:**
+
+- The "file-drawer" calculation assumes missing studies are centred on zero — an unjustified assumption
+
+
+## Meta-Analysis: The Recommendation
+
+::: {.callout-important}
+**"Our recommendation is simple: just say no."**
+
+The suggested alternative is equally simple:
+*read the papers, think about them, and summarise them.*
+
+"If you can't sort the papers into meaningful categories, neither can the meta-analysts."
+:::
+
+Meta-analysis can give approximately valid results only when:
+
+1. All studies are properly randomised controlled experiments
+2. They share a common protocol
+3. The only goal is to test the global null hypothesis (treatment has no effect anywhere)
+
+
+## Experiments Are Not a Free Lunch Either
+
+Even with a randomised experiment (1,000 subjects, 500 to treatment):
+
+- Assumptions (A) & (B) require independence **within** each group — violated because subjects are drawn without replacement
+- Assumption (C) requires independence **between** groups — violated because assignment to treatment precludes control
+
+To satisfy (A–C) approximately, you need:
+- A **very large** pool of subjects
+- Randomly draw a **small fraction** into treatment and control separately
+- Treatment adds a **constant** to all responses
+
+> "Few experiments satisfy these conditions."
+
+
+## Recommendations for Practice
+
+| Recommendation | Rationale |
+|---|---|
+| **Use probability sampling whenever possible** | The only method that truly justifies inferential arithmetic |
+| **Do not assume convenience samples are random** | Assumptions do not create representativeness; decades of survey research demonstrate this |
+| **Avoid post hoc statistical adjustments for dependence** | Adjustments require their own restrictive assumptions and distance the researcher from the data |
+| **Conduct sensitivity analyses** | Use partial knowledge of the data-generation mechanism to test robustness — but fictional sensitivity analyses yield fictional results |
+| **Replicate** | Real replication answers the question "what would happen if the study were repeated?" |
+| **Just say no to meta-analysis** | Read and synthesise the primary literature instead |
+
+
+## What to Do Instead
+
+**Cross-validation:**
+
+- Split a large sample into two; build a forecasting model on one part and evaluate it on the other
+- Offers protection against overfitting but does **not** address replicability across studies
+
+**Actual replication:**
+
+- Estimate a mean or coefficient in one study; use it to forecast findings in a second, similar study
+- Correct forecasts are strong evidence for the model; failed forecasts are informative failures
+
+> "It is probably impossible to predict the changes attendant on replication without doing replications."
+
+
+## Conclusions
+
+1. **Statistical inference with convenience samples is risky.** Bias is expected; independence is almost certainly violated.
+
+2. **P-values and standard errors from conventional formulas can be grossly misleading** when independence fails — typically they will be too small, generating spurious significance.
+
+3. **Assumptions are not technicalities.** They are empirical commitments about how the social world operates. Using the formulas means accepting those commitments.
+
+4. **No amount of statistical maneuvering substitutes for understanding the data-generation process.**
+
+5. **Statistical issues and substantive issues overlap.** Methods cannot be separated from theory and context.
+
+
+## Conceptual Summary
+
+```
+Convenience sample
+        │
+        ▼
+Researcher applies conventional inference
+(standard errors, t-tests, p-values)
+        │
+Implicitly assumes:
+  ✗ Independence of observations
+  ✗ Constant selection probabilities
+  ✗ Random sampling (from a real OR imaginary population)
+        │
+        ▼
+These are EMPIRICAL claims about social processes
+— not technical defaults —
+and they are almost always false.
+        │
+        ▼
+Result: p-values and standard errors
+are unreliable guides to uncertainty
+```
+
+## One-Slide Summary
+
+| Theme | Berk & Freedman's position |
+|---|---|
+| Convenience samples | Almost never equivalent to random samples |
+| Standard errors from i.i.d. formulas | Typically underestimated due to dependence |
+| Imaginary populations | Circular and untestable; to be avoided |
+| Regression / SEM / time series | Same assumptions, more hidden layers |
+| Meta-analysis | Assumptions are untenable; prefer narrative review |
+| Randomised experiments | Satisfy assumptions only under special conditions |
+| Best practice | Probability sampling, replication, honest sensitivity analysis |
 
 ## The Dimensions of TSCS/CSTS and Summary
 
