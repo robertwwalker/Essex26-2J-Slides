@@ -1,3 +1,3 @@
 # Essex-slides
 
-This repository contains the slides for **Essex 3K: Dynamics and Heterogeneity**.
+This repository contains the slides for **Essex 2J: Time Series, One or More**.
