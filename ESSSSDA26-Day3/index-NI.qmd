@@ -11,9 +11,9 @@ format:
      footer: "ESSSSDA26-2J: One or More Time Series"
      multiplex:
        url: 'https://multiplex-5adl.onrender.com'
-     self-contained: true
+     self-contained: false
      html-math-method: katex
-     incremental: true
+     incremental: false
      slide-number: c/t
      transition: zoom
      preview-links: true
@@ -43,21 +43,21 @@ B-J modeling strategy starts with **(p, d, q)** diagnostics:
 ::: {.incremental}
 1. **Determine Stationarity** through a three-pronged strategy:
    1. Graph $Y_t$ across time
-   2. Examine the ACF
+   2. Examine the ACF and PACF
    3. Conduct a statistical test for stationarity (e.g., Augmented Dickey-Fuller)
 
-2. **Diagnose the AR processes**
+2. **Diagnose the AR and the MA processes**
 
-3. **Diagnose the MA processes**
-
-4. **Post-estimation diagnostics** of the residuals from a filtering model — if we have the B-J model right, $\hat{\epsilon}$ should be pure random noise.
+3. **Post-estimation diagnostics** of the residuals from a filtering model — if we have the B-J model right, $\hat{\epsilon}$ should be pure random noise.
 :::
 
 ## Portmanteau Tests for White Noise
 
-- **Portmanteau tests** are encompassing tests for white noise in a model's residuals. One of the most popular is the **Ljung-Box Q-statistic**.
+Goal: White noise residuals -- that is, residuals that contain no notable autocorrelation.
 
-- If $Y$ is white noise, then:
+- Measure: **Portmanteau tests** are encompassing tests for white noise in a model's residuals. One of the most popular is the **Ljung-Box Q-statistic**.
+
+- If $Y$ is white noise, then (because correlations are distributed normal, their squares are chi-square:
 
 $$Q = n(n+2)\sum_{j=1}^{m} \frac{1}{n-j}\hat{\rho}_j^2 \;\rightarrow\; \chi^2_m$$
 
