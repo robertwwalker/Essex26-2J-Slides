@@ -180,7 +180,7 @@ For all three: **smaller values indicate better-fitting, more parsimonious model
 
 ---
 
-## Fractional Integration
+## Fractional Integration (Discussed in Chapter 7)
 
 Starting from:
 $$Y_t - Y_{t-1} = \epsilon_t \;\;\Longrightarrow\;\; (1-L)Y_t = \epsilon_t \;\;\Longrightarrow\;\; (1-L)^1 Y_t = \epsilon_t$$
@@ -229,6 +229,8 @@ where $d$ can now range continuously from $-0.5$ to $1$ (and beyond).
 A simple special case — the **Pure Fractional Noise** model:
 
 $$(1-L)^d Y_t = \epsilon_t, \quad \epsilon_t \sim N(0, \sigma^2)$$
+
+Lebo, Walker, and Clarke (2000) provide evidence that many political time series are consistent with fractional integration.
 
 ## Interventions Generally
 
