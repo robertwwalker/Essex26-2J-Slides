@@ -14,7 +14,8 @@ format:
      incremental: true
      slide-number: c/t
      transition: zoom
-     multiplex: true
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
      preview-links: true
 ---
 
