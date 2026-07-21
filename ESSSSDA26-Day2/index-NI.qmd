@@ -208,7 +208,7 @@ URDF %>% mutate(D.y = difference(y, lag=1)) %>% as_tsibble(index=x) %>% gg_tsdis
 
 ## Stata
 
-Though these plots were generated in $R$, we could do the same thing in Stata.  For a quick summary with a little graphic, have a look at the `corrgram`.  For (pretty) plots, Stata has two commands to recreate this, `ac` and `pac`.  The former generates the autocorrelations while the latter creates the partial autocorrelations.  We will have a go at this in the lab.
+Though these plots were generated in $R$, we could do the same thing in Stata.  For a quick summary with a little graphic, have a look at the `corrgram`.  For (pretty) plots, Stata has two commands to recreate this, `ac` and `pac`.  The former generates the autocorrelations while the latter creates the partial autocorrelations. 
 
 
 
