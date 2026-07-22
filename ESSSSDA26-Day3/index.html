@@ -228,15 +228,21 @@ Robert W. Walker
 <section id="outline-for-day-3" class="title-slide slide level1 center scrollable">
 <h1>Outline for Day 3</h1>
 <ol type="1">
+<li class="fragment">A Note on Notation from Google AI</li>
 <li class="fragment">The Box-Jenkins Methodology</li>
 <li class="fragment">Dynamic Models<br>
 </li>
 <li class="fragment">GLS vs.&nbsp;OLS and fixes</li>
 </ol>
 </section>
+<section id="a-note-on-notation-from-google-ai" class="slide level2">
+<h2>A Note on Notation from Google AI</h2>
+
+<img data-src="./img/GAI-Diff.png" class="r-stretch quarto-figure-center"><p class="caption">Screenshot</p></section>
 <section id="the-box-jenkins-arima-approach" class="slide level2 scrollable">
 <h2>The Box-Jenkins ARIMA Approach</h2>
 <p>B-J modeling strategy starts with <strong>(p, d, q)</strong> diagnostics:</p>
+<p><span class="math display">e_{t} = \phi_{1} e_{t-1} + \phi_{2}e_{t-2} + \cdots + \phi_{p} e_{t-p} + \nu_{t} + \theta_{1} \nu_{t-1} + \theta_{2}\nu_{t-2} + \cdots + \theta_{q} \nu_{t-q}</span></p>
 <ol type="1">
 <li class="fragment"><p><strong>Determine Stationarity</strong> through a three-pronged strategy:</p>
 <ol type="1">
@@ -253,13 +259,25 @@ Robert W. Walker
 <p>Goal: White noise residuals – that is, residuals that contain no notable autocorrelation.</p>
 <ul>
 <li class="fragment"><p>Measure: <strong>Portmanteau tests</strong> are encompassing tests for white noise in a model’s residuals. One of the most popular is the <strong>Ljung-Box Q-statistic</strong>.</p></li>
-<li class="fragment"><p>If <span class="math inline">Y</span> is white noise, then (because correlations are distributed normal, their squares are chi-square:</p></li>
+<li class="fragment"><p>If <span class="math inline">Y</span> is white noise, then (because correlations are distributed normal, their squares are chi-square):</p></li>
 </ul>
 <p><span class="math display">Q = n(n+2)\sum_{j=1}^{m} \frac{1}{n-j}\hat{\rho}_j^2 \;\rightarrow\; \chi^2_m</span></p>
 <ul>
-<li class="fragment"><p>where <span class="math inline">m</span> is the number of autocorrelations calculated (based on the number of lags specified) and <span class="math inline">\hat{\rho}_j</span> is the estimated autocorrelation for lag <span class="math inline">j</span>.</p></li>
-<li class="fragment"><p><strong>Larger Q-statistics</strong> indicate that the errors contain some type of systematic process.</p></li>
+<li class="fragment">where <span class="math inline">m</span> is the number of autocorrelations calculated (based on the number of lags specified) and <span class="math inline">\hat{\rho}_j</span> is the estimated autocorrelation for lag <span class="math inline">j</span>.</li>
 </ul>
+<div class="callout callout-note callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Larger Q-statistics</strong> indicate that the errors contain some type of systematic process.</p>
+</div>
+</div>
+</div>
 </section>
 <section id="statas-corrgram-output-an-example" class="slide level2">
 <h2>Stata’s <code>corrgram</code> Output — An Example</h2>
@@ -321,22 +339,22 @@ Robert W. Walker
 <td>All zero</td>
 </tr>
 <tr class="even">
-<td>MA(1): <span class="math inline">\beta &gt; 0</span></td>
+<td>MA(1): <span class="math inline">\theta &gt; 0</span></td>
 <td>Single positive spike at lag 1</td>
 <td>Oscillating decay</td>
 </tr>
 <tr class="odd">
-<td>MA(1): <span class="math inline">\beta &lt; 0</span></td>
+<td>MA(1): <span class="math inline">\theta &lt; 0</span></td>
 <td>Single negative spike at lag 1</td>
 <td>Geometric decay</td>
 </tr>
 <tr class="even">
-<td>AR(1): <span class="math inline">a_1 &gt; 0</span></td>
+<td>AR(1): <span class="math inline">\phi_1 &gt; 0</span></td>
 <td>Direct geometric decay</td>
 <td>Single spike at lag 1</td>
 </tr>
 <tr class="odd">
-<td>AR(1): <span class="math inline">a_1 &lt; 0</span></td>
+<td>AR(1): <span class="math inline">\phi_1 &lt; 0</span></td>
 <td>Oscillating decay</td>
 <td>Single spike at lag 1</td>
 </tr>
@@ -408,6 +426,7 @@ Robert W. Walker
 <li class="fragment">If we see <strong>pure white noise</strong> in the residuals, we have a good model. If not, re-specify until we do.</li>
 <li class="fragment">Another acid test is the model’s <strong>ability to forecast</strong> — ex-post forecasting is a good way to settle disputes between rival models.</li>
 <li class="fragment">We can also use <strong>AIC</strong> and other model selection criteria.</li>
+<li class="fragment"><h2 id="there-could-be-more-than-one-model-that-provides-the-desiderata.">There could be more than one model that provides the desiderata.</h2></li>
 </ul>
 </section>
 <section id="model-selection-criteria" class="slide level2">
@@ -416,7 +435,7 @@ Robert W. Walker
 <p><strong>Adjusted <span class="math inline">R^2</span>:</strong> <span class="math display">\bar{R}^2 = 1 - \frac{n-1}{n-K}(1-R^2)</span></p>
 <p><strong>Akaike Information Criterion (AIC):</strong> <span class="math display">\text{AIC}(K) = s_y^2(1-R^2)\,e^{2K/n}</span></p>
 <p><strong>Bayesian Information Criterion (BIC / Schwartz criterion):</strong> <span class="math display">\text{BIC}(K) = s_y^2(1-R^2)\,n^{K/n}</span></p>
-<p>For all three: <strong>smaller values indicate better-fitting, more parsimonious models</strong>.</p>
+<p>For information criteria: <strong>smaller values indicate better-fitting, more parsimonious models</strong>. It is often suggested that AIC has better properties for forecasting models while BIC (generally) has a more extreme penalty for each parameter leading to more parsimonious explanations.</p>
 </section>
 <section id="fractional-integration-discussed-in-chapter-7" class="slide level2">
 <h2>Fractional Integration (Discussed in Chapter 7)</h2>
@@ -738,6 +757,7 @@ Robert W. Walker
 <li class="fragment">Use that lag as <span class="math inline">i</span> in the transfer function model.</li>
 </ol>
 <p>This data-driven identification strategy is known as <strong>cross-correlation</strong>.</p>
+<p>This complete analysis and the original article can be found on <a href="https://essexuniversity.box.com/s/lgh3u90i6aajdcphga1x2iyy8zcf0ig9">Box</a></p>
 </section>
 <section id="dynamic-linear-models" class="slide level2">
 <h2>Dynamic Linear Models</h2>
@@ -818,7 +838,7 @@ short run and long-run effects are parametrically identified <span class="math d
 </section>
 <section id="a-cottage-industry-of-adls" class="slide level2">
 <h2>A Cottage Industry of ADL’s</h2>
-<p>As recently as April of 2025, a paper appeared in the <em>Journal of Politics</em> advocating the use of ADL(2,2). The paper, by Kagalwala and Whitten, called <strong>The Answer was There All Along: Worry about the dynamics!</strong>. A previous argument was made for the ADL(1,1).</p>
+<p>As recently as April of 2025, a paper appeared in the <em>Journal of Politics</em> advocating the use of ADL(2,2). The paper, by Kagalwala and Whitten, called <strong>The Answer was There All Along: Worry about the dynamics!</strong>. A previous argument was made for the ADL(1,1) a few years before. I have placed the 2025 paper in the Box.</p>
 </section>
 <section id="structural-vs.-non-structural" class="slide level2">
 <h2>Structural vs.&nbsp;Non-structural</h2>
@@ -835,7 +855,7 @@ short run and long-run effects are parametrically identified <span class="math d
 <li class="fragment"><p>The key insight is that this VAR is the reduced form to some more complicated as yet unspecified structural form.</p></li>
 <li class="fragment"><p>But if the goal is to specify how variables related to one another and to use data to discover Granger causality and responses to impulse injected in the system.</p></li>
 </ul>
-<aside><ol class="aside-footnotes"><li id="fn2"><p>A nice blog post with an extended example in R can be found on <a href="https://towardsdatascience.com/a-deep-dive-on-vector-autoregression-in-r-58767ebb3f06">towardsdatascience</a>. Kit Baum has <a href="http://fmwww.bc.edu/EC-C/S2016/8823/ECON8823.S2016.nn10.slides.pdf">a similar worked example in slides</a>.</p></li></ol></aside></section>
+<aside><ol class="aside-footnotes"><li id="fn2"><p>A nice blog post with an extended example in R can be found on <a href="https://medium.com/data-science/a-deep-dive-on-vector-autoregression-in-r-58767ebb3f06">towardsdatascience</a>. Kit Baum has <a href="http://fmwww.bc.edu/EC-C/S2016/8823/ECON8823.S2016.nn10.slides.pdf">a similar worked example in slides</a>.</p></li></ol></aside></section>
 <section id="a-very-simple-example" class="slide level2">
 <h2>A very simple example</h2>
 <pre><code>library(forecast)

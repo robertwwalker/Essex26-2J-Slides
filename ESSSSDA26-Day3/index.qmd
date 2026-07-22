@@ -32,13 +32,20 @@ library(xaringanthemer); library(kableExtra); library(tidyverse); library(skimr)
 
 # Outline for Day 3
 
-1. The Box-Jenkins Methodology
-2. Dynamic Models  
-3. GLS vs. OLS and fixes
+1. A Note on Notation from Google AI
+2. The Box-Jenkins Methodology
+3. Dynamic Models  
+4. GLS vs. OLS and fixes
+
+## A Note on Notation from Google AI
+
+![Screenshot](./img/GAI-Diff.png)
 
 ## The Box-Jenkins ARIMA Approach
 
 B-J modeling strategy starts with **(p, d, q)** diagnostics:
+
+$$e_{t} = \phi_{1} e_{t-1} + \phi_{2}e_{t-2} + \cdots + \phi_{p} e_{t-p} + \nu_{t} + \theta_{1} \nu_{t-1} + \theta_{2}\nu_{t-2} + \cdots + \theta_{q} \nu_{t-q}$$
 
 ::: {.incremental}
 1. **Determine Stationarity** through a three-pronged strategy:
@@ -57,13 +64,15 @@ Goal: White noise residuals -- that is, residuals that contain no notable autoco
 
 - Measure: **Portmanteau tests** are encompassing tests for white noise in a model's residuals. One of the most popular is the **Ljung-Box Q-statistic**.
 
-- If $Y$ is white noise, then (because correlations are distributed normal, their squares are chi-square:
+- If $Y$ is white noise, then (because correlations are distributed normal, their squares are chi-square):
 
 $$Q = n(n+2)\sum_{j=1}^{m} \frac{1}{n-j}\hat{\rho}_j^2 \;\rightarrow\; \chi^2_m$$
 
 - where $m$ is the number of autocorrelations calculated (based on the number of lags specified) and $\hat{\rho}_j$ is the estimated autocorrelation for lag $j$.
 
-- **Larger Q-statistics** indicate that the errors contain some type of systematic process.
+::: {.callout-note}
+**Larger Q-statistics** indicate that the errors contain some type of systematic process.
+::: 
 
 ## Stata's `corrgram` Output — An Example
 
@@ -100,10 +109,10 @@ Slowly decaying AC values and a single large PAC spike at lag 1 are the hallmark
 | Model | ACF | PACF |
 |---|---|---|
 | White noise | All zero | All zero |
-| MA(1): $\beta > 0$ | Single positive spike at lag 1 | Oscillating decay |
-| MA(1): $\beta < 0$ | Single negative spike at lag 1 | Geometric decay |
-| AR(1): $a_1 > 0$ | Direct geometric decay | Single spike at lag 1 |
-| AR(1): $a_1 < 0$ | Oscillating decay | Single spike at lag 1 |
+| MA(1): $\theta > 0$ | Single positive spike at lag 1 | Oscillating decay |
+| MA(1): $\theta < 0$ | Single negative spike at lag 1 | Geometric decay |
+| AR(1): $\phi_1 > 0$ | Direct geometric decay | Single spike at lag 1 |
+| AR(1): $\phi_1 < 0$ | Oscillating decay | Single spike at lag 1 |
 | AR(p) | Decays toward zero | Spikes through lag p; zero for $s > p$ |
 | ARMA(1,1) | Geometric decay after lag 1 | Oscillating decay after lag 1 |
 | ARMA(p,q) | Decay after lag q | Decay after lag p |
@@ -154,13 +163,11 @@ $$(1-L)Y_t = \phi(1-L)Y_{t-1} + \epsilon_t + \theta\epsilon_{t-1}$$
 
 Once we think we have the right (p, d, q) model, we test it with a **filtering model**.
 
-::: {.incremental}
 - Estimate using **MLE** and examine the parameter estimates and the ACF, PACF, and Q statistics for the model residuals.
 - If we see **pure white noise** in the residuals, we have a good model. If not, re-specify until we do.
 - Another acid test is the model's **ability to forecast** — ex-post forecasting is a good way to settle disputes between rival models.
 - We can also use **AIC** and other model selection criteria.
-:::
-
+- There could be more than one model that provides the desiderata.
 ---
 
 ## Model Selection Criteria
@@ -176,7 +183,7 @@ $$\text{AIC}(K) = s_y^2(1-R^2)\,e^{2K/n}$$
 **Bayesian Information Criterion (BIC / Schwartz criterion):**
 $$\text{BIC}(K) = s_y^2(1-R^2)\,n^{K/n}$$
 
-For all three: **smaller values indicate better-fitting, more parsimonious models**.
+For information criteria: **smaller values indicate better-fitting, more parsimonious models**.  It is often suggested that AIC has better properties for forecasting models while BIC (generally) has a more extreme penalty for each parameter leading to more parsimonious explanations.
 
 ---
 
@@ -634,7 +641,7 @@ Suppose we expect the effect of unemployment ($EMPXL$) to be **negative** and be
 
 This data-driven identification strategy is known as **cross-correlation**.
 
-
+This complete analysis and the original article can be found on [Box](https://essexuniversity.box.com/s/lgh3u90i6aajdcphga1x2iyy8zcf0ig9)
 
 ## Dynamic Linear Models
 
@@ -747,7 +754,7 @@ $$y_{t} = \alpha + \gamma_{1}y_{t-1} + \beta_{0} X_t + \beta_{1}X_{t-1} + \beta_
 
 ## A Cottage Industry of ADL's
 
-As recently as April of 2025, a paper appeared in the *Journal of Politics* advocating the use of ADL(2,2).  The paper, by Kagalwala and Whitten, called **The Answer was There All Along: Worry about the dynamics!**. A previous argument was made for the ADL(1,1).
+As recently as April of 2025, a paper appeared in the *Journal of Politics* advocating the use of ADL(2,2).  The paper, by Kagalwala and Whitten, called **The Answer was There All Along: Worry about the dynamics!**. A previous argument was made for the ADL(1,1) a few years before.  I have placed the 2025 paper in the Box.
 
 ## Structural vs. Non-structural
 
@@ -763,7 +770,7 @@ Chris Sims suggested a more flexible approach: the VAR.
 
 - Choose a relevant set of lag lengths and write each variable in the system as a function of lags of itself and other variables to the chosen lengths.<sup>1</sup> [For Stata](https://www.stata.com/manuals/tsvar.pdf) and [for R](https://otexts.com/fpp3/VAR.html)[^1]
 
-[^1]: A nice blog post with an extended example in R can be found on [towardsdatascience](https://towardsdatascience.com/a-deep-dive-on-vector-autoregression-in-r-58767ebb3f06).  Kit Baum has [a similar worked example in slides](http://fmwww.bc.edu/EC-C/S2016/8823/ECON8823.S2016.nn10.slides.pdf).
+[^1]: A nice blog post with an extended example in R can be found on [towardsdatascience](https://medium.com/data-science/a-deep-dive-on-vector-autoregression-in-r-58767ebb3f06).  Kit Baum has [a similar worked example in slides](http://fmwww.bc.edu/EC-C/S2016/8823/ECON8823.S2016.nn10.slides.pdf).
 
 - The key insight is that this VAR is the reduced form to some more complicated as yet unspecified structural form.  
 

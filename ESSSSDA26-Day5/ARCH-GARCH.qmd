@@ -1,0 +1,173 @@
+---
+title: "Day 5: Dynamics in Variance"
+subtitle: "ARCH/GARCH"  
+author: "Robert W. Walker"
+date: "July 24, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: One or More Time Series"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: false
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  hiline = TRUE
+)
+library(xaringanthemer); library(kableExtra); library(tidyverse); library(skimr)
+```
+
+## Dynamics in Variance
+
+- Thinking about heteroscedasticity as theoretically interesting
+- ARCH
+- GARCH
+
+# Heteroscedasticity as Theoretically Interesting
+
+## A Different Take on Heteroscedasticity
+
+- ARCH and GARCH are time series versions of models that **buck the traditional approach** to heteroscedastic error processes.
+
+- These models depart from the typical treatment of heteroscedasticity as a *disease to be cured*.
+
+- Instead, they treat heteroscedasticity as a **subject of theoretical interest** to be modelled.
+
+- In these frameworks we develop **two levels of theories**: theories about the mean and variance of our dependent variable.
+
+# ARCH
+
+## Origins of ARCH
+
+The first ARCH model was proposed by Engle in a 1982 *Econometrica* article titled:
+
+> "Autoregressive Conditional Heteroskedasticity with Estimates of the Variance of UK Inflation"
+
+The name derives from **A**uto**R**egressive **C**onditional **H**eteroscedasticity.
+
+## The Standard Time Series Setup
+
+Beginning with Harvey's (1990) autoregressive distributed (AD) lag notation for time series data:
+
+$$Y_t = \sum_{i=0}^{L} X_{t-i}\beta_i + \sum_{i=1}^{M} \phi_i Y_{t-i} + \epsilon_t$$
+
+In such models we still assume:
+
+$$\epsilon_t \sim N(0,\, \sigma^2)$$
+
+where the absence of a subscript on $\sigma^2$ indicates a **homoscedastic** population stochastic component.
+
+## Engle's Relaxation
+
+Engle's model starts from the same theoretically-driven specification but **relaxes homoscedasticity** by assuming instead that:
+
+$$\epsilon_t \sim N(0,\, \sigma_t^2)$$
+
+Where $\sigma_t^2$, the variance of the population stochastic component, **varies across time**.
+
+## Two Equations
+
+ARCH models involve estimating **two equations**:
+
+::: {.nonincremental}
+1. **Mean equation** — the theoretically-derived equation with $Y_t$ as the dependent variable.
+
+2. **Variance equation** — an equation in which $\sigma_t^2$ is the dependent variable.
+:::
+
+## ARCH Order
+
+ARCH processes are described by their **q order**.
+
+::: {.nonincremental}
+**ARCH(1)**:
+$$h_t = \sigma_t^2 = \gamma_0 + \gamma_1 \epsilon_{t-1}^2$$
+
+**ARCH(2)**:
+$$h_t = \sigma_t^2 = \gamma_0 + \gamma_1 \epsilon_{t-1}^2 + \gamma_2 \epsilon_{t-2}^2$$
+
+**General ARCH(q)**:
+$$h_t = \sigma_t^2 = \gamma_0 + \sum_{j=1}^{q} \gamma_j \epsilon_{t-j}^2$$
+:::
+
+## Conditional Variance with Covariates
+
+We can also allow conditional variance to depend on **theoretically-chosen covariates** — developing and testing theories about what makes the stochastic process larger or smaller.
+
+In such models the variance equation becomes:
+
+$$h_t = \sigma_t^2 = e^{\lambda_0 + \lambda_1 Z_{t-1}} + \gamma_1 \epsilon_{t-1}^2$$
+
+where the **Z variables** are covariates for which we have theoretical expectations about how they affect model variance.
+
+## Notes on This Notation
+
+$$h_t = \sigma_t^2 = e^{\lambda_0 + \lambda_1 Z_{t-1}} + \gamma_1 \epsilon_{t-1}^2$$
+
+::: {.nonincremental}
+- This generalises to any **ARCH(q)** process.
+- Z variables can follow **any time process** we can theoretically justify.
+- Unlike the $\gamma$ parameters, the $\lambda$ (lambda) parameters **can be negative** — meaning that as Z increases, the error variance decreases.
+- The **same variable** can appear as both a Z and an X in an ARCH model.
+- If $\lambda_1 = 0$, the model collapses to a standard ARCH(1) where $\gamma_0 = e^{\lambda_0}$.
+:::
+
+# GARCH
+
+## From ARCH to GARCH
+
+- The ARCH framework allows for conditional heteroscedasticity of a **moving average** flavour.
+
+- However, our theories about heteroscedasticity in time series may also be of an **autoregressive** flavour.
+
+- We can approximate this by making q large — but the GARCH model handles it more **parsimoniously**.
+
+## The GARCH Variance Equation
+
+GARCH re-specifies the variance equation as:
+
+$$h_t = \sigma_t^2 = \gamma_0 + \sum_{i=1}^{p} \delta_i h_{t-1} + \sum_{j=1}^{q} \gamma_j \epsilon_{t-j}^2$$
+
+GARCH processes are described as **GARCH(p, q)**, where p is the order of the autoregressive variance terms and q is the order of the lagged squared errors.
+
+## GARCH with Independent Variables
+
+An additionally attractive feature of GARCH is the ability to include **independent variables** in the variance equation:
+
+$$h_t = \sigma_t^2 = \gamma_0 + \sum_{i=1}^{p} \delta_i h_{t-1} + \sum_{j=1}^{q} \gamma_j \epsilon_{t-j}^2 + \sum_{k=1}^{m} \mu_k X_k$$
+
+This allows direct modelling of which substantive factors drive the size of the stochastic process.
+
+# ARCH in Many Flavours
+
+See the day 5 post for a guide to computing these models.
+
+# ARCH in Mean
+
+## ARCH-in-Mean Models
+
+ARCH-in-Mean (ARCH-M) models allow heteroscedasticity to **directly affect** $Y_t$. For instance:
+
+$$Y_t = \beta_0 + \beta_1 X_t + \psi\sigma_t^2 + \epsilon_t$$
+$$\sigma_t^2 = \gamma_0 + \gamma_1 \epsilon_{t-1}$$
+
+This class of model tests **two distinct theories** about the heteroscedastic process:
+
+::: {.nonincremental}
+1. The standard ARCH/GARCH theory about the structure of heteroscedasticity (captured by $\gamma_1$).
+
+2. Whether heteroscedasticity has a **direct impact** $\psi$ on the mean equation — where $\psi$ can be either positive or negative.
+:::
