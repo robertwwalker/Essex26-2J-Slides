@@ -443,7 +443,7 @@
 
   <meta name="author" content="Robert W. Walker">
   <meta name="dcterms.date" content="2026-07-23">
-  <title>Day 4: Cointegration</title>
+  <title>Simultaneous Equations</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -1041,7 +1041,7 @@ margin-right: 0; }
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">Day 4: Cointegration</h1>
+  <h1 class="title">Simultaneous Equations</h1>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -1053,377 +1053,303 @@ Robert W. Walker
 
   <p class="date">2026-07-23</p>
 </section>
-<section id="on-reduced-and-structural-forms-and-systems-of-equations" class="slide level2">
-<h2>On Reduced and Structural Forms and Systems of Equations</h2>
-<p>What are structural forms and what are reduced forms? Are we familiar with what the <em>rank</em> and <em>order</em> conditions are?</p>
-</section>
-<section id="systems-of-simultaneous-equations" class="slide level2">
-<h2>Systems of Simultaneous Equations</h2>
-<p>Which beg questions about identification as above. Let’s briefly discuss the system that they present.</p>
-</section>
-<section id="vector-autoregression" class="slide level2">
-<h2>Vector AutoRegression</h2>
-<p>Choose a relevant set of lag lengths and write each variable in the system as a function of lags of itself and other variables to the chosen lengths. The key insight is that this VAR is the reduced form to some more complicated as yet unspecified structural form. But if the goal is to specify how variables related to one another and to use data to discover Granger causality and responses to impulse injected in the system.</p>
-</section>
-<section id="on-granger-causation" class="slide level2">
-<h2>On Granger Causation</h2>
-<p>Granger causation in a panel data setting. This is a rather complex topic because of heterogeneity.</p>
+<section id="the-problem" class="slide level2">
+<h2>The Problem</h2>
+<p>Price goes up — does quantity fall because demand fell, or rise because supply rose?</p>
+<p>When variables are jointly determined, regressing one on the other gives inconsistent OLS estimates — not merely imprecise, but <em>wrong in the limit</em>. Simultaneity makes the regressor correlated with the error in its own equation. From Day 1, <span class="math inline">X^{&#39;}\epsilon \neq 0</span></p>
+<p>The way out is to be explicit about two levels of the model:</p>
 <ul>
-<li>An identical causal relationship could exist for each <span class="math inline">i \in N</span></li>
-<li>No causal relationship could exist for any <span class="math inline">i \in N</span>.</li>
-<li>Something in between the above two extremes.</li>
-</ul>
-<p>Matching the theoretical claim and the empirical analysis here, like everywhere else, is absolutely crucial. Also, in some ways, this is just our earliest ANOVA example but now we will use the lags of the dependent variable to establish the alternative hypotheses.</p>
-</section>
-<section id="implementation" class="slide level2">
-<h2>Implementation</h2>
-<ul>
-<li>Look at stationarity. We want to make certain that this holds.</li>
-<li>Test a hypothesis, many forms can be implied.</li>
-</ul>
-<p>Conditional on stationarity, the procedure goes like this. For example, to test the hypothesis that, for all <span class="math inline">i</span>, <span class="math inline">x</span> does not Granger cause <span class="math inline">y</span>, we choose a lag length, call it <span class="math inline">k</span>. We then regress lags of <span class="math inline">y</span> and <span class="math inline">k</span> lags of <span class="math inline">x</span> on <span class="math inline">y</span> in a model with unit specific slopes and unit specific intercepts. We do not include contemporaneous <span class="math inline">x</span> because Granger causality is all about temporal priority. This is the unrestricted model. The hypothesis implies the restriction that all the coefficients on all of the lagged <span class="math inline">x</span> are zero for each cross-section and for all <span class="math inline">k</span> lags of <span class="math inline">x</span>.</p>
-</section>
-<section id="section" class="slide level2">
-<h2></h2>
-<p>In other words, the unrestricted model is: <span class="math display">y_{it} = \rho_{i,1} y_{i,t-1} + \rho_{i,2} y_{i,t-2} + \ldots + \rho_{i,m} y_{i,t-m} + \beta_{i,1} x_{i,t-1} + \ldots + \beta_{i,k} x_{i,t-k} + \epsilon_{it}</span> while the restricted model is <span class="math display">y_{it} = \rho_{i,1} y_{i,t-1} + \rho_{i,2} y_{i,t-2} + \ldots + \rho_{i,m} y_{i,t-m} + \epsilon_{it}</span> because the null hypothesis implies that all the <span class="math inline">\beta</span> are zero for all lags <span class="math inline">t-1</span> to <span class="math inline">t-k</span> lags of <span class="math inline">x</span>.</p>
-</section>
-<section id="backfilling-the-lagged-dependent-variable-problem" class="slide level2">
-<h2>Backfilling the Lagged Dependent Variable problem</h2>
-<p>Let’s analyse this. This will preview dynamic interpretation in panel settings also. The long-run multiplier.</p>
-</section>
-<section id="lets-talk-about-simultaneous-equations-and-systems-of-equations." class="slide level2">
-<h2>Let’s Talk about simultaneous equations and systems of equations.</h2>
-</section>
-<section id="stationarity-conditions" class="slide level2">
-<h2>Stationarity conditions</h2>
-<p>We normally restrict autoregressive models to stationary data, and then some constraints on the values of the parameters are required.</p>
-<h3 id="general-condition-for-stationarity">General condition for stationarity</h3>
-<p>Complex roots of <span class="math inline">1-\phi_1 z - \phi_2 z^2 - \dots - \phi_pz^p</span> lie outside the unit circle on the complex plane.</p>
-<ul>
-<li>For <span class="math inline">p=1</span>: <span class="math inline">-1&lt;\phi_1&lt;1</span>.</li>
-<li>For <span class="math inline">p=2</span>:<span class="math inline">-1&lt;\phi_2&lt;1\qquad \phi_2+\phi_1 &lt; 1 \qquad \phi_2 -\phi_1 &lt; 1</span>.</li>
-<li>More complicated conditions hold for <span class="math inline">p\ge3</span>.</li>
-<li>Estimation software takes care of this.</li>
+<li class="fragment">the <strong>structural form</strong> — which equation is which (demand vs. supply, policy vs. response)</li>
+<li class="fragment">the <strong>reduced form</strong> — what the data can actually tell us directly</li>
 </ul>
 </section>
-<section id="invertibility" class="slide level2">
-<h2>Invertibility</h2>
-<ul>
-<li>Any MA( <span class="math inline">q</span> ) process can be written as an AR( <span class="math inline">\infty</span> ) process if we impose some constraints on the MA parameters.</li>
-<li>Then the MA model is called “invertible”.</li>
-<li>Invertible models have some mathematical properties that make them easier to use in practice.</li>
-<li>Invertibility of an ARIMA model is equivalent to forecastability of an ETS model.</li>
-</ul>
-</section>
-<section id="invertibility-1" class="slide level2">
-<h2>Invertibility</h2>
-<p>General condition for invertibility: Complex roots of <span class="math inline">1+\theta_1 z + \theta_2 z^2 + \dots + \theta_qz^q</span> lie outside the unit circle on the complex plane.</p>
-<ul>
-<li>For <span class="math inline">q=1</span>: <span class="math inline">-1&lt;\theta_1&lt;1</span>.</li>
-<li>For <span class="math inline">q=2</span>: <span class="math display">-1&lt;\theta_2&lt;1 \qquad \theta_2+\theta_1 &gt;-1 \qquad \theta_1 -\theta_2 &lt; 1</span></li>
-<li>More complicated conditions hold for <span class="math inline">q\ge3</span>.</li>
-<li>Estimation software takes care of this.</li>
-</ul>
-</section>
-<section id="on-equilibrium" class="slide level2">
-<h2>On Equilibrium</h2>
-<p>What does equilibrium mean? Equilibration?</p>
-</section>
-<section>
-<section id="cointegration" class="title-slide slide level1 center">
-<h1>Cointegration</h1>
-
-</section>
-<section id="the-problem-with-differencing" class="slide level2">
-<h2>The Problem with Differencing</h2>
-<p>The notion of cointegration is a very important idea that comes out of the work of Hendry, Granger, and Engle.</p>
-<p>Start with a static regression model:</p>
-<p><span class="math display">Y_t = \beta_0 + \beta_1 X_t + \epsilon_t</span></p>
-<p>If we test for non-stationarity and find that both <span class="math inline">Y_t</span> and <span class="math inline">X_t</span> are non-stationary, then we need to difference both series: <span class="math inline">(1 - L)Y_t</span> and <span class="math inline">(1 - L)X_t</span>.</p>
-<p>We can rewrite the regression model as:</p>
-<p><span class="math display">(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t + \epsilon_t</span></p>
-<div class="callout callout-important callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Important</strong></p>
-</div>
-<div class="callout-content">
-<p>The problem: we are no longer able to make any inferences about the <strong>long-run equilibrium</strong> processes at work. Cointegration and Error Correction Models substantially bridge this gap.</p>
-</div>
-</div>
-</div>
-</section></section>
-<section>
-<section id="cointegration-and-error-correction" class="title-slide slide level1 center">
-<h1>Cointegration and Error Correction</h1>
-
-</section>
-<section id="the-core-idea" class="slide level2">
-<h2>The Core Idea</h2>
-<p><span class="math display">(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t + \epsilon_t</span></p>
-<p>Imagine <span class="math inline">Y_t</span> and <span class="math inline">X_t</span> are both non-stationary, and we want to analyze the <strong>long-run equilibrium</strong> relationship between them.</p>
-<p>Engle and Granger brought together two fundamental ideas: <strong>co-integration</strong> and <strong>error correction</strong>.</p>
-<ul>
-<li><p>The notion of co-integration involves a long-run relationship between two non-stationary variables.</p></li>
-<li><p>Even if <span class="math inline">Y_t</span> and <span class="math inline">X_t</span> are both non-stationary, they may still have a linear and stationary relationship characterised by <span class="math inline">(Y_t - cX_t)</span>.</p></li>
-</ul>
-</section>
-<section id="the-englegranger-two-step-process" class="slide level2 scrollable">
-<h2>The Engle–Granger Two-Step Process</h2>
-<p>In their 1987 paper, Engle and Granger outlined the following process for assessing cointegration and, if found, estimating an error correction model:</p>
-<ol type="1">
-<li class="fragment"><strong>Are the two variables of interest both non-stationary?</strong></li>
-<li class="fragment"><strong>If so, is a linear combination of them non-stationary?</strong>
-<ul>
-<li class="fragment">Estimate a cointegrating regression: <span class="math inline">Y_t = \hat{c}_0 + \hat{c}_1 X_t + \epsilon_t</span></li>
-<li class="fragment">Test whether the residuals <span class="math inline">\hat{\epsilon}_t = Y_t - \hat{c}_0 + \hat{c}_1 X_t</span> are stationary.</li>
-</ul></li>
-<li class="fragment"><strong>If <span class="math inline">\hat{\epsilon}_t</span> is stationary</strong>, estimate an error correction model: <span class="math display">\small (1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1}) + u_t</span> where <span class="math inline">\alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1})</span> is the <strong>error correction mechanism</strong>.</li>
-<li class="fragment">Substitute <span class="math inline">\hat{\epsilon}_t = Y_t - \hat{c}_0 + \hat{c}_1 X_t</span> and run <strong>OLS</strong>. This is the <strong>Engle–Granger two-step process</strong>.</li>
-</ol>
-</section>
-<section id="the-adjustment-parameter-alpha" class="slide level2">
-<h2>The Adjustment Parameter <span class="math inline">\alpha</span></h2>
-<p><span class="math display">(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1}) + u_t</span></p>
-<p>Note that <span class="math inline">|\alpha| &lt; 1.0</span> and <span class="math inline">\alpha</span> <strong>should be negative</strong>. Its magnitude tells us the <strong>speed of adjustment</strong> to shocks.</p>
-<blockquote>
-<p>If <span class="math inline">\alpha = -0.5</span>, then after a shock, half of it goes away in the first period, and then another half of the remaining shock goes away in each subsequent period.</p>
-</blockquote>
-</section>
-<section id="interpretation-and-specification-notes" class="slide level2">
-<h2>Interpretation and Specification Notes</h2>
-<p>In an error correction model such as</p>
-<p><span class="math display">(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - c_0 - c_1 X_{t-1}) + \epsilon_t</span></p>
-<p>the effect of <span class="math inline">X</span> on <span class="math inline">Y</span> involves two components:</p>
-<ul>
-<li><strong>Short-run effect</strong> — captured by <span class="math inline">\beta_1</span></li>
-<li><strong>Adjustment/feedback effect</strong> — captured by <span class="math inline">\alpha</span>, indicating how much of the disequilibrium is corrected each period</li>
-</ul>
-<div class="callout callout-note callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Notes on ECM specification</strong></p>
-</div>
-<div class="callout-content">
-<ul>
-<li>There can be <strong>other independent variables</strong> in the model specification.</li>
-<li>There can be <strong>more than one ECM</strong> in the same model.</li>
-</ul>
-</div>
-</div>
-</div>
-</section>
-<section id="alternative-single-step-estimation" class="slide level2">
-<h2>Alternative (Single-Step) Estimation</h2>
-<p>The two-step process first obtains <span class="math inline">\hat{\epsilon}_t</span>, then estimates:</p>
-<p><span class="math display">(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 - \hat{c}_1 X_{t-1}) + u_t</span></p>
-<p>where the ECM uses residuals from <span class="math inline">Y_t = c_0 + c_1 X_t + \hat{\epsilon}_t</span>.</p>
-<p>Expanding the error correction term algebraically:</p>
-<p><span class="math display">\small (1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha Y_{t-1} + \alpha\hat{c}_0 + \alpha\hat{c}_1 X_{t-1} + u_t</span></p>
-<p><span class="math display">\small (1 - L)Y_t = (\beta_0 + \alpha\hat{c}_0) + \beta_1(1 - L)X_t - \alpha Y_{t-1} + \alpha\hat{c}_1 X_{t-1} + u_t</span></p>
-<p>This reparameterisation can be <strong>estimated in a single OLS step</strong>.</p>
-</section></section>
-<section>
-<section id="cointegration-and-exogeneity" class="title-slide slide level1 center">
-<h1>Cointegration and Exogeneity</h1>
-
-</section>
-<section id="three-types-of-exogeneity" class="slide level2 scrollable">
-<h2>Three Types of Exogeneity</h2>
-<p>Any time you have a co-integrated series, people will want to flip the causal arrow on you. It is possible that <span class="math inline">X</span> influences <span class="math inline">Y</span>, giving rise to a <strong>simultaneity bias</strong>. This is addressed through exogeneity testing.</p>
-<p>There are three types of exogeneity:</p>
-<ol type="1">
-<li><p><strong>Weak:</strong> <span class="math inline">X_t \rightarrow Y_t</span> but <span class="math inline">Y_t \not\rightarrow X_t</span></p></li>
-<li><p><strong>Strong</strong> (Granger non-causality): <span class="math inline">X_t \rightarrow Y_t</span> but <span class="math inline">Y_t \not\rightarrow X_t</span> <em>and</em> <span class="math inline">Y_t \not\rightarrow X_{t-1}</span>. If instead <span class="math inline">Y_t \rightarrow X_{t-1}</span>, we have <strong>Granger causality</strong>.</p></li>
-<li><p><strong>Super:</strong> Important for forecasting. Rooted in the Lucas critique — if rational agents anticipate and offset policy innovation, parameters will not be stable over time.</p></li>
-</ol>
-</section>
-<section id="testing-for-weak-exogeneity" class="slide level2 scrollable">
-<h2>Testing for Weak Exogeneity</h2>
-<p>The test for weak exogeneity has <strong>three parts</strong>:</p>
-<ol type="1">
-<li><p><strong>Develop a credible model of <span class="math inline">X</span></strong> — the independent variable in question.</p></li>
-<li><p><strong>Add the ECM term</strong> <span class="math inline">\epsilon_{t-1}</span> from the main model to the right-hand side of that <span class="math inline">X</span> model. If this is statistically <strong>insignificant</strong>, the first part of the test is passed.</p></li>
-<li><p><strong>Return to the original ECM</strong> and add the residuals from step 1. Run a <strong>Hausman test (F-test)</strong> to see whether model fit has improved. If it has <strong>not</strong>, then we have weak exogeneity.</p></li>
-</ol>
-</section>
-<section id="granger-causality-testing" class="slide level2">
-<h2>Granger Causality Testing</h2>
-<p>A variable <span class="math inline">X</span> <strong>Granger causes</strong> <span class="math inline">Y</span> if you can improve your forecast of <span class="math inline">Y</span> using <span class="math inline">X</span> over and above a model of <span class="math inline">Y</span> explained by its own history. (Granger 1969)</p>
-<p><strong>Step 1</strong> — Run a univariate model of <span class="math inline">Y</span> based on its own history:</p>
-<p><span class="math display">Y_t = \beta_0 + \beta_1 Y_{t-1} + \ldots + \beta_k Y_{t-k} + \epsilon_t</span></p>
-<p><strong>Step 2</strong> — Add lags of <span class="math inline">X</span> and re-estimate:</p>
-<p><span class="math display">Y_t = \beta_0 + \beta_1 Y_{t-1} + \ldots + \beta_k Y_{t-k} + c_1 X_{t-1} + \ldots + c_k X_{t-k} + \epsilon_t</span></p>
-<p>Conduct an <strong>F-test</strong> to see whether fit has improved.</p>
-<p><strong>Step 3</strong> — If fit has improved, then <strong><span class="math inline">X</span> Granger causes <span class="math inline">Y</span></strong>.</p>
-</section>
-<section id="non-integrated-ecm" class="slide level2">
-<h2>Non-integrated ECM?</h2>
-<p>de Boef and Keele [referenced in BFHP on p. 90]</p>
-</section>
-<section id="multiple-cointegrating-vectors-johansen" class="slide level2">
-<h2>Multiple Cointegrating Vectors: Johansen</h2>
-<p>The VECM or Vector Error Correction Model</p>
-<p><strong>Engle–Granger is limited to a single cointegrating vector.</strong> Johansen (1988, 1991) provides a full-system maximum-likelihood approach.</p>
-<p>Start with a <span class="math inline">k</span>-dimensional VAR(<span class="math inline">p</span>) in levels, then reparametrise as a <strong>Vector Error-Correction Model (VECM)</strong>:</p>
+<section id="the-structural-form" class="slide level2">
+<h2>The Structural Form</h2>
+<p>A system of <span class="math inline">G</span> equations in <span class="math inline">G</span> endogenous variables <span class="math inline">\mathbf{y}_t</span> and <span class="math inline">K</span> exogenous variables <span class="math inline">\mathbf{x}_t</span>:</p>
 <p><span class="math display">
-\Delta \mathbf{X}_t
-  = \boldsymbol{\Pi}\,\mathbf{X}_{t-1}
-  + \sum_{i=1}^{p-1}\boldsymbol{\Gamma}_i\,\Delta\mathbf{X}_{t-i}
-  + \boldsymbol{\varepsilon}_t,
-\qquad \boldsymbol{\varepsilon}_t \sim \mathcal{N}(\mathbf{0},\boldsymbol{\Sigma})
-</span></p>
-<p>The <strong>long-run impact matrix</strong> <span class="math inline">\boldsymbol{\Pi}</span> carries all information about cointegration via its rank <span class="math inline">r</span>:</p>
-<p><span class="math display">
-\boldsymbol{\Pi} = \boldsymbol{\alpha}\boldsymbol{\beta}^\top
+\mathbf{B}\,\mathbf{y}_t + \boldsymbol{\Gamma}\,\mathbf{x}_t = \boldsymbol{\varepsilon}_t
 </span></p>
 <table class="caption-top">
 <colgroup>
-<col style="width: 22%">
-<col style="width: 31%">
-<col style="width: 45%">
+<col style="width: 32%">
+<col style="width: 44%">
+<col style="width: 24%">
 </colgroup>
 <thead>
 <tr class="header">
 <th>Symbol</th>
 <th>Dimension</th>
-<th>Interpretation</th>
+<th>Role</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><span class="math inline">\boldsymbol{\beta}</span></td>
-<td><span class="math inline">k \times r</span></td>
-<td>Cointegrating vectors (long-run relationships)</td>
+<td><span class="math inline">\mathbf{B}</span></td>
+<td><span class="math inline">G \times G</span></td>
+<td>coefficients on endogenous variables</td>
 </tr>
 <tr class="even">
-<td><span class="math inline">\boldsymbol{\alpha}</span></td>
-<td><span class="math inline">k \times r</span></td>
-<td>Adjustment (loading) coefficients</td>
+<td><span class="math inline">\boldsymbol{\Gamma}</span></td>
+<td><span class="math inline">G \times K</span></td>
+<td>coefficients on exogenous variables</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\boldsymbol{\varepsilon}_t</span></td>
+<td><span class="math inline">G \times 1</span></td>
+<td>structural disturbances, <span class="math inline">E[\boldsymbol{\varepsilon}_t \boldsymbol{\varepsilon}_t&#39;] = \boldsymbol{\Sigma}</span></td>
 </tr>
 </tbody>
 </table>
+<p>Each row is a separate economic relationship — a supply curve, a demand curve, a policy rule. By convention, normalise the diagonal of <span class="math inline">\mathbf{B}</span> to <span class="math inline">-1</span> so that variable <span class="math inline">i</span> stands alone on the left-hand side of equation <span class="math inline">i</span>.</p>
 </section>
-<section id="rank-cointegration-and-the-π-decomposition" class="slide level2">
-<h2>Rank, Cointegration, and the Π Decomposition</h2>
-<p>The <strong>rank of <span class="math inline">\boldsymbol{\Pi}</span></strong> determines the number of cointegrating relationships:</p>
+<section id="the-reduced-form" class="slide level2">
+<h2>The Reduced Form</h2>
+<p>Premultiply by <span class="math inline">\mathbf{B}^{-1}</span> (assuming it exists):</p>
+<p><span class="math display">
+\mathbf{y}_t = \underbrace{-\mathbf{B}^{-1}\boldsymbol{\Gamma}}_{\boldsymbol{\Pi}}\,\mathbf{x}_t + \underbrace{\mathbf{B}^{-1}\boldsymbol{\varepsilon}_t}_{\mathbf{v}_t}
+\qquad\Longrightarrow\qquad
+\boxed{\mathbf{y}_t = \boldsymbol{\Pi}\,\mathbf{x}_t + \mathbf{v}_t}
+</span></p>
+<p>Every endogenous variable is now expressed purely in terms of exogenous variables. Because the same regressors appear in every equation, <span class="math inline">\boldsymbol{\Pi}</span> can be estimated by OLS applied equation by equation — consistently and without instruments.</p>
+<p>The cost: the reduced-form errors <span class="math inline">\mathbf{v}_t = \mathbf{B}^{-1}\boldsymbol{\varepsilon}_t</span> are a blend of all the structural disturbances and will generally be correlated across equations:</p>
+<p><span class="math display">
+E[\mathbf{v}_t \mathbf{v}_t&#39;] = \mathbf{B}^{-1}\boldsymbol{\Sigma}\left(\mathbf{B}^{-1}\right)&#39;
+</span></p>
+</section>
+<section id="a-concrete-example-supply-demand" class="slide level2">
+<h2>A Concrete Example: Supply &amp; Demand</h2>
+<p><strong>Structural form</strong> (<span class="math inline">G = 2</span>, endogenous <span class="math inline">p_t</span> and <span class="math inline">q_t</span>, exogenous <span class="math inline">\text{inc}_t</span> and <span class="math inline">\text{cost}_t</span>)</p>
+<p><span class="math display">
+\begin{aligned}
+\text{Demand:}\quad &amp; q_t = \alpha_1 p_t + \alpha_2\,\text{inc}_t + \varepsilon_t^d \\[4pt]
+\text{Supply:}\quad &amp; q_t = \beta_1 p_t + \beta_2\,\text{cost}_t + \varepsilon_t^s
+\end{aligned}
+</span></p>
+<p><strong>Reduced form</strong> (solve for <span class="math inline">p_t</span> and <span class="math inline">q_t</span>)</p>
+<p><span class="math display">
+\begin{aligned}
+p_t &amp;= \pi_{11}\,\text{inc}_t + \pi_{12}\,\text{cost}_t + v_t^p \\[4pt]
+q_t &amp;= \pi_{21}\,\text{inc}_t + \pi_{22}\,\text{cost}_t + v_t^q
+\end{aligned}
+</span></p>
+<p>The <span class="math inline">\pi_{ij}</span> are rational functions of <span class="math inline">(\alpha_1, \alpha_2, \beta_1, \beta_2)</span> — ratios of the structural parameters. Recovering those parameters from <span class="math inline">\hat{\boldsymbol{\Pi}}</span> is the identification problem.</p>
+</section>
+<section id="the-identification-problem" class="slide level2">
+<h2>The Identification Problem</h2>
+<p>We can estimate <span class="math inline">\hat{\boldsymbol{\Pi}}</span> cleanly from data. But does it tell us anything about <span class="math inline">\mathbf{B}</span> and <span class="math inline">\boldsymbol{\Gamma}</span>?</p>
+<p><span class="math display">
+\boldsymbol{\Pi} = -\mathbf{B}^{-1}\boldsymbol{\Gamma}
+\quad\Leftrightarrow\quad
+\mathbf{B}\,\boldsymbol{\Pi} + \boldsymbol{\Gamma} = \mathbf{0}
+</span></p>
+<p>The reduced form <span class="math inline">\boldsymbol{\Pi}</span> has <span class="math inline">G \times K</span> free parameters. The structural pair <span class="math inline">(\mathbf{B}, \boldsymbol{\Gamma})</span> has up to <span class="math inline">G(G + K)</span>. Without further restrictions there are infinitely many structural models consistent with any given reduced form.</p>
+<p>What rescues identification is prior knowledge about which variables belong in which equations: the exclusion restrictions.</p>
+</section>
+<section id="the-order-condition" class="slide level2">
+<h2>The Order Condition</h2>
+<p>A variable excluded from equation <span class="math inline">i</span> is a potential source of identifying information. The necessary condition is:</p>
+<p><span class="math display">
+\boxed{\text{number of excluded variables} \geq G - 1}
+</span></p>
+<p>where “excluded” means present in the system but absent from equation <span class="math inline">i</span>.</p>
 <table class="caption-top">
 <colgroup>
-<col style="width: 43%">
-<col style="width: 56%">
+<col style="width: 50%">
+<col style="width: 50%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>Rank <span class="math inline">r</span></th>
-<th>Implication</th>
+<th>Excluded variables</th>
+<th>Status</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><span class="math inline">r = 0</span></td>
-<td>No cointegration; <span class="math inline">\boldsymbol{\Pi} = \mathbf{0}</span> (pure VAR in differences)</td>
+<td><span class="math inline">&lt; G-1</span></td>
+<td><strong>Under-identified</strong> — structural parameters cannot be recovered</td>
 </tr>
 <tr class="even">
-<td><span class="math inline">0 &lt; r &lt; k</span></td>
-<td>Exactly <span class="math inline">r</span> linearly independent cointegrating vectors</td>
+<td><span class="math inline">= G-1</span></td>
+<td><strong>Exactly identified</strong></td>
 </tr>
 <tr class="odd">
-<td><span class="math inline">r = k</span></td>
-<td><span class="math inline">\boldsymbol{\Pi}</span> is full rank; all <span class="math inline">k</span> series are <span class="math inline">I(0)</span></td>
+<td><span class="math inline">&gt; G-1</span></td>
+<td><strong>Over-identified</strong> — testable restrictions remain</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Key properties of the decomposition <span class="math inline">\boldsymbol{\Pi} = \boldsymbol{\alpha}\boldsymbol{\beta}^\top</span>:</strong></p>
-<ul>
-<li>Each column of <span class="math inline">\boldsymbol{\beta}</span> defines a stationary linear combination <span class="math inline">\boldsymbol{\beta}_i^\top \mathbf{X}_{t-1} \sim I(0)</span></li>
-<li>Each row of <span class="math inline">\boldsymbol{\alpha}</span> measures the speed at which variable <span class="math inline">j</span> corrects toward equilibrium</li>
-<li>Both <span class="math inline">\boldsymbol{\alpha}</span> and <span class="math inline">\boldsymbol{\beta}</span> are identified only up to an invertible <span class="math inline">r \times r</span> rotation — <strong>normalisation restrictions</strong> are required</li>
-</ul>
+<p>Passing the order condition confirms you have <em>enough</em> excluded variables. It does not confirm they actually do the job — that is the rank condition’s business.</p>
 </section>
-<section id="the-two-test-statistics" class="slide level2">
-<h2>The Two Test Statistics</h2>
-<p>Johansen’s approach solves a <strong>reduced-rank regression</strong> via canonical correlation between <span class="math inline">\Delta\mathbf{X}_t</span> and <span class="math inline">\mathbf{X}_{t-1}</span> (partialling out the lagged differences). This yields ordered eigenvalues <span class="math inline">\hat{\lambda}_1 \geq \hat{\lambda}_2 \geq \cdots \geq \hat{\lambda}_k</span>.</p>
-<h3 id="trace-statistic">Trace Statistic</h3>
-<p>Tests <span class="math inline">H_0: \operatorname{rank}(\boldsymbol{\Pi}) \leq r</span> against <span class="math inline">H_1: \operatorname{rank}(\boldsymbol{\Pi}) &gt; r</span></p>
+<section id="the-rank-condition" class="slide level2">
+<h2>The Rank Condition</h2>
+<p>Let <span class="math inline">\mathbf{C}_i</span> be the submatrix of structural coefficients on the variables excluded from equation <span class="math inline">i</span>, drawn from the other <span class="math inline">G - 1</span> equations.</p>
 <p><span class="math display">
-\lambda_{\text{trace}}(r) = -T \sum_{i=r+1}^{k} \ln\!\left(1 - \hat{\lambda}_i\right)
+\boxed{\text{rank}(\mathbf{C}_i) = G - 1}
 </span></p>
-<h3 id="maximum-eigenvalue-statistic">Maximum Eigenvalue Statistic</h3>
-<p>Tests <span class="math inline">H_0: \operatorname{rank} = r</span> against <span class="math inline">H_1: \operatorname{rank} = r+1</span></p>
-<p><span class="math display">
-\lambda_{\max}(r, r+1) = -T\ln\!\left(1 - \hat{\lambda}_{r+1}\right)
-</span></p>
-<ul>
-<li>Both statistics follow non-standard distributions (functionals of Brownian motion); <strong>critical values depend on <span class="math inline">k - r</span> and the deterministic specification</strong> (Osterwald-Lenum 1992; MacKinnon–Haug–Michelis 1999)</li>
-<li>Test sequentially: begin at <span class="math inline">r = 0</span> and increment until <span class="math inline">H_0</span> is not rejected</li>
-</ul>
+<p>This is necessary <em>and</em> sufficient. The excluded variables need to genuinely shift the other equations — if their effects are collinear across those equations, or absent altogether, we cannot trace out equation <span class="math inline">i</span> no matter how many are excluded.</p>
+<p>The rank condition implies the order condition, so rank is the definitive test. Order is just the quick preliminary count.</p>
 </section>
-<section id="deterministic-terms-and-practical-considerations" class="slide level2 scrollable">
-<h2>Deterministic Terms and Practical Considerations</h2>
-<p>Johansen (1994) defines <strong>five canonical models</strong> based on where constants and trends enter the VECM:</p>
+<section id="rank-order-the-supplydemand-example" class="slide level2">
+<h2>Rank &amp; Order: The Supply/Demand Example</h2>
+<p>Coefficient matrix (normalised so <span class="math inline">q_t</span> has coefficient <span class="math inline">-1</span> in both equations):</p>
+<p><span class="math display">
+\begin{array}{c|cc|cc}
+&amp; p_t &amp; q_t &amp; \text{inc}_t &amp; \text{cost}_t \\ \hline
+\text{Demand} &amp; \alpha_1 &amp; -1 &amp; \alpha_2 &amp; 0 \\
+\text{Supply}  &amp; \beta_1  &amp; -1 &amp; 0        &amp; \beta_2
+\end{array}
+</span></p>
+<p><strong>Demand</strong> excludes <span class="math inline">\text{cost}_t</span>. Its coefficient in the supply equation is <span class="math inline">\beta_2</span>:</p>
+<p><span class="math display">\text{rank}([\,\beta_2\,]) = 1 = G-1 \quad\checkmark\quad (\text{provided } \beta_2 \neq 0)</span></p>
+<p><strong>Supply</strong> excludes <span class="math inline">\text{inc}_t</span>. Its coefficient in the demand equation is <span class="math inline">\alpha_2</span>:</p>
+<p><span class="math display">\text{rank}([\,\alpha_2\,]) = 1 = G-1 \quad\checkmark\quad (\text{provided } \alpha_2 \neq 0)</span></p>
+<p>Both equations are exactly identified.</p>
+</section>
+<section id="the-var-as-a-reduced-form" class="slide level2">
+<h2>The VAR as a Reduced Form</h2>
+<p>A Vector Autoregression of order <span class="math inline">p</span>:</p>
+<p><span class="math display">
+\mathbf{y}_t = \mathbf{A}_1\,\mathbf{y}_{t-1} + \mathbf{A}_2\,\mathbf{y}_{t-2} + \cdots + \mathbf{A}_p\,\mathbf{y}_{t-p} + \mathbf{u}_t, \qquad \mathbf{u}_t \sim WN(0,\,\boldsymbol{\Sigma}_u)
+</span></p>
+<p>This <em>is</em> a reduced form. There are no contemporaneous endogenous variables on the right — only lags, which are predetermined. The <span class="math inline">\mathbf{A}_j</span> matrices are reduced-form coefficients, not structural parameters. Because every equation shares the same regressors, OLS is consistent and fully efficient; SUR would give identical estimates.</p>
+<p>The off-diagonal elements of <span class="math inline">\boldsymbol{\Sigma}_u</span> are not evidence of direct causal links — they reflect structural shocks that get mixed together through <span class="math inline">\mathbf{B}_0^{-1}</span>.</p>
+</section>
+<section id="from-structural-var-to-reduced-form-var" class="slide level2">
+<h2>From Structural VAR to Reduced Form VAR</h2>
+<p>The underlying structural model:</p>
+<p><span class="math display">
+\mathbf{B}_0\,\mathbf{y}_t = \mathbf{B}_1\,\mathbf{y}_{t-1} + \cdots + \mathbf{B}_p\,\mathbf{y}_{t-p} + \boldsymbol{\varepsilon}_t,
+\qquad \boldsymbol{\varepsilon}_t \sim WN(0,\,\mathbf{I})
+</span></p>
+<p>Premultiply by <span class="math inline">\mathbf{B}_0^{-1}</span> to recover the reduced form VAR:</p>
+<p><span class="math display">
+\mathbf{y}_t = \underbrace{\mathbf{B}_0^{-1}\mathbf{B}_1}_{\mathbf{A}_1}\mathbf{y}_{t-1} + \cdots + \underbrace{\mathbf{B}_0^{-1}\mathbf{B}_p}_{\mathbf{A}_p}\mathbf{y}_{t-p} + \underbrace{\mathbf{B}_0^{-1}\boldsymbol{\varepsilon}_t}_{\mathbf{u}_t}
+</span></p>
+<p>The covariance matrix ties the two levels together:</p>
+<p><span class="math display">
+\boldsymbol{\Sigma}_u = \mathbf{B}_0^{-1}\left(\mathbf{B}_0^{-1}\right)&#39;
+</span></p>
+</section>
+<section id="identification-in-the-svar" class="slide level2">
+<h2>Identification in the SVAR</h2>
+<p>We estimate <span class="math inline">\hat{\mathbf{A}}_j</span> and <span class="math inline">\hat{\boldsymbol{\Sigma}}_u</span> from the data. The question is whether <span class="math inline">\hat{\boldsymbol{\Sigma}}_u</span> pins down <span class="math inline">\mathbf{B}_0</span>.</p>
+<p><span class="math display">\boldsymbol{\Sigma}_u = \mathbf{B}_0^{-1}\left(\mathbf{B}_0^{-1}\right)&#39;</span></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Object</th>
+<th>Free parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\boldsymbol{\Sigma}_u</span> (symmetric)</td>
+<td><span class="math inline">G(G+1)/2</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\mathbf{B}_0</span></td>
+<td><span class="math inline">G^2</span></td>
+</tr>
+<tr class="odd">
+<td>Shortfall</td>
+<td><span class="math inline">G^2 - G(G+1)/2 = G(G-1)/2</span></td>
+</tr>
+</tbody>
+</table>
+<p><span class="math inline">\boldsymbol{\Sigma}_u</span> alone pins down <span class="math inline">\mathbf{B}_0</span> only up to right-multiplication by an orthogonal matrix. At least <span class="math inline">G(G-1)/2</span> restrictions are needed to resolve the ambiguity: three for a three-variable system, fifteen for six variables.</p>
+</section>
+<section id="imposing-identification" class="slide level2">
+<h2>Imposing Identification</h2>
+<p>The restrictions on <span class="math inline">\mathbf{B}_0</span> are an economic choice, not a statistical one:</p>
 <table class="caption-top">
 <colgroup>
-<col style="width: 6%">
-<col style="width: 37%">
-<col style="width: 34%">
-<col style="width: 22%">
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>Case</th>
-<th style="text-align: center;">Constant in <span class="math inline">\boldsymbol{\beta}</span>?</th>
-<th style="text-align: center;">Trend in <span class="math inline">\boldsymbol{\beta}</span>?</th>
-<th>Typical application</th>
+<th>Scheme</th>
+<th>Restriction</th>
+<th>Idea</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>I</td>
-<td style="text-align: center;">No</td>
-<td style="text-align: center;">No</td>
-<td>Artificial; series have zero mean</td>
+<td><strong>Recursive (Cholesky)</strong></td>
+<td><span class="math inline">\mathbf{B}_0</span> lower triangular</td>
+<td>Variables ordered so earlier ones affect later ones on impact, not vice versa</td>
 </tr>
 <tr class="even">
-<td>II</td>
-<td style="text-align: center;">Yes</td>
-<td style="text-align: center;">No</td>
-<td>Series have non-zero mean, no trend</td>
+<td><strong>Short-run zeros</strong></td>
+<td>Selected off-diagonals of <span class="math inline">\mathbf{B}_0</span> zero</td>
+<td>Some shocks leave certain variables unaffected contemporaneously</td>
 </tr>
 <tr class="odd">
-<td>III</td>
-<td style="text-align: center;">Unrestricted</td>
-<td style="text-align: center;">No</td>
-<td>Most common; series are trended, cointegrating relations are not</td>
+<td><strong>Long-run (Blanchard–Quah)</strong></td>
+<td>Elements of <span class="math inline">(\mathbf{I} - \textstyle\sum\mathbf{A}_j)^{-1}\mathbf{B}_0^{-1}</span> zero</td>
+<td>Some shocks leave no permanent trace</td>
 </tr>
 <tr class="even">
-<td>IV</td>
-<td style="text-align: center;">Yes</td>
-<td style="text-align: center;">Yes</td>
-<td>Cointegrating relations have linear trends</td>
-</tr>
-<tr class="odd">
-<td>V</td>
-<td style="text-align: center;">Unrestricted</td>
-<td style="text-align: center;">Unrestricted</td>
-<td>Quadratic trends in levels (rare)</td>
+<td><strong>Sign restrictions</strong></td>
+<td>Signs of impulse responses</td>
+<td>Theory pins down direction, not magnitude</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Further practical steps:</strong></p>
-<ol type="1">
-<li><strong>Lag selection</strong> — use AIC/BIC/HQ on the unrestricted VAR before testing</li>
-<li><strong>Identification</strong> — normalise <span class="math inline">\boldsymbol{\beta}</span> (e.g., <span class="math inline">[\mathbf{I}_r \mid \mathbf{B}]</span>) and impose economic theory restrictions; test overidentifying restrictions via likelihood-ratio tests</li>
-<li><strong>Weak exogeneity</strong> — rows of <span class="math inline">\boldsymbol{\alpha}</span> equal to zero imply the corresponding variable does not respond to disequilibrium</li>
-<li><strong>Robustness</strong> — trace and <span class="math inline">\lambda_{\max}</span> may disagree; check sensitivity to lag length and deterministic specification</li>
-</ol>
+<p>Recursive identification is point-identified; sign restrictions are set-identified — a range of <span class="math inline">\mathbf{B}_0</span> matrices is consistent with the data.</p>
+</section>
+<section id="summary" class="slide level2">
+<h2>Summary</h2>
+<p><span class="math display">
+\underbrace{\mathbf{B}_0\,\mathbf{y}_t = \mathbf{B}_1\,\mathbf{y}_{t-1} + \cdots + \boldsymbol{\varepsilon}_t}_{\text{Structural VAR}}
+\quad\xrightarrow{\;\times\,\mathbf{B}_0^{-1}\;}\quad
+\underbrace{\mathbf{y}_t = \mathbf{A}_1\,\mathbf{y}_{t-1} + \cdots + \mathbf{u}_t}_{\text{Reduced Form VAR}}
+</span></p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>SVAR</th>
+<th>Reduced form VAR</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>RHS</td>
+<td>Contemporaneous <span class="math inline">\mathbf{y}_t</span> + lags</td>
+<td>Lags only</td>
+</tr>
+<tr class="even">
+<td>Errors</td>
+<td><span class="math inline">\boldsymbol{\varepsilon}_t \sim(0,\mathbf{I})</span>, uncorrelated by construction</td>
+<td><span class="math inline">\mathbf{u}_t \sim(0,\boldsymbol{\Sigma}_u)</span>, generally correlated</td>
+</tr>
+<tr class="odd">
+<td>Estimation</td>
+<td>Estimate RF first; recover <span class="math inline">\mathbf{B}_0</span> via restrictions</td>
+<td>OLS equation-by-equation</td>
+</tr>
+<tr class="even">
+<td>Identification</td>
+<td><span class="math inline">\geq G(G-1)/2</span> restrictions on <span class="math inline">\mathbf{B}_0</span></td>
+<td>Always identified</td>
+</tr>
+<tr class="odd">
+<td>Interpretation</td>
+<td>Causal — shocks, impulse responses</td>
+<td>Statistical — forecasting</td>
+</tr>
+</tbody>
+</table>
+<p>The reduced form is always there. Whether you can get back to the structural form depends entirely on the restrictions you are prepared to impose and defend.</p>
 
-</section></section>
+</section>
     </div>
   <div class="quarto-auto-generated-content" style="display: none;">
 <p><img role="img" src="data:image/jpeg;base64,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" class="slide-logo"></p>
@@ -2486,7 +2412,7 @@ window.QuartoSupport = function () {
 'autoAnimateUnmatched': true,
 'jumpToSlide': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
-'multiplex': {"secret":"62d366c6c70ee3ade230ce9e45463ce3","id":"2dc73ad5c0cde5c32429082cd7957d1ee5491d25d65d63c0aa59d8db888d021b","url":"https://multiplex-5adl.onrender.com"},
+'multiplex': {"secret":"7753daa934d11d3be8507fdedcd049f2","id":"efba0812a788c3398cb2db18d5b967124940d5d27a0ed3ee71bb53f14218231d","url":"https://multiplex-5adl.onrender.com"},
 'smaller': false,
  
         // Display controls in the bottom right corner

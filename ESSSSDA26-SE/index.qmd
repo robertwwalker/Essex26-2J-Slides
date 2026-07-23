@@ -1,0 +1,266 @@
+---
+title: "Simultaneous Equations"
+author: "Robert W. Walker"
+date: "July 23, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: One or More Time Series"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  hiline = TRUE
+)
+library(xaringanthemer); library(kableExtra); library(tidyverse); library(skimr)
+```
+
+## The Problem
+
+Price goes up — does quantity fall because demand fell, or rise because supply rose?
+
+When variables are jointly determined, regressing one on the other gives inconsistent OLS estimates — not merely imprecise, but *wrong in the limit*. Simultaneity makes the regressor correlated with the error in its own equation.  From Day 1, $X^{'}\epsilon \neq 0$
+
+The way out is to be explicit about two levels of the model:
+
+- the **structural form** — which equation is which (demand vs. supply, policy vs. response)
+- the **reduced form** — what the data can actually tell us directly
+
+---
+
+## The Structural Form
+
+A system of $G$ equations in $G$ endogenous variables $\mathbf{y}_t$ and $K$ exogenous variables $\mathbf{x}_t$:
+
+$$
+\mathbf{B}\,\mathbf{y}_t + \boldsymbol{\Gamma}\,\mathbf{x}_t = \boldsymbol{\varepsilon}_t
+$$
+
+| Symbol | Dimension | Role |
+|--------|-----------|------|
+| $\mathbf{B}$ | $G \times G$ | coefficients on endogenous variables |
+| $\boldsymbol{\Gamma}$ | $G \times K$ | coefficients on exogenous variables |
+| $\boldsymbol{\varepsilon}_t$ | $G \times 1$ | structural disturbances, $E[\boldsymbol{\varepsilon}_t \boldsymbol{\varepsilon}_t'] = \boldsymbol{\Sigma}$ |
+
+Each row is a separate economic relationship — a supply curve, a demand curve, a policy rule. By convention, normalise the diagonal of $\mathbf{B}$ to $-1$ so that variable $i$ stands alone on the left-hand side of equation $i$.
+
+---
+
+## The Reduced Form
+
+Premultiply by $\mathbf{B}^{-1}$ (assuming it exists):
+
+$$
+\mathbf{y}_t = \underbrace{-\mathbf{B}^{-1}\boldsymbol{\Gamma}}_{\boldsymbol{\Pi}}\,\mathbf{x}_t + \underbrace{\mathbf{B}^{-1}\boldsymbol{\varepsilon}_t}_{\mathbf{v}_t}
+\qquad\Longrightarrow\qquad
+\boxed{\mathbf{y}_t = \boldsymbol{\Pi}\,\mathbf{x}_t + \mathbf{v}_t}
+$$
+
+Every endogenous variable is now expressed purely in terms of exogenous variables. Because the same regressors appear in every equation, $\boldsymbol{\Pi}$ can be estimated by OLS applied equation by equation — consistently and without instruments.
+
+The cost: the reduced-form errors $\mathbf{v}_t = \mathbf{B}^{-1}\boldsymbol{\varepsilon}_t$ are a blend of all the structural disturbances and will generally be correlated across equations:
+
+$$
+E[\mathbf{v}_t \mathbf{v}_t'] = \mathbf{B}^{-1}\boldsymbol{\Sigma}\left(\mathbf{B}^{-1}\right)'
+$$
+
+---
+
+## A Concrete Example: Supply & Demand
+
+**Structural form** ($G = 2$, endogenous $p_t$ and $q_t$, exogenous $\text{inc}_t$ and $\text{cost}_t$)
+
+$$
+\begin{aligned}
+\text{Demand:}\quad & q_t = \alpha_1 p_t + \alpha_2\,\text{inc}_t + \varepsilon_t^d \\[4pt]
+\text{Supply:}\quad & q_t = \beta_1 p_t + \beta_2\,\text{cost}_t + \varepsilon_t^s
+\end{aligned}
+$$
+
+**Reduced form** (solve for $p_t$ and $q_t$)
+
+$$
+\begin{aligned}
+p_t &= \pi_{11}\,\text{inc}_t + \pi_{12}\,\text{cost}_t + v_t^p \\[4pt]
+q_t &= \pi_{21}\,\text{inc}_t + \pi_{22}\,\text{cost}_t + v_t^q
+\end{aligned}
+$$
+
+The $\pi_{ij}$ are rational functions of $(\alpha_1, \alpha_2, \beta_1, \beta_2)$ — ratios of the structural parameters. Recovering those parameters from $\hat{\boldsymbol{\Pi}}$ is the identification problem.
+
+---
+
+## The Identification Problem
+
+We can estimate $\hat{\boldsymbol{\Pi}}$ cleanly from data. But does it tell us anything about $\mathbf{B}$ and $\boldsymbol{\Gamma}$?
+
+$$
+\boldsymbol{\Pi} = -\mathbf{B}^{-1}\boldsymbol{\Gamma}
+\quad\Leftrightarrow\quad
+\mathbf{B}\,\boldsymbol{\Pi} + \boldsymbol{\Gamma} = \mathbf{0}
+$$
+
+The reduced form $\boldsymbol{\Pi}$ has $G \times K$ free parameters. The structural pair $(\mathbf{B}, \boldsymbol{\Gamma})$ has up to $G(G + K)$. Without further restrictions there are infinitely many structural models consistent with any given reduced form.
+
+What rescues identification is prior knowledge about which variables belong in which equations: the exclusion restrictions.
+
+---
+
+## The Order Condition
+
+A variable excluded from equation $i$ is a potential source of identifying information. The necessary condition is:
+
+$$
+\boxed{\text{number of excluded variables} \geq G - 1}
+$$
+
+where "excluded" means present in the system but absent from equation $i$.
+
+| Excluded variables | Status |
+|---|---|
+| $< G-1$ | **Under-identified** — structural parameters cannot be recovered |
+| $= G-1$ | **Exactly identified** |
+| $> G-1$ | **Over-identified** — testable restrictions remain |
+
+Passing the order condition confirms you have *enough* excluded variables. It does not confirm they actually do the job — that is the rank condition's business.
+
+---
+
+## The Rank Condition
+
+Let $\mathbf{C}_i$ be the submatrix of structural coefficients on the variables excluded from equation $i$, drawn from the other $G - 1$ equations.
+
+$$
+\boxed{\text{rank}(\mathbf{C}_i) = G - 1}
+$$
+
+This is necessary *and* sufficient. The excluded variables need to genuinely shift the other equations — if their effects are collinear across those equations, or absent altogether, we cannot trace out equation $i$ no matter how many are excluded.
+
+The rank condition implies the order condition, so rank is the definitive test. Order is just the quick preliminary count.
+
+---
+
+## Rank & Order: The Supply/Demand Example
+
+Coefficient matrix (normalised so $q_t$ has coefficient $-1$ in both equations):
+
+$$
+\begin{array}{c|cc|cc}
+ & p_t & q_t & \text{inc}_t & \text{cost}_t \\ \hline
+\text{Demand} & \alpha_1 & -1 & \alpha_2 & 0 \\
+\text{Supply}  & \beta_1  & -1 & 0        & \beta_2
+\end{array}
+$$
+
+**Demand** excludes $\text{cost}_t$. Its coefficient in the supply equation is $\beta_2$:
+
+$$\text{rank}([\,\beta_2\,]) = 1 = G-1 \quad\checkmark\quad (\text{provided } \beta_2 \neq 0)$$
+
+**Supply** excludes $\text{inc}_t$. Its coefficient in the demand equation is $\alpha_2$:
+
+$$\text{rank}([\,\alpha_2\,]) = 1 = G-1 \quad\checkmark\quad (\text{provided } \alpha_2 \neq 0)$$
+
+Both equations are exactly identified.
+
+---
+
+## The VAR as a Reduced Form
+
+A Vector Autoregression of order $p$:
+
+$$
+\mathbf{y}_t = \mathbf{A}_1\,\mathbf{y}_{t-1} + \mathbf{A}_2\,\mathbf{y}_{t-2} + \cdots + \mathbf{A}_p\,\mathbf{y}_{t-p} + \mathbf{u}_t, \qquad \mathbf{u}_t \sim WN(0,\,\boldsymbol{\Sigma}_u)
+$$
+
+This *is* a reduced form. There are no contemporaneous endogenous variables on the right — only lags, which are predetermined. The $\mathbf{A}_j$ matrices are reduced-form coefficients, not structural parameters. Because every equation shares the same regressors, OLS is consistent and fully efficient; SUR would give identical estimates.
+
+The off-diagonal elements of $\boldsymbol{\Sigma}_u$ are not evidence of direct causal links — they reflect structural shocks that get mixed together through $\mathbf{B}_0^{-1}$.
+
+---
+
+## From Structural VAR to Reduced Form VAR
+
+The underlying structural model:
+
+$$
+\mathbf{B}_0\,\mathbf{y}_t = \mathbf{B}_1\,\mathbf{y}_{t-1} + \cdots + \mathbf{B}_p\,\mathbf{y}_{t-p} + \boldsymbol{\varepsilon}_t,
+\qquad \boldsymbol{\varepsilon}_t \sim WN(0,\,\mathbf{I})
+$$
+
+Premultiply by $\mathbf{B}_0^{-1}$ to recover the reduced form VAR:
+
+$$
+\mathbf{y}_t = \underbrace{\mathbf{B}_0^{-1}\mathbf{B}_1}_{\mathbf{A}_1}\mathbf{y}_{t-1} + \cdots + \underbrace{\mathbf{B}_0^{-1}\mathbf{B}_p}_{\mathbf{A}_p}\mathbf{y}_{t-p} + \underbrace{\mathbf{B}_0^{-1}\boldsymbol{\varepsilon}_t}_{\mathbf{u}_t}
+$$
+
+The covariance matrix ties the two levels together:
+
+$$
+\boldsymbol{\Sigma}_u = \mathbf{B}_0^{-1}\left(\mathbf{B}_0^{-1}\right)'
+$$
+
+---
+
+## Identification in the SVAR
+
+We estimate $\hat{\mathbf{A}}_j$ and $\hat{\boldsymbol{\Sigma}}_u$ from the data. The question is whether $\hat{\boldsymbol{\Sigma}}_u$ pins down $\mathbf{B}_0$.
+
+$$\boldsymbol{\Sigma}_u = \mathbf{B}_0^{-1}\left(\mathbf{B}_0^{-1}\right)'$$
+
+| Object | Free parameters |
+|---|---|
+| $\boldsymbol{\Sigma}_u$ (symmetric) | $G(G+1)/2$ |
+| $\mathbf{B}_0$ | $G^2$ |
+| Shortfall | $G^2 - G(G+1)/2 = G(G-1)/2$ |
+
+$\boldsymbol{\Sigma}_u$ alone pins down $\mathbf{B}_0$ only up to right-multiplication by an orthogonal matrix. At least $G(G-1)/2$ restrictions are needed to resolve the ambiguity: three for a three-variable system, fifteen for six variables.
+
+---
+
+## Imposing Identification
+
+The restrictions on $\mathbf{B}_0$ are an economic choice, not a statistical one:
+
+| Scheme | Restriction | Idea |
+|---|---|---|
+| **Recursive (Cholesky)** | $\mathbf{B}_0$ lower triangular | Variables ordered so earlier ones affect later ones on impact, not vice versa |
+| **Short-run zeros** | Selected off-diagonals of $\mathbf{B}_0$ zero | Some shocks leave certain variables unaffected contemporaneously |
+| **Long-run (Blanchard–Quah)** | Elements of $(\mathbf{I} - \textstyle\sum\mathbf{A}_j)^{-1}\mathbf{B}_0^{-1}$ zero | Some shocks leave no permanent trace |
+| **Sign restrictions** | Signs of impulse responses | Theory pins down direction, not magnitude |
+
+Recursive identification is point-identified; sign restrictions are set-identified — a range of $\mathbf{B}_0$ matrices is consistent with the data.
+
+---
+
+## Summary
+
+$$
+\underbrace{\mathbf{B}_0\,\mathbf{y}_t = \mathbf{B}_1\,\mathbf{y}_{t-1} + \cdots + \boldsymbol{\varepsilon}_t}_{\text{Structural VAR}}
+\quad\xrightarrow{\;\times\,\mathbf{B}_0^{-1}\;}\quad
+\underbrace{\mathbf{y}_t = \mathbf{A}_1\,\mathbf{y}_{t-1} + \cdots + \mathbf{u}_t}_{\text{Reduced Form VAR}}
+$$
+
+| | SVAR | Reduced form VAR |
+|---|---|---|
+| RHS | Contemporaneous $\mathbf{y}_t$ + lags | Lags only |
+| Errors | $\boldsymbol{\varepsilon}_t \sim(0,\mathbf{I})$, uncorrelated by construction | $\mathbf{u}_t \sim(0,\boldsymbol{\Sigma}_u)$, generally correlated |
+| Estimation | Estimate RF first; recover $\mathbf{B}_0$ via restrictions | OLS equation-by-equation |
+| Identification | $\geq G(G-1)/2$ restrictions on $\mathbf{B}_0$ | Always identified |
+| Interpretation | Causal — shocks, impulse responses | Statistical — forecasting |
+
+The reduced form is always there. Whether you can get back to the structural form depends entirely on the restrictions you are prepared to impose and defend.
+

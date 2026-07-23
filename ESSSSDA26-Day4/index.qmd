@@ -110,47 +110,244 @@ General condition for invertibility:
 
 What does equilibrium mean?  Equilibration?
 
-## Cointegration
 
-- Is the alternative conjecture for simultaneously analysing the short run and the long-run.
-- Is premised on a dynamic system of sorts.
-- The idea was largely responsible for winning Clive Granger the Nobel.
+# Cointegration
 
+## The Problem with Differencing
 
-## Cointegration: The Practice
+The notion of cointegration is a very important idea that comes out of the work of Hendry, Granger, and Engle.
 
-We begin with a need for nonstationary data.  If the data were stationary, they are **self-equilibrating**.
+Start with a static regression model:
 
+$$Y_t = \beta_0 + \beta_1 X_t + \epsilon_t$$
 
-## Cointegration: The Criteria
+If we test for non-stationarity and find that both $Y_t$ and $X_t$ are non-stationary, then we need to difference both series: $(1 - L)Y_t$ and $(1 - L)X_t$.
 
-- Some linear combination must yield a stationary series.
-- Variables must be integrated of the same order.
-- With more than two variables, there can be multiple cointegrating vectors linking sets of variables.
+We can rewrite the regression model as:
 
-## Cointegration: The Process
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t + \epsilon_t$$
 
-The ECM is:
+::: {.callout-important}
+The problem: we are no longer able to make any inferences about the **long-run equilibrium** processes at work. Cointegration and Error Correction Models substantially bridge this gap.
+:::
 
-- Pretest the variables for the order of integration.  If integrated, then
-- Perform a seemingly troubled regression: the spurious regression of $$y_{t} = \beta_{0} + \beta_{1}x_{t} + \epsilon_{t}$$
+# Cointegration and Error Correction
 
-- Is $\epsilon_{t}$ stationary?  Check using $$\Delta \hat{\epsilon}_{t} = \alpha_{1}\hat{\epsilon}_{t-1}$$
+## The Core Idea
 
-- If all complies, then estimate the ECM:
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t + \epsilon_t$$
 
-$$\Delta x_{t} = \alpha + \gamma_{xy} \hat{\epsilon_{t-1}} + G + \epsilon{Cx}$$
-$$\Delta y_{t} = \alpha + \gamma_{yx} \hat{\epsilon_{t-1}} + G + \epsilon{Cy}$$
+Imagine $Y_t$ and $X_t$ are both non-stationary, and we want to analyze the **long-run equilibrium** relationship between them.
 
-where G is the set of appropriate lagged differences in an OLS VAR [an aside on instrumental variables here]
-- Assess model adequacy.
+Engle and Granger brought together two fundamental ideas: **co-integration** and **error correction**.
 
+- The notion of co-integration involves a long-run relationship between two non-stationary variables.
 
-## Multiple Cointegrating Vectors: Johansen
+- Even if $Y_t$ and $X_t$ are both non-stationary, they may still have a linear and stationary relationship characterised by $(Y_t - cX_t)$.
 
-The VECM or Vector Error Correction Model
+## The Engle–Granger Two-Step Process
+
+In their 1987 paper, Engle and Granger outlined the following process for assessing cointegration and, if found, estimating an error correction model:
+
+::: {.incremental}
+1. **Are the two variables of interest both non-stationary?**
+2. **If so, is a linear combination of them non-stationary?**
+   - Estimate a cointegrating regression: $Y_t = \hat{c}_0 + \hat{c}_1 X_t + \epsilon_t$
+   - Test whether the residuals $\hat{\epsilon}_t = Y_t - \hat{c}_0 + \hat{c}_1 X_t$ are stationary.
+3. **If $\hat{\epsilon}_t$ is stationary**, estimate an error correction model:
+$$\small (1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1}) + u_t$$
+   where $\alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1})$ is the **error correction mechanism**.
+4. Substitute $\hat{\epsilon}_t = Y_t - \hat{c}_0 + \hat{c}_1 X_t$ and run **OLS**. This is the **Engle–Granger two-step process**.
+:::
+
+## The Adjustment Parameter $\alpha$
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1}) + u_t$$
+
+Note that $|\alpha| < 1.0$ and $\alpha$ **should be negative**. Its magnitude tells us the **speed of adjustment** to shocks.
+
+> If $\alpha = -0.5$, then after a shock, half of it goes away in the first period, and then another half of the remaining shock goes away in each subsequent period.
+
+## Interpretation and Specification Notes
+
+In an error correction model such as
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - c_0 - c_1 X_{t-1}) + \epsilon_t$$
+
+the effect of $X$ on $Y$ involves two components:
+
+- **Short-run effect** — captured by $\beta_1$
+- **Adjustment/feedback effect** — captured by $\alpha$, indicating how much of the disequilibrium is corrected each period
+
+::: {.callout-note}
+### Notes on ECM specification
+- There can be **other independent variables** in the model specification.
+- There can be **more than one ECM** in the same model.
+:::
+
+## Alternative (Single-Step) Estimation
+
+The two-step process first obtains $\hat{\epsilon}_t$, then estimates:
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 - \hat{c}_1 X_{t-1}) + u_t$$
+
+where the ECM uses residuals from $Y_t = c_0 + c_1 X_t + \hat{\epsilon}_t$.
+
+Expanding the error correction term algebraically:
+
+$$\small (1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha Y_{t-1} + \alpha\hat{c}_0 + \alpha\hat{c}_1 X_{t-1} + u_t$$
+
+$$\small (1 - L)Y_t = (\beta_0 + \alpha\hat{c}_0) + \beta_1(1 - L)X_t - \alpha Y_{t-1} + \alpha\hat{c}_1 X_{t-1} + u_t$$
+
+This reparameterisation can be **estimated in a single OLS step**.
+
+# Cointegration and Exogeneity
+
+## Three Types of Exogeneity
+
+Any time you have a co-integrated series, people will want to flip the causal arrow on you. It is possible that $X$ influences $Y$, giving rise to a **simultaneity bias**. This is addressed through exogeneity testing.
+
+There are three types of exogeneity:
+
+1. **Weak:** $X_t \rightarrow Y_t$ but $Y_t \not\rightarrow X_t$
+
+2. **Strong** (Granger non-causality): $X_t \rightarrow Y_t$ but $Y_t \not\rightarrow X_t$ *and* $Y_t \not\rightarrow X_{t-1}$. If instead $Y_t \rightarrow X_{t-1}$, we have **Granger causality**.
+
+3. **Super:** Important for forecasting. Rooted in the Lucas critique — if rational agents anticipate and offset policy innovation, parameters will not be stable over time.
+
+## Testing for Weak Exogeneity
+
+The test for weak exogeneity has **three parts**:
+
+1. **Develop a credible model of $X$** — the independent variable in question.
+
+2. **Add the ECM term** $\epsilon_{t-1}$ from the main model to the right-hand side of that $X$ model. If this is statistically **insignificant**, the first part of the test is passed.
+
+3. **Return to the original ECM** and add the residuals from step 1. Run a **Hausman test (F-test)** to see whether model fit has improved. If it has **not**, then we have weak exogeneity.
+
+## Granger Causality Testing
+
+A variable $X$ **Granger causes** $Y$ if you can improve your forecast of $Y$ using $X$ over and above a model of $Y$ explained by its own history. (Granger 1969)
+
+**Step 1** — Run a univariate model of $Y$ based on its own history:
+
+$$Y_t = \beta_0 + \beta_1 Y_{t-1} + \ldots + \beta_k Y_{t-k} + \epsilon_t$$
+
+**Step 2** — Add lags of $X$ and re-estimate:
+
+$$Y_t = \beta_0 + \beta_1 Y_{t-1} + \ldots + \beta_k Y_{t-k} + c_1 X_{t-1} + \ldots + c_k X_{t-k} + \epsilon_t$$
+
+Conduct an **F-test** to see whether fit has improved.
+
+**Step 3** — If fit has improved, then **$X$ Granger causes $Y$**.
 
 
 ## Non-integrated ECM?
 
 de Boef and Keele [referenced in BFHP on p. 90] 
+
+## Multiple Cointegrating Vectors: Johansen
+
+The VECM or Vector Error Correction Model
+
+**Engle–Granger is limited to a single cointegrating vector.**
+Johansen (1988, 1991) provides a full-system maximum-likelihood approach.
+
+Start with a $k$-dimensional VAR($p$) in levels, then reparametrise as a
+**Vector Error-Correction Model (VECM)**:
+
+$$
+\Delta \mathbf{X}_t
+  = \boldsymbol{\Pi}\,\mathbf{X}_{t-1}
+  + \sum_{i=1}^{p-1}\boldsymbol{\Gamma}_i\,\Delta\mathbf{X}_{t-i}
+  + \boldsymbol{\varepsilon}_t,
+\qquad \boldsymbol{\varepsilon}_t \sim \mathcal{N}(\mathbf{0},\boldsymbol{\Sigma})
+$$
+
+The **long-run impact matrix** $\boldsymbol{\Pi}$ carries all information about
+cointegration via its rank $r$:
+
+$$
+\boldsymbol{\Pi} = \boldsymbol{\alpha}\boldsymbol{\beta}^\top
+$$
+
+| Symbol | Dimension | Interpretation |
+|--------|-----------|----------------|
+| $\boldsymbol{\beta}$ | $k \times r$ | Cointegrating vectors (long-run relationships) |
+| $\boldsymbol{\alpha}$ | $k \times r$ | Adjustment (loading) coefficients |
+
+---
+
+## Rank, Cointegration, and the Π Decomposition
+
+The **rank of $\boldsymbol{\Pi}$** determines the number of cointegrating relationships:
+
+| Rank $r$ | Implication |
+|----------|-------------|
+| $r = 0$ | No cointegration; $\boldsymbol{\Pi} = \mathbf{0}$ (pure VAR in differences) |
+| $0 < r < k$ | Exactly $r$ linearly independent cointegrating vectors |
+| $r = k$ | $\boldsymbol{\Pi}$ is full rank; all $k$ series are $I(0)$ |
+
+**Key properties of the decomposition $\boldsymbol{\Pi} = \boldsymbol{\alpha}\boldsymbol{\beta}^\top$:**
+
+- Each column of $\boldsymbol{\beta}$ defines a stationary linear combination
+  $\boldsymbol{\beta}_i^\top \mathbf{X}_{t-1} \sim I(0)$
+- Each row of $\boldsymbol{\alpha}$ measures the speed at which variable $j$
+  corrects toward equilibrium
+- Both $\boldsymbol{\alpha}$ and $\boldsymbol{\beta}$ are identified only up to an
+  invertible $r \times r$ rotation — **normalisation restrictions** are required
+
+---
+
+## The Two Test Statistics
+
+Johansen's approach solves a **reduced-rank regression** via canonical
+correlation between $\Delta\mathbf{X}_t$ and $\mathbf{X}_{t-1}$ (partialling out
+the lagged differences). This yields ordered eigenvalues
+$\hat{\lambda}_1 \geq \hat{\lambda}_2 \geq \cdots \geq \hat{\lambda}_k$.
+
+### Trace Statistic
+Tests $H_0: \operatorname{rank}(\boldsymbol{\Pi}) \leq r$ against
+$H_1: \operatorname{rank}(\boldsymbol{\Pi}) > r$
+
+$$
+\lambda_{\text{trace}}(r) = -T \sum_{i=r+1}^{k} \ln\!\left(1 - \hat{\lambda}_i\right)
+$$
+
+### Maximum Eigenvalue Statistic
+Tests $H_0: \operatorname{rank} = r$ against $H_1: \operatorname{rank} = r+1$
+
+$$
+\lambda_{\max}(r, r+1) = -T\ln\!\left(1 - \hat{\lambda}_{r+1}\right)
+$$
+
+- Both statistics follow non-standard distributions (functionals of Brownian
+  motion); **critical values depend on $k - r$ and the deterministic
+  specification** (Osterwald-Lenum 1992; MacKinnon–Haug–Michelis 1999)
+- Test sequentially: begin at $r = 0$ and increment until $H_0$ is not rejected
+
+---
+
+## Deterministic Terms and Practical Considerations
+
+Johansen (1994) defines **five canonical models** based on where
+constants and trends enter the VECM:
+
+| Case | Constant in $\boldsymbol{\beta}$? | Trend in $\boldsymbol{\beta}$? | Typical application |
+|------|:---------------------------------:|:------------------------------:|---------------------|
+| I    | No  | No  | Artificial; series have zero mean |
+| II   | Yes | No  | Series have non-zero mean, no trend |
+| III  | Unrestricted | No | Most common; series are trended, cointegrating relations are not |
+| IV   | Yes | Yes | Cointegrating relations have linear trends |
+| V    | Unrestricted | Unrestricted | Quadratic trends in levels (rare) |
+
+**Further practical steps:**
+
+1. **Lag selection** — use AIC/BIC/HQ on the unrestricted VAR before testing
+2. **Identification** — normalise $\boldsymbol{\beta}$ (e.g., $[\mathbf{I}_r \mid \mathbf{B}]$)
+   and impose economic theory restrictions; test overidentifying restrictions
+   via likelihood-ratio tests
+3. **Weak exogeneity** — rows of $\boldsymbol{\alpha}$ equal to zero imply the
+   corresponding variable does not respond to disequilibrium
+4. **Robustness** — trace and $\lambda_{\max}$ may disagree; check sensitivity
+   to lag length and deterministic specification
