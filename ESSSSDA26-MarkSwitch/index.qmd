@@ -1,0 +1,647 @@
+---
+title: "Switching Regression"
+subtitle: "Nonlinear Modeling via Discrete Regime Change"
+author: "Robert W. Walker"
+date: "July 24, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: One or More Time Series"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: false
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  hiline = TRUE
+)
+library(xaringanthemer); library(kableExtra); library(tidyverse); library(skimr)
+```
+
+
+# Background
+
+## Motivation
+
+- Linear regression is the primary tool for econometric analysis
+- But **nonlinear modeling** is sometimes appropriate—especially for macroeconomic relationships subject to **regime change**
+- Switching regression models capture nonlinearity through **discrete shifts in regime**
+
+We consider:
+
+- **Simple (independent) switching** — regime probabilities are exogenous
+- **Markov switching** — regime follows a first-order Markov process
+
+Both settings allow for **unobserved** regimes and dynamic specifications (lagged dependent variables, autocorrelated errors).
+
+---
+
+## The Basic Setup
+
+Let $y_t$ follow a process governed by an unobserved discrete state variable $s_t \in \{1, \ldots, M\}$.
+
+Each regime $m$ has its own regression model. Given regressors $X_t$ (switching coefficients) and $Z_t$ (common coefficients):
+
+$$
+\mu_{t,m} = X_t'\beta_m + Z_t'\gamma
+$$
+
+Errors are normally distributed with (potentially) regime-specific variance:
+
+$$
+y_t \mid s_t = m \;\sim\; \mathcal{N}\!\left(\mu_{t,m},\; \sigma_m^2\right)
+$$
+
+- $\beta_m$: regime-specific coefficient vector
+- $\gamma$: regime-invariant coefficient vector
+- $\sigma_m$: may vary by regime
+
+---
+
+## The Mixture Log-Likelihood
+
+The likelihood contribution for observation $t$ weights each regime density by its one-step-ahead probability:
+
+$$
+L_t = \sum_{m=1}^{M} \frac{1}{\sigma_m} f\!\left(\frac{y_t - \mu_{t,m}}{\sigma_m}\right) P(s_t = m \mid \mathcal{F}_{t-1};\, \delta)
+$$
+
+The full **log-likelihood** is:
+
+$$
+\ell(\beta, \gamma, \sigma, \delta) = \sum_{t=1}^{T} \log L_t
+$$
+
+Maximized via iterative numerical methods — BFGS is standard across implementations.
+
+# Simple Switching
+
+## Regime Probabilities
+
+In **simple switching**, regime probabilities are independent across time (no state dependence).
+
+Probabilities are parameterized via a **multinomial logit**:
+
+$$
+P(s_t = m \mid G_{t-1};\, \delta) = \frac{\exp(G_{t-1}'\delta_m)}{\sum_{j=1}^{M} \exp(G_{t-1}'\delta_j)}
+$$
+
+with the normalization $\delta_M = 0$.
+
+- **Constant probabilities**: $G_{t-1} \equiv 1$
+- **Time-varying probabilities**: $G_{t-1}$ contains exogenous observables
+
+> **Note:** Valid only for models with *uncorrelated* errors. Serial correlation requires a different approach.
+
+---
+
+## Filtering
+
+After observing $y_t$, we can update our regime probability estimates using **Bayes' theorem**:
+
+$$
+P(s_t = m \mid \mathcal{F}_t) = \frac{\frac{1}{\sigma_m}f\!\left(\frac{y_t - \mu_{t,m}}{\sigma_m}\right) P(s_t = m \mid \mathcal{F}_{t-1})}{\sum_{j=1}^{M} \frac{1}{\sigma_j} f\!\left(\frac{y_t - \mu_{t,j}}{\sigma_j}\right) P(s_t = j \mid \mathcal{F}_{t-1})}
+$$
+
+- **One-step-ahead** probabilities: $P(s_t = m \mid \mathcal{F}_{t-1})$ — used in the likelihood
+- **Filtered** probabilities: $P(s_t = m \mid \mathcal{F}_t)$ — updated using contemporaneous data
+
+> For simple switching without AR terms, filtered = smoothed.
+
+# Markov Switching
+
+## Transition Probabilities
+
+Under Markov switching, the regime probability depends on the **previous state**:
+
+$$
+P(s_t = j \mid s_{t-1} = i) = p_{ij,t}
+$$
+
+Collected into an $M \times M$ transition matrix:
+
+$$
+\mathbf{P}_t = \begin{pmatrix} p_{11,t} & \cdots & p_{1M,t} \\ \vdots & \ddots & \vdots \\ p_{M1,t} & \cdots & p_{MM,t} \end{pmatrix}
+$$
+
+The $(i,j)$ element is the probability of transitioning **from** regime $i$ at $t-1$ **to** regime $j$ at $t$.
+
+---
+
+## Time-Varying Transition Probabilities
+
+Each row of $\mathbf{P}_t$ is parameterized by a separate multinomial logit:
+
+$$
+p_{ij,t} = P(s_t = j \mid s_{t-1} = i;\, G_{t-1}, \delta_i) = \frac{\exp(G_{t-1}'\delta_{ij})}{\sum_{s=1}^{M}\exp(G_{t-1}'\delta_{is})}
+$$
+
+with $\delta_{iM} = 0$ for identification.
+
+**Special cases:**
+
+| Case | Description |
+|------|-------------|
+| $G_{t-1} \equiv 1$ | Constant transition probs (Hamilton 1989) |
+| $G_{t-1}$ = leading indicator | Time-varying probs (Filardo 1994; Diebold et al. 1994) |
+
+---
+
+## Likelihood Evaluation & Filtering (Markov)
+
+Starting from filtered probabilities $P(s_{t-1} = m \mid \mathcal{F}_{t-1})$, each period involves four steps:
+
+**1. Predict** one-step-ahead regime probabilities:
+$$P(s_t = m \mid \mathcal{F}_{t-1}) = \sum_{j=1}^{M} p_{jm,t}\, P(s_{t-1} = j \mid \mathcal{F}_{t-1})$$
+
+**2. Form** joint densities of data and state:
+$$f(y_t, s_t = m \mid \mathcal{F}_{t-1}) = \frac{1}{\sigma_m} f\!\left(\frac{y_t - \mu_{t,m}}{\sigma_m}\right) P(s_t = m \mid \mathcal{F}_{t-1})$$
+
+**3. Evaluate** the likelihood contribution (marginalise over states):
+$$L_t = \sum_{j=1}^{M} f(y_t, s_t = j \mid \mathcal{F}_{t-1})$$
+
+**4. Filter** — update regime probabilities via Bayes' rule:
+$$P(s_t = m \mid \mathcal{F}_t) = \frac{f(y_t, s_t = m \mid \mathcal{F}_{t-1})}{L_t}$$
+
+---
+
+## Smoothing (Kim 1994)
+
+**Smoothed probabilities** use the full-sample information set $\mathcal{F}_T$ rather than only $\mathcal{F}_t$.
+
+**Kim's (1994) efficient backward recursion:**
+
+$$
+P(s_t = i, s_{t+1} = j \mid \mathcal{F}_T) = P(s_t = i \mid \mathcal{F}_t) \cdot \frac{p_{ij,t+1}\, P(s_{t+1} = j \mid \mathcal{F}_T)}{P(s_{t+1} = j \mid \mathcal{F}_t)}
+$$
+
+Marginalize over $s_{t+1}$ to obtain smoothed probabilities:
+
+$$
+P(s_t = i \mid \mathcal{F}_T) = \sum_{j=1}^{M} P(s_t = i, s_{t+1} = j \mid \mathcal{F}_T)
+$$
+
+- Initialize at $t = T$ using filtered probabilities
+- Iterate backward from $t = T-1$ to $t = 1$
+
+---
+
+## Initial Probabilities
+
+The Markov filter requires initialization $P(s_0 = m \mid \mathcal{F}_0)$. Common approaches:
+
+| Method | Description | Default in |
+|--------|-------------|-----------|
+| **Ergodic (steady-state)** | Implied by transition matrix | Stata, most packages |
+| **Uniform** | $1/M$ for each regime | Manual override |
+| **User-specified** | Analyst-supplied prior | All packages |
+| **Estimated** | Treated as free parameters | `depmixS4` |
+
+> Ergodic initialization is arbitrary when transition probabilities are time-varying.
+
+# Dynamic Models
+
+## Two Approaches to Dynamics
+
+Two strategies for introducing dynamics into switching models:
+
+|  | **MSDR** | **MSAR / Hamilton Model** |
+|--|----------|--------------------------|
+| **Full name** | Markov Switching Dynamic Regression | Markov Switching Autoregressive |
+| **Also known as** | MSI (regime-invariant lags) | MSM, Hamilton model |
+| **Dynamics via** | Lagged $y_t$ as regressors | Serially correlated errors |
+| **Mean depends on** | Current state $s_t$ only | Current **and** lagged states |
+| **State vector** | $M$-dimensional | $M^{p+1}$-dimensional |
+| **Standard filter** | Applies directly | Requires Hamilton filter |
+
+---
+
+## MSDR: Dynamic Regression
+
+Include lagged dependent variables directly as regressors:
+
+$$
+y_t = X_t'\beta_{s_t} + Z_t'\gamma + \sum_{r=1}^{p} \phi_r^{(s_t)}\, y_{t-r} + \sigma_{s_t} \varepsilon_t
+$$
+
+where $X_t'\beta_{s_t} + Z_t'\gamma$ is the regime mean from regressors and $\phi_r^{(s_t)}$ are the (optionally regime-varying) lag coefficients.
+
+- Conditional mean depends **only on the contemporaneous state $s_t$**
+- Lagged $y_{t-r}$ treated as additional (switching or common) regressors — standard filtering applies directly
+- State space remains $M$-dimensional regardless of lag order $p$
+
+---
+
+## MSAR: Autoregressive Errors
+
+Deviations of $y_t$ from the regime mean follow an AR($p$) process:
+
+$$
+\left(1 - \sum_{r=1}^{p} \rho_r L^r\right)(y_t - \mu_{s_t}) = \sigma_{s_t} \varepsilon_t
+$$
+
+Rearranged (expanding the lag operator):
+
+$$
+y_t = \mu_{s_t} + \sum_{r=1}^{p} \rho_r\left(y_{t-r} - \mu_{s_{t-r}}\right) + \sigma_{s_t} \varepsilon_t
+$$
+
+Key points:
+
+- AR coefficients $\rho_r$ are **regime-invariant** in Hamilton (1989); the general MSAR permits them to be regime-specific
+- The lagged mean adjustments $\mu_{s_{t-r}}$ depend on **lagged states** $s_{t-r}$ — so the mean at $t$ depends on the entire state history $\{s_t, s_{t-1}, \ldots, s_{t-p}\}$
+- The joint state vector $(s_t, \ldots, s_{t-p})$ has $M^{p+1}$ possible values — grows rapidly (e.g., $M=2$, $p=1$: 4 combinations; $p=4$: 32 combinations)
+- Requires the **Hamilton filter** and **Kim smoother** to handle the enlarged state space
+
+# Implementation in Stata
+
+## Stata: `mswitch`
+
+`mswitch` has been part of official Stata since **Stata 14**. Two sub-commands map directly onto the two dynamic specifications:
+
+| Command | Model | Dynamics |
+|---------|-------|----------|
+| `mswitch dr` | MSDR | Lagged $y_t$ as regressors |
+| `mswitch ar` | MSAR | AR errors (Hamilton filter) |
+
+```stata
+* MSDR — 2-state switching intercept with common regressors
+mswitch dr y x1 x2, states(2) norswitching(z1 z2)
+
+* MSAR — Hamilton (1989): 2-state, regime-invariant AR(4)
+mswitch ar g, states(2) ar(1/4)
+```
+
+`norswitching(varlist)` specifies regime-invariant regressors $Z_t$.
+
+---
+
+## Stata: Key Options
+
+| Option | Purpose |
+|--------|---------|
+| `states(#)` | Number of regimes $M$ |
+| `ar(numlist)` | AR lags for MSAR (e.g., `ar(1/4)`) |
+| `norswitching(varlist)` | Regime-invariant regressors $Z_t$ |
+| `varswitch` | Regime-specific error variances $\sigma_m^2$ |
+| `tvtp(varlist)` | Time-varying transition probabilities |
+| `from(matrix)` | User-supplied starting values |
+| `technique(bfgs)` | Optimization algorithm (default BFGS) |
+
+> Use `tvtp(c l.dlogidx)` for Filardo-style TVP: Stata's `l.` prefix lags within the option, consistent with the data being at period $t$.
+
+---
+
+## Stata: Post-Estimation
+
+```stata
+* Transition matrix and expected durations
+estat transition
+
+* Regime probabilities (all three types available)
+predict p1 p2,   pr        // one-step-ahead
+predict f1 f2,   filterpr  // filtered
+predict s1 s2,   smoothpr  // smoothed  ← Kim smoother
+
+* Plot smoothed P(recession)
+tsline s2, yline(0.5, lpattern(dash))   ///
+    title("Smoothed P(Regime 2)")        ///
+    xtitle("") ytitle("Probability")
+
+* Transition probability restrictions: supply a matrix
+* with fixed values; missing (.) means estimated
+matrix RESTR = (., 0 \ ., .)   // p_12 = 0 forced
+mswitch ar y, states(2) ar(1) constraint(RESTR)
+```
+
+---
+
+## Stata: Hamilton (1989) — Full Example
+
+```stata
+* Data: quarterly log-difference of US GNP, 1951q1–1984q4
+use gnp_hamilton.dta, clear
+tsset date
+
+* Estimate MSAR(4), 2 states, common AR and variance
+mswitch ar g, states(2) ar(1/4)
+
+* Inspect
+estat transition        // transition matrix + expected durations
+estimates store msar4
+
+* Extract and plot smoothed recession probability
+predict smprob1 smprob2, smoothpr
+tsline smprob2,                        ///
+    title("P(S(t)=2 | Full Sample)")   ///
+    ytitle("Probability") xtitle("")
+```
+
+Expected durations: ~10.4 quarters in expansion, ~4.1 in recession.
+
+# Implementation in R
+
+## R: Package Landscape
+
+Three packages cover most switching regression needs:
+
+| Package | Strengths | Typical use |
+|---------|-----------|-------------|
+| `MSwM` | Simple API; wraps `lm`/`glm` | Quick MSDR / MSAR |
+| `depmixS4` | EM algorithm; TVP; non-Gaussian | Flexible HMM / MSAR |
+| `MSGARCH` | Regime-switching GARCH | Financial volatility |
+
+```r
+install.packages(c("MSwM", "depmixS4"))
+library(MSwM)
+library(depmixS4)
+```
+
+> Neither package replicates every feature from the chapter out of the box. For production work, check each package's vignette and verify the log-likelihood against a known benchmark.
+
+---
+
+## R: `MSwM` — MSAR Workflow
+
+`msmFit()` wraps a fitted `lm` object. The `p` argument adds AR lags (MSAR); `sw` controls which parameters are regime-specific.
+
+```r
+library(MSwM)
+
+# Baseline model (intercept only — regime switching applies to mean)
+base <- lm(g ~ 1, data = gnp_df)
+
+# 2-state MSAR(4): intercept switches, AR coefs and sigma common
+# sw: logical vector over (intercept, sigma) — length = npar + 1
+ms <- msmFit(base,
+             k   = 2,       # number of regimes
+             p   = 4,       # AR order (MSAR)
+             sw  = c(TRUE, FALSE),   # intercept switches; sigma does not
+             control = list(parallel = FALSE))
+
+summary(ms)
+```
+
+`ms@transMat` — transition matrix; `ms@Coef` — regime-specific coefficients.
+
+---
+
+## R: `MSwM` — Regime Probabilities & Plots
+
+```r
+# Filtered probabilities: T × k matrix
+filt <- ms@Fit@filtProb      # P(s_t = k | F_{t-1})
+
+# Smoothed probabilities
+smoo <- ms@Fit@smoProb       # P(s_t = k | F_T)
+
+# Built-in plot
+plotProb(ms, which = 2)      # smoothed P(regime 2)
+
+# Or with ggplot2
+library(ggplot2)
+df_prob <- data.frame(date = gnp_df$date,
+                      p_rec = smoo[, 2])
+
+ggplot(df_prob, aes(date, p_rec)) +
+  geom_line(colour = "steelblue") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  labs(title = "Smoothed P(Recession)", x = NULL, y = "Prob.") +
+  theme_minimal()
+```
+
+Add NBER shading with `geom_rect()` using dates from the `{usrecessions}` package.
+
+---
+
+## R: `depmixS4` — Flexible HMM
+
+`depmixS4` is better suited to TVP models, non-Gaussian responses, and models with covariates on the transition matrix.
+
+```r
+library(depmixS4)
+
+# Specify: Gaussian response, 2 states, TVP via transition covariate
+mod <- depmix(
+  response   = g ~ 1,           # switching mean
+  data       = gnp_df,
+  nstates    = 2,
+  family     = gaussian(),
+  transition = ~ dlogidx        # TVP: Filardo specification
+)
+
+# Fit via EM (try multiple starts to avoid local optima)
+set.seed(42)
+fit <- fit(mod, verbose = FALSE)
+summary(fit)
+
+# Posterior state probabilities
+post <- posterior(fit)   # columns: state, S1, S2, ...
+```
+
+`getpars(fit)` extracts all parameters; `logLik(fit)` gives the maximised log-likelihood.
+
+---
+
+## R: Practical Notes on Local Optima
+
+Switching models often have multiple local optima. Strategies in R:
+
+```r
+# Run msmFit from multiple random starts (MSwM)
+best  <- NULL
+for (i in 1:25) {
+  set.seed(i)
+  try({
+    m <- msmFit(base, k = 2, p = 4, sw = c(TRUE, FALSE),
+                control = list(parallel = FALSE))
+    if (is.null(best) || logLik(m) > logLik(best)) best <- m
+  })
+}
+
+# depmixS4: EM with random initialisation
+fits <- replicate(25, {
+  set.seed(sample.int(1e5, 1))
+  try(fit(mod, verbose = FALSE), silent = TRUE)
+}, simplify = FALSE)
+
+best_depmix <- fits[[which.max(sapply(fits, function(x)
+  tryCatch(logLik(x), error = function(e) -Inf)))]]
+```
+
+---
+
+## Stata vs R: Feature Comparison
+
+| Feature | Stata `mswitch` | R `MSwM` | R `depmixS4` |
+|---------|:--------------:|:--------:|:------------:|
+| MSDR | ✓ | ✓ | ✓ |
+| MSAR | ✓ | ✓ | Limited |
+| TVP transitions | ✓ (`tvtp()`) | ✗ | ✓ (`transition=~`) |
+| Regime-specific $\sigma$ | ✓ (`varswitch`) | ✓ | ✓ |
+| $> 2$ regimes | ✓ | ✓ | ✓ |
+| Transition restrictions | ✓ | ✗ | Partial |
+| Smoothed probabilities | ✓ | ✓ | ✓ (posterior) |
+| Non-Gaussian response | ✗ | Limited | ✓ |
+| Multiple random starts | Manual | Manual | Manual |
+| Publication-ready plots | Via `coefplot` | Via `ggplot2` | Via `ggplot2` |
+
+# Worked Examples
+
+## Example 1: Hamilton (1989) MSAR(4)
+
+**Model:** Two-state Markov switching mean for U.S. GNP growth, with regime-invariant AR(4) errors.
+
+**Specification:**
+
+- Dependent variable: $g_t = 100 \times \Delta \ln(\text{GNP})$, 1951Q1–1984Q4
+- Switching intercept ($\mu_{s_t}$), regime-invariant AR(1)–AR(4), common $\sigma$
+- Constant transition probabilities (ergodic initialisation)
+
+```stata
+* Stata
+mswitch ar g, states(2) ar(1/4)
+```
+
+```r
+# R (MSwM)
+msmFit(lm(g ~ 1, data = df), k = 2, p = 4, sw = c(TRUE, FALSE))
+```
+
+---
+
+## Example 1: Key Results
+
+**Regime-specific means** — Hamilton's "fast" and "slow" growth:
+
+| | Regime 1 (Expansion) | Regime 2 (Recession) |
+|-|---------------------|---------------------|
+| **C** | 1.164 (0.000) | −0.359 (0.189) |
+
+**Transition matrix:**
+
+$$
+\hat{\mathbf{P}} = \begin{pmatrix} 0.904 & 0.096 \\ 0.245 & 0.755 \end{pmatrix}
+$$
+
+**Expected durations:** ~10.4 quarters in expansion, ~4.1 quarters in recession.
+
+> Predicted probabilities of the low-output state align closely with NBER recession dates.
+
+---
+
+## Example 2: Time-Varying Transitions (Filardo 1994)
+
+**Model:** MSAR(4) for industrial production (DLOGIP) with time-varying transition probabilities driven by a leading indicator (DLOGIDX).
+
+**Specification:** 1948M01–1991M04; switching mean, common AR(1)–AR(4) and $\sigma$; TVP logit on $G_{t-1} = \Delta \log \text{IDX}_{t-1}$.
+
+```stata
+* Stata — L. operator lags dlogidx within tvtp()
+mswitch ar dlogip, states(2) ar(1/4) tvtp(c l.dlogidx)
+```
+
+```r
+# R (depmixS4) — covariate on transition equation
+mod <- depmix(dlogip ~ 1, data = df, nstates = 2,
+              transition = ~ dlogidx_lag)
+fit(mod)
+```
+
+> Use the **lagged** indicator so that the period-$t$ transition probability depends on information available at $t-1$.
+
+---
+
+## Example 2: Key Results
+
+**Regime-specific means:**
+
+| | Regime 1 (Expansion) | Regime 2 (Contraction) |
+|-|---------------------|----------------------|
+| **C** | 0.517 (0.000) | −0.866 (0.000) |
+
+**Time-varying transition parameters:**
+
+| Parameter | Estimate | Interpretation |
+|-----------|----------|----------------|
+| P11-C | 4.36 | Baseline persistence in expansion |
+| P11-DLOGIDX(−1) | 1.77 | Higher growth → higher prob. of staying in expansion |
+| P21-C | −1.65 | Baseline exit from contraction |
+| P21-DLOGIDX(−1) | 0.99 | Higher growth → higher prob. of moving to expansion |
+
+---
+
+## Example 3: Regime Heteroskedasticity (Kim & Nelson 1999)
+
+**Model:** Three-state Markov switching model of stock return volatility — mean zero, regime-specific variances $\sigma_1^2 < \sigma_3^2 < \sigma_2^2$.
+
+**Specification:** Monthly CRSP excess returns, 1926M01–1986M12; intercept fixed at zero; 3 regimes; constant transition probabilities.
+
+```stata
+* Stata
+mswitch dr excess, states(3) varswitch noconstant
+```
+
+```r
+# R (MSwM) — sw=c(FALSE, TRUE): intercept fixed, sigma switches
+msmFit(lm(excess ~ 1, data = df), k = 3,
+       sw = c(FALSE, TRUE))
+```
+
+**Estimation challenge:** Many local roots — run at least 50 random starts and select the solution with the highest log-likelihood.
+
+---
+
+## Example 3: Key Results
+
+**Implied standard deviations by regime:**
+
+| Regime | $\log(\hat{\sigma})$ | $\hat{\sigma}$ | Interpretation |
+|--------|---------------------|----------------|----------------|
+| 1 | −3.352 | **0.035** | Low volatility |
+| 2 | −1.736 | **0.176** | High volatility |
+| 3 | −2.760 | **0.063** | Medium volatility |
+
+**Expected durations:** ~38 months (low), ~20 months (high), ~32 months (medium).
+
+**Key finding:** Transition probability from low to high volatility is essentially **zero** — warranting a restriction $p_{12} = 0$.
+
+Impose via a $3 \times 3$ restriction matrix with `0` in cell (1,2) and `NA` elsewhere (except fixed cells).
+
+# Summary
+
+## Key Takeaways
+
+::: {.incremental}
+- Switching regression models capture **regime-dependent behavior** through discrete, unobserved state variables
+- **Simple switching** — regime probabilities are exogenous (i.i.d. draws); easy to estimate
+- **Markov switching** — regime follows a Markov chain; richer dynamics but requires the Hamilton filter and Kim smoother
+- **MSDR** (lagged $y$ as regressors) keeps the state space compact; **MSAR** (AR errors) is more general but computationally heavier
+- Likelihood is a **normal mixture** — unbounded at degenerate solutions; local optima require randomized starting values
+- **Stata** (`mswitch`) and **R** (`MSwM`, `depmixS4`) provide mature implementations; multiple random starts are essential in both to escape local optima
+:::
+
+---
+
+## References (Selected)
+
+- **Hamilton (1989)** — Original Markov switching model of GNP; MSAR specification and filter
+- **Kim (1994)** — Efficient backward smoothing algorithm
+- **Kim & Nelson (1999)** — *State-Space Models With Regime Switching*, MIT Press
+- **Filardo (1994)** — Time-varying transition probabilities
+- **Diebold, Lee & Weinbach (1994)** — Logistic parameterization of time-varying probs
+- **Frühwirth-Schnatter (2006)** — *Finite Mixture and Markov Switching Models*, Springer
+- **Maheu & McCurdy (2000)** — Residual construction for switching models
+- **Davidson (2004)** — Forecasting Markov-switching processes
