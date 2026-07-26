@@ -1,0 +1,519 @@
+---
+title: "Fixed and Random Effects Models: Making an Informed Choice"
+author: "Robert W. Walker"
+date: "July 27, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: Bell, Fairbrother & Jones (2019) · Fixed and Random Effects Models"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=TRUE, comment=NA, prompt=FALSE, fig.height=6, fig.width=6.5, fig.retina = 3, dev = 'svg', dev.args = list(bg = "white"), eval=TRUE)
+library(tidyverse)
+library(kableExtra)
+```
+
+
+## Overview {.center}
+
+> *"In most research scenarios, a well-specified RE model provides everything that FE provides and more."*
+
+This paper:
+
+- Clarifies widespread **confusion** about fixed effects (FE) and random effects (RE) models
+- Introduces the **within-between RE (REWB)** model as the most general framework
+- Uses **simulations** to evaluate behaviour under likely mis-specifications
+- Provides **practical guidance** for applied researchers
+
+---
+
+## The Problem in the Literature
+
+Two camps with contradictory advice:
+
+| Camp | View |
+|------|------|
+| RE advocates | RE provides more information and is superior in most settings |
+| FE advocates | FE is the "gold standard" — protects against endogeneity |
+
+. . .
+
+**Root causes of confusion:**
+
+- Inconsistent terminology across disciplines (especially "random effects")
+- Misreading the Hausman test as a simple FE-vs-RE selector
+- Failure to distinguish *within* from *between* variation
+
+---
+
+## Data Structures: Setting the Scene
+
+Social science data are typically **multilevel**:
+
+| Structure | Level 1 | Level 2 | Level 3 |
+|-----------|---------|---------|---------|
+| Cross-sectional | Individuals | Neighbourhoods | — |
+| Cross-national | Individuals | Countries | — |
+| Panel (individuals) | Occasions | Individuals | — |
+| Panel (countries) | Occasions | Countries | — |
+| Three-level | Individuals | Country-years | Countries |
+
+. . .
+
+Crucially: relationships can differ **within** and **between** clusters — these should **not be assumed equal**.
+
+---
+
+## Within vs Between Effects
+
+Consider income ($x$) predicting some outcome ($y$):
+
+**Within effect** *(level 1)*
+: How does a person's outcome change when their own income changes over time?
+
+**Between effect** *(level 2)*
+: Do people with higher average incomes tend to have higher outcomes?
+
+. . .
+
+**Classic example (Gelman 2008):**
+
+- *Between states:* Higher-income US states → more Democratic
+- *Within states:* Higher-income voters → more Republican
+
+These effects can point in **opposite directions**. Combining them is misleading.
+
+---
+
+## The Modelling Hierarchy
+
+```
+Most general
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  REWB / Mundlak model                   │  ← Recommended starting point
+│  (separate within & between effects)    │
+└─────────────────────────────────────────┘
+      │  constrain β_W = β_B
+      ▼
+┌─────────────────────────────────────────┐
+│  Standard RE model                      │  ← OK if β_W ≈ β_B
+└─────────────────────────────────────────┘
+      │  remove between-level info
+      ▼
+┌─────────────────────────────────────────┐
+│  Fixed Effects (FE) model               │  ← Loses between effects entirely
+└─────────────────────────────────────────┘
+      │  ignore clustering
+      ▼
+┌─────────────────────────────────────────┐
+│  Pooled OLS                             │  ← Generally inadvisable
+└─────────────────────────────────────────┘
+Least general / most restricted
+```
+
+---
+
+## The REWB Model (Core Specification)
+
+$$y_{it} = \beta_0 + \beta_{1W}(x_{it} - \bar{x}_i) + \beta_{2B}\bar{x}_i + \beta_3 z_i + (v_i + \epsilon_{it})$$
+
+| Term | Meaning |
+|------|---------|
+| $\beta_{1W}$ | **Within** effect of $x$ — variation around individual mean |
+| $\beta_{2B}$ | **Between** effect of $x$ — individual mean level |
+| $\beta_3$ | Effect of time-invariant variable $z_i$ |
+| $v_i$ | Random intercept for individual $i$ |
+
+. . .
+
+The **Mundlak formulation** (1978) is an alternative parameterisation with identical fit and identical within estimates.
+
+Relationship: $\beta_{1W} + \beta_{2C} = \beta_{2B}$
+
+---
+
+## REWB and Mundlak: Overwhelming Commonality
+
+Both models are **mathematically equivalent** — same log-likelihood, same fit, same within effect:
+
+::: {.columns}
+
+::: {.column width="50%"}
+**REWB** *(within-between)*
+
+$$y_{it} = \beta_0 + \beta_{1W}\underbrace{(x_{it} - \bar{x}_i)}_{\text{demeaned}} + \newline \beta_{2B}\underbrace{\bar{x}_i}_{\text{group mean}} + \beta_3 z_i + v_i + \epsilon_{it}$$
+
+- $x_{it}$ split into two orthogonal components
+- $\bar{x}_i$ and $(x_{it}-\bar{x}_i)$ are uncorrelated by construction
+- Reports a **between effect** $\beta_{2B}$
+:::
+
+::: {.column width="50%"}
+**Mundlak** *(correlated RE)*
+
+$$y_{it} = \beta_0 + \beta_{1W}\underbrace{x_{it}}_{\text{raw}} + \newline \beta_{2C}\underbrace{\bar{x}_i}_{\text{group mean}} + \beta_4 z_i + v_i + \epsilon_{it}$$
+
+- $x_{it}$ enters in raw form; $\bar{x}_i$ added as a control
+- Reports a **contextual effect** $\beta_{2C}$
+- Collinearity between $x_{it}$ and $\bar{x}_i$ possible if many predictors
+:::
+
+:::
+
+. . .
+
+$$\boxed{\hat{\beta}_{1W}^{\text{REWB}} = \hat{\beta}_{1W}^{\text{Mundlak}}} \qquad \hat{\beta}_{2B} = \hat{\beta}_{1W} + \hat{\beta}_{2C}$$
+
+---
+
+## REWB vs Mundlak: The Subtle Difference
+
+The only substantive difference is **what the higher-level coefficient means**:
+
+| | REWB: $\hat{\beta}_{2B}$ | Mundlak: $\hat{\beta}_{2C}$ |
+|--|--|--|
+| **What it asks** | "What is the association with $\bar{x}_i$ alone?" | "What does the context add, given individual $x_{it}$?" |
+| **Controls for** | Nothing held constant at level 1 | Individual-level $x_{it}$ held constant |
+| **Longitudinal data** | ✓ **Preferred** — level 1 units can't move between level 2 clusters | ✗ Contextual interpretation is awkward |
+| **Cross-sectional data** | ✓ Valid | ✓ **Preferred** — individual moves between contexts is meaningful |
+
+. . .
+
+**Practical takeaway:**
+
+- For **panel data** → use REWB (between effect is interpretable; contextual effect is not)
+- For **cross-sectional multilevel data** → Mundlak contextual effect answers the policy-relevant question
+- Either way: **fit one, recover the other by arithmetic**
+- Both are preferable to standard RE or FE in almost all circumstances
+
+---
+
+## Standard RE Model: A Constrained REWB
+
+$$y_{it} = \beta_0 + \beta_1^{RE} x_{it} + \beta_3^{RE} z_i + (v_i + \epsilon_{it})$$
+
+This **implicitly assumes** $\beta_{1W} = \beta_{2B}$ (within = between).
+
+. . .
+
+**When this holds:** RE is more *efficient* than REWB — it uses all variation.
+
+**When this fails:** $\beta_1^{RE}$ is a weighted average of two different processes — *substantively uninterpretable*.
+
+. . .
+
+**Test:** Use a Wald test of the contextual effect in the Mundlak model, or test $\beta_{1W} = \beta_{2B}$ in REWB. This is what the **Hausman test** actually does — not a simple FE vs RE selector.
+
+---
+
+## Fixed Effects Model: What It Does and Doesn't Do
+
+$$y_{it} = \beta_1(x_{it} - \bar{x}_i) + (v_i + \epsilon_{it})$$
+
+Equivalent to including a **dummy variable for every level-2 entity**.
+
+. . .
+
+::: {.columns}
+
+::: {.column width="50%"}
+**Strengths**
+
+- Within effect unbiased by between-level omitted variables
+- No distributional assumptions on $v_i$
+:::
+
+::: {.column width="50%"}
+**Weaknesses**
+
+- **Cannot estimate between effects**
+- Cannot include time-invariant variables ($z_i$)
+- Cannot model random slopes
+- Cannot add further hierarchical levels
+- "Throws away important information" (Nerlove 2005)
+:::
+
+:::
+
+. . .
+
+**Key insight:** REWB gives *identical* within-effect estimates to FE, *plus* the between effect and more.
+
+---
+
+## The Hausman Test: Widely Misunderstood
+
+**Common (mis)use:**
+
+> Hausman test significant → use FE; not significant → use RE
+
+. . .
+
+**What it actually tests:**
+
+> Are the within and between effects equal?  
+> i.e., is the contextual effect $\beta_{2C} = 0$?
+
+. . .
+
+**Better approach:**
+
+- Fit REWB and *inspect* the within and between effects separately
+- A significant difference means the effects are substantively distinct — both are worth knowing
+- Use REWB regardless; it solves the problem the Hausman test detects
+
+---
+
+## Omitted Variable Bias
+
+|  | Level 1 OVB | Level 2 OVB |
+|--|-------------|-------------|
+| **FE / REWB** | ✗ Not controlled | ✓ Absorbed into between effect |
+| **Standard RE** | ✗ Not controlled | ✗ Can bias within estimate |
+| **OLS** | ✗ Not controlled | ✗ Biases all estimates |
+
+. . .
+
+**For within effects:** REWB and FE equally protect against time-invariant omitted variables.
+
+**For between effects:** Only REWB estimates them — and these estimates should be interpreted as proxies for broader unmeasured social processes, not direct causal effects.
+
+---
+
+## Random Slopes: A Critical Extension
+
+So far: assumed the within effect $\beta_{1W}$ is the **same for all level-2 entities**.
+
+Often wrong. The full REWB model adds:
+
+$$y_{it} = \beta_0 + \beta_{1W}(x_{it}-\bar{x}_i) + \beta_{2B}\bar{x}_i + \beta_3 z_i + v_{i0} + v_{i1}(x_{it}-\bar{x}_i) + \epsilon_{it}$$
+
+where $v_{i1}$ captures **heterogeneity** in the within effect across individuals/countries/groups.
+
+. . .
+
+| $\sigma_{v01}$ | Interpretation |
+|----------------|----------------|
+| Negative | "Fanning in" — effects converge as $x$ increases |
+| Positive | "Fanning out" — effects diverge as $x$ increases |
+
+---
+
+## Why Random Slopes Matter: Simulation Evidence
+
+**Finding 1:** When random slopes exist in the data but are omitted from the model:
+
+- Standard errors are **anti-conservative** (underestimated)
+- Applies to FE *and* random-intercept RE models
+- Robust SEs help but do not fully correct the problem
+
+. . .
+
+**Finding 2:** Two influential reanalyses (Table 2):
+
+| Study | Without RS | With RS |
+|-------|-----------|---------|
+| Milner & Kubota (2005): Democracy → trade | β = −0.227** | β = −0.143 (NS) |
+| Reinhart & Rogoff (2010): Debt → growth | SE triples; effect insignificant when time controlled |
+
+. . .
+
+**Recommendation:** At minimum, test whether the key predictor's coefficient changes when allowed to vary randomly.
+
+---
+
+## Three-Level and Cross-Classified Models
+
+**A further advantage of REWB/RE over FE:**
+
+- FE at level 2 **exhausts degrees of freedom** — cannot accommodate a third level
+- RE framework handles **three or more levels** parsimoniously
+  - One variance parameter per level
+  - Variance at each level indicates how much that scale "matters"
+
+. . .
+
+**Example:**
+
+$$\text{Individuals} \subset \text{Country-years} \subset \text{Countries}$$
+
+Cross-national surveys fielded repeatedly — common in comparative social science.
+
+FE cannot model this. REWB can.
+
+---
+
+## Non-Continuous Outcomes (GLMs)
+
+For binary/count outcomes (logit, probit, Poisson):
+
+- REWB with non-identity link **does not** perfectly partition within and between effects
+- Bias can arise when $\bar{x}_i$ and $v_i$ are non-linearly related
+
+. . .
+
+**However:**
+
+- Brumback et al. (2010): "difficult to find an example where the problem is severe"
+- Only problematic when $\bar{x}_i$ and $v_i$ are *highly* correlated with few obs per cluster
+- Many link functions (ordered logit, probit, negative binomial) have **no conditional likelihood alternative**
+
+. . .
+
+**Practical check:** Compare REWB estimate to the conditional likelihood estimate. If similar, REWB results are reliable.
+
+---
+
+## Robustness of the Normality Assumption
+
+RE models assume $v_i \sim N(0, \sigma^2_v)$. How much does this matter?
+
+. . .
+
+**For linear (continuous) models — reassuring findings:**
+
+- $\hat{\beta}$ and standard errors: **unbiased** even under Chi-square or outlier distributions
+- Level-2 variance estimates: **slightly biased** when distribution is skewed
+- Random intercept estimates: biased mainly when outliers are present (but outliers can be "dummied out")
+
+. . .
+
+**For non-linear models — more caution needed:**
+
+- Significant bias in variance estimates when level-2 variance is large
+- Beta estimates still generally robust
+
+. . .
+
+**Alternatives if concerned:** Non-parametric maximum likelihood (NPML) methods.
+
+---
+
+## Practical Recommendations {.smaller}
+
+**1. Use REWB as your starting point**
+
+- More general than FE or standard RE
+- Retains between effects; allows random slopes and additional levels
+- Small biases from Normality violations are usually worth the added flexibility
+
+. . .
+
+**2. Test for random slopes**
+
+- Check whether the key predictor's effect varies across clusters
+- Use robust SEs as a diagnostic (large difference → possible random slope mis-specification)
+- Be parsimonious: not all variables need random slopes
+
+. . .
+
+**3. Reframe the Hausman test**
+
+- Don't use it to choose between FE and RE
+- Use it to assess whether within and between effects differ
+- If they differ, model them separately with REWB — both are substantively interesting
+
+---
+
+## When Is FE Acceptable?
+
+The authors identify only three situations where FE may be preferred:
+
+1. **Higher-level variables are of no interest whatsoever** — but this is rarely true in social science
+2. **No random slopes in the true DGP** — but testing this requires fitting RE anyway
+3. **Very few level-2 entities** — making random-effects estimation unreliable
+
+. . .
+
+In practice, REWB is almost always the better choice. Labelling REWB as a "hybrid FE" model (as some do) **undersells and misrepresents** its value.
+
+---
+
+## Summary: Model Comparison
+
+| Feature | OLS | FE | Standard RE | **REWB** |
+|---------|-----|----|-----------|----|
+| Within effect | Blended | ✓ | Blended | ✓ |
+| Between effect | Blended | ✗ | Blended | ✓ |
+| Time-invariant vars | ✓* | ✗ | ✓ | ✓ |
+| Random slopes | ✗ | Partial | ✓ | ✓ |
+| Three+ levels | ✗ | ✗ | ✓ | ✓ |
+| Level-2 variance | ✗ | ✗ | ✓ | ✓ |
+| Clustering accounted for | ✗ | ✓ | ✓ | ✓ |
+
+*\*OLS estimate of z is biased if level-2 omitted variables exist*
+
+---
+
+## Key Takeaways
+
+::: {.incremental}
+
+- **Within ≠ between.** Always consider whether these effects should be modelled separately.
+
+- **REWB is the most general model** — it encompasses FE, standard RE, and OLS as special cases.
+
+- **FE discards valuable information** — between effects and higher-level structure — without providing anything REWB cannot.
+
+- **Omitting random slopes produces anti-conservative SEs** — this affects FE and RE equally.
+
+- **Violating the Normality assumption is usually tolerable** — biases in fixed-part estimates are small.
+
+- **The Hausman test is a test of effect equality**, not a model selector.
+
+:::
+
+---
+
+## References {.smaller}
+
+Bell, A., Fairbrother, M., & Jones, K. (2019). Fixed and random effects models: making an informed choice. *Quality & Quantity*, 53, 1051–1074.
+
+**Key works cited in this paper:**
+
+- Mundlak, Y. (1978). Pooling of time-series and cross-section data. *Econometrica*, 46(1), 69–85.
+- Hausman, J.A. (1978). Specification tests in econometrics. *Econometrica*, 46(6), 1251–1271.
+- Raudenbush, S.W. & Bryk, A. (2002). *Hierarchical Linear Models*. Sage.
+- Allison, P.D. (2014). Problems with the hybrid method. *Statistical Horizons*.
+- Barr, D.J. et al. (2013). Random effects structure for confirmatory hypothesis testing. *Journal of Memory and Language*, 68(3), 255–278.
+- Reinhart, C.M. & Rogoff, K.S. (2010). Growth in a time of debt. *American Economic Review*, 100(2), 573–578.
+
+---
+
+## REWB in Practice: Applied Citations {.smaller}
+
+The REWB framework has been adopted across many disciplines:
+
+**Political Science**
+
+- Bell, A. & Jones, K. (2015). Explaining fixed effects: random effects modelling of time-series cross-sectional and panel data. *Political Science Research and Methods*, 3(1), 133–153. *(foundational simulation study)*
+- Jordan, S. & Philips, A.Q. (2023). Improving the interpretation of random effects regression results. *Political Science Research and Methods*. *(interpretive guidance for REWB users)*
+- Stötzer, L. et al. (2025). Does political polarisation undermine democratic accountability? Evidence from 28 European democracies. *West European Politics*. *(REWB with random slopes for TSCS)*
+- Coma, F. & Lago, I. (2025). School subject choices in adolescence affect political party support. *West European Politics*. *(REWB as difference-in-differences analogue)*
+
+**Sociology & Psychology**
+
+- Rapp, C. & Stadelmann-Steffen, I. (2020). Policy area satisfaction, perceptions of responsibility, and political trust. *Journal of Elections, Public Opinion and Parties*. *(novel within-respondent REWB application)*
+- Dorrestein et al. (2025). Problematic social media use in individuals with ADHD. *(REWB for longitudinal psychopathology outcomes)*
+
+**Epidemiology & Public Health**
+
+- Bijnsdorp, F. et al. (2025). Effect of fast-food environments on children's eating behaviour: Generation R Study. *Pediatric Obesity*. *(REWB for repeated-measures diet data)*
+- Gericke et al. (2022). Delta and Omicron: protective measures and SARS-CoV-2 in day care centres. *BMC Infectious Diseases*. *(REWB panel models for binomial and count outcomes)*
+
+**Energy Economics**
+
+- Hirth, L. et al. (2024). Cross-border cannibalization: Spillover effects of wind and solar energy on European electricity markets. *arXiv:2405.17166*. *(REWB to recover between-zone variation lost under FE)*
