@@ -1,0 +1,485 @@
+---
+title: "Common Factor Restrictions in ARDL Models: Reconnecting the Time Series and Panel Literatures"
+subtitle: "From Sargan and Hendry to Cook and Webb and Beyond"
+author: "Robert Walker"
+date: "July 27, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: Common Factor Restrictions"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+# Motivation
+
+## Two literatures studying the same algebra
+
+The literature on common factor restrictions (CFRs) evolved along two largely separate paths:
+
+::::: {.columns}
+::: {.column width="50%"}
+### Time Series Econometrics
+
+- Sargan (1964)
+- Hendry and the LSE tradition
+- Dynamic specification
+- Error-correction models
+- General-to-specific modelling
+:::
+
+::: {.column width="50%"}
+### Panel Econometrics
+
+- Dynamic fixed effects
+- GMM estimators
+- Mean Group estimation
+- Pooled Mean Group estimation
+- Common Correlated Effects
+:::
+
+::::
+
+**Central claim:** These literatures study closely related dynamic models but rarely engage with one another.
+
+
+# Core Question
+
+Suppose we observe persistence in a dependent variable.
+
+Is that persistence due to:
+
+1. genuine lagged effects of explanatory variables?
+
+or
+
+2. serially correlated disturbances?
+
+This distinction is fundamental for:
+
+- causal interpretation,
+- long-run multipliers,
+- forecasting,
+- policy analysis.
+
+Common factor restrictions provide a testable answer.
+
+
+# The Basic Result
+
+Consider
+
+$$
+y_t = \alpha y_{t-1} + \beta x_t + u_t
+$$
+
+with
+
+$$
+u_t = \rho u_{t-1} + \varepsilon_t.
+$$
+
+Substituting yields
+
+$$
+y_t
+=
+(\alpha+\rho)y_{t-1}
+-\alpha\rho y_{t-2}
++\beta x_t
+-\rho\beta x_{t-1}
++\varepsilon_t.
+$$
+
+The model can be written as an ADL(2,1).
+
+But only a subset of ADL(2,1) models satisfy this representation.
+
+
+# Common Factor Restrictions
+
+The lag polynomial
+
+$$
+(1-\rho L)
+$$
+
+appears as a common factor in both
+
+- the autoregressive polynomial,
+- the distributed lag polynomial.
+
+Therefore
+
+$$
+\delta_1 = -\rho \beta
+$$
+
+and
+
+$$
+\gamma_2 = -\rho \alpha.
+$$
+
+These nonlinear parameter restrictions are the common factor restrictions.
+
+
+## Hendry–Sargan 
+
+Estimate:
+
+$$
+ADL(p,q)
+$$
+
+first.
+
+Then:
+
+1. Test common factor restrictions.
+2. Impose them only if supported by data.
+
+Interpretation:
+
+- residual serial correlation may indicate omitted dynamics;
+- AR-error models are not automatically appropriate;
+- rejected restrictions imply genuine lagged structural effects.
+
+
+# Error-Correction Models
+
+Every ADL can be rewritten as an ECM.
+
+When common factor restrictions hold:
+
+- parsimonious ECM representation exists;
+- adjustment occurs through a single dynamic mechanism.
+
+When restrictions fail:
+
+- additional short-run dynamics remain;
+- richer lag structures are required.
+
+Common factor restrictions therefore connect:
+
+ARDL models, ECMs, and serial correlation models.
+
+
+# Cook and Webb (2021)
+
+## Main contribution
+
+Cook and Webb revisit this issue in political methodology.
+
+Their central argument:
+
+> An unrestricted ADL contains both genuine lagged effects and AR-error representations.
+
+Therefore:
+
+- estimate unrestricted dynamics;
+- test common factor restrictions;
+- do not assume lagged regressors merely proxy serial correlation.
+
+This is fundamentally a specification-testing argument.
+
+## Key Observation: Nothing in the algebra requires \(N=1\)
+
+The Cook and Webb derivation is not intrinsically a time-series result.
+
+The same substitution works immediately in panel data settings.
+
+This raises an important question:
+
+### Why has the panel literature paid so little attention to common factor restrictions?
+
+
+## Extending the Result to Panel Data
+
+Consider
+
+$$
+y_{it}
+=
+\alpha_i y_{i,t-1}
++
+\beta_i x_{it}
++
+u_{it}
+$$
+
+with
+
+$$
+u_{it}
+=
+\rho_i u_{i,t-1}
++
+\varepsilon_{it}.
+$$
+
+Substitution gives
+
+$$
+y_{it}
+=
+(\alpha_i+\rho_i)y_{i,t-1}
+-
+\alpha_i\rho_i y_{i,t-2}
++
+\beta_i x_{it}
+-
+\rho_i\beta_i x_{i,t-1}
++
+\varepsilon_{it}.
+$$
+
+The same common factor restrictions emerge.  **A trivial paper no one has written.**
+
+
+
+# Four Major Panel Approaches
+
+## Dynamic Fixed Effects (DFE)
+
+Assumes:
+
+- common slope coefficients,
+- common dynamic parameters,
+- unit-specific intercepts.
+
+Effectively pools all units into one dynamic model.
+
+Suitable when dynamics are believed to be homogeneous.
+
+
+
+# Four Major Panel Approaches
+
+## Mean Group (MG)
+
+Pesaran and Smith (1995)
+
+Procedure:
+
+1. Estimate a separate time-series model for each unit.
+2. Average estimated coefficients.
+
+Allows:
+
+- heterogeneous short-run dynamics,
+- heterogeneous long-run effects.
+
+Most flexible panel ARDL estimator.
+
+
+
+# Four Major Panel Approaches
+
+## Pooled Mean Group (PMG)
+
+Pesaran, Shin, and Smith (1999)
+
+Allows:
+
+- heterogeneous short-run dynamics,
+- heterogeneous adjustment speeds,
+
+but imposes:
+
+- common long-run coefficients.
+
+Motivation:
+
+- countries, firms, or regions may adjust differently,
+- but share the same equilibrium relationship.
+
+Widely used in macroeconomic panel ARDL applications.
+
+
+
+# Four Major Panel Approaches
+
+## Common Correlated Effects (CCE)
+
+Pesaran (2006)
+
+Addresses:
+
+- cross-sectional dependence,
+- omitted common shocks.
+
+Adds cross-sectional averages to absorb latent factors.
+
+Examples:
+
+- global business cycles,
+- common technology shocks,
+- financial crises.
+
+"Common factors" here means latent cross-sectional factors—not common lag polynomials.
+
+
+
+# Why the Literatures Diverged
+
+## Time-Series Tradition
+
+Main concerns:
+
+- specification testing,
+- encompassing,
+- dynamic completeness,
+- model reduction.
+
+Representative authors:
+
+- Sargan
+- Hendry
+- Mizon
+- Davidson
+
+
+
+# Why the Literatures Diverged
+
+## Panel Tradition
+
+Main concerns:
+
+- Nickell bias,
+- dynamic panel estimation,
+- heterogeneity,
+- cointegration,
+- cross-sectional dependence.
+
+Representative authors:
+
+- Arellano
+- Bond
+- Pesaran
+- Shin
+- Smith
+
+The specification-testing agenda largely disappeared.
+
+
+
+# Historical Timeline
+
+```text
+1964  Sargan
+      Common factor restrictions
+
+1970s–1980s
+      Hendry–Pagan–Sargan
+      Dynamic specification testing
+
+1987
+      Engle–Granger ECM representation
+
+1990s
+      Cointegration revolution
+
+1995
+      Mean Group (MG)
+
+1999
+      Pooled Mean Group (PMG)
+
+2000s
+      Dynamic heterogeneous panels
+
+2006
+      Common Correlated Effects (CCE)
+
+2021
+      Cook and Webb
+      Revival of common factor restrictions
+```
+
+
+
+# Two Meanings of "Common Factors"
+
+| Time-Series Literature | Panel Literature |
+|----------|----------|
+| Common lag polynomial | Latent cross-sectional factor |
+| Dynamic specification | Cross-sectional dependence |
+| AR errors vs lagged effects | Omitted common shocks |
+| Sargan-Hendry | Pesaran CCE |
+
+The terminology is similar.
+
+The underlying concepts are different.
+
+
+
+# A Unified Perspective
+
+All of the following may be viewed as variants of an unrestricted panel ARDL:
+
+- DFE
+- MG
+- PMG
+- CCE-ARDL
+
+The fundamental question remains:
+
+> Are observed lag structures genuine dynamics, or merely representations of serially correlated errors?
+
+This is precisely the question addressed by common factor restrictions.
+
+
+
+# A Possible Research Program
+
+Estimate unrestricted panel ARDL models and:
+
+1. Test common factor restrictions.
+2. Compare MG, PMG, and DFE implementations.
+3. Extend tests to CCE specifications.
+4. Evaluate finite-sample properties.
+5. Study consequences for long-run multipliers.
+
+This appears largely absent from the modern literature.
+
+
+
+# Main Conclusions
+
+1. Common factor restrictions are fundamentally algebraic.
+2. The Cook and Webb argument extends naturally to panel data.
+3. The extension applies to MG, PMG, DFE, and related estimators.
+4. Time-series and panel econometrics evolved into largely separate literatures.
+5. Reintegrating these traditions offers a promising research agenda.
+
+
+
+# References
+
+Cook, S. J., & Webb, M. D. (2021). *Lagged outcomes, lagged predictors, and lagged errors: A clarification on common factors*. Political Analysis.
+
+Engle, R. F., & Granger, C. W. J. (1987). *Co-integration and error correction: Representation, estimation and testing*. Econometrica.
+
+Hendry, D. F. (1995). *Dynamic Econometrics*. Oxford University Press.
+
+Hendry, D. F., Pagan, A. R., & Sargan, J. D. (1984). Dynamic specification.
+
+Pesaran, M. H. (2006). *Estimation and inference in large heterogeneous panels with a multifactor error structure*. Econometrica.
+
+Pesaran, M. H., Shin, Y., & Smith, R. P. (1999). *Pooled Mean Group estimation of dynamic heterogeneous panels*. JASA.
+
+Pesaran, M. H., & Smith, R. P. (1995). *Estimating long-run relationships from dynamic heterogeneous panels*. Journal of Econometrics.
+
+Sargan, J. D. (1964). *Wages and prices in the United Kingdom: A study in econometric methodology*.
+
+Wilkins, A. S. (2018). *To lag or not to lag? Re-evaluating the use of lagged dependent variables in regression analysis*.

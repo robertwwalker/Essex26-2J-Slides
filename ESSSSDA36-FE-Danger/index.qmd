@@ -1,0 +1,476 @@
+---
+title: "Not So Harmless After All: The Fixed-Effects Model"
+subtitle: "Plümper & Troeger · *Political Analysis* 27(1): 21–45 (2019)"
+author: "RWW"
+date: "July 27, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: TWFE Models"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+
+## Overview {.center}
+
+The fixed-effects (FE) estimator is widely regarded as a safe default for panel data analysis. **This paper argues it is not.**
+
+Under conditions routinely found in political science data, FE:
+
+- **amplifies** bias from dynamic misspecification
+- can be **more** biased than naïve pooled-OLS
+- is **not reliably diagnosed** by the Hausman test
+
+---
+
+## Outline
+
+1. The conventional case for FE  
+2. Two sources of bias — and why they interact badly  
+3. When FE bias exceeds OLS bias: formal results  
+4. Monte Carlo design  
+5. Key experimental results  
+6. The Hausman test problem  
+7. Conclusions and recommendations  
+
+---
+
+## The Conventional Case for Fixed Effects
+
+The FE estimator controls for **time-invariant unobserved heterogeneity** by removing between-unit variation (the "within" transformation):
+
+$$\tilde{y}_{it} = \beta\,\tilde{x}_{it} + \tilde{\varepsilon}_{it}$$
+
+where $\tilde{z}_{it} = z_{it} - \bar{z}_i$.
+
+**Key virtue:** if unit effects $u_i$ are correlated with regressors, OLS is biased but FE is unbiased — provided the model is otherwise correctly specified.
+
+> *"Under a strict exogeneity assumption on the explanatory variables, the fixed-effects estimator is unbiased."* — Wooldridge (2002)
+
+---
+
+## The Catch: Strict Exogeneity
+
+Strict exogeneity requires that **no time-varying covariate is omitted** and that **dynamics are correctly modelled**.
+
+In political science panels this assumption is frequently violated because:
+
+- **Time-varying confounders** are common and hard to measure
+- **Dynamic misspecifications** are pervasive — most papers use ad hoc fixes (lagged DV, period dummies) rather than the true lag structure
+- The **correct lag length** is rarely identifiable from the data
+
+P&T's claim: violating strict exogeneity hurts FE *more* than it hurts OLS.
+
+---
+
+## Two Distinct Sources of Bias
+
+| Source | Harms OLS? | Harms FE? |
+|---|---|---|
+| Omitted **time-invariant** variable correlated with $x$ | ✔ Yes | ✗ No (removed by within transform) |
+| Omitted **time-varying** variable / dynamic misspecification correlated with within variation of $x$ | ✔ Yes | ✔ Yes — **and more severely** |
+
+The problem: FE solves the first issue at the cost of **concentrating all identification in within variation**, making it maximally exposed to the second issue.
+
+---
+
+## Formal Result 1: Bias with an Omitted Time-Varying Variable
+
+True DGP:  $y_{it} = \alpha_1 x_{it} + \alpha_2 w_{it} + u_i + \varepsilon_{it}$
+
+Omit $w_{it}$, where $w_{it} = \gamma_1 \ddot{x}_{it} + \gamma_2 \bar{x}_i + \omega_{it}$  
+($\gamma_1$ = correlation with within variation; $\gamma_2$ = correlation with between variation)
+
+$$\text{Bias}(\hat{\alpha}_{1,\text{OLS}}) = \frac{\gamma_1 \sum\ddot{x}^2 + T\gamma_2\sum\bar{x}^2 + \delta_1 T\sum\bar{x}^2}{\sum\ddot{x}^2 + T\sum\bar{x}^2}$$
+
+$$\text{Bias}(\hat{\alpha}_{1,\text{FE}}) = \gamma_1$$
+
+**FE bias equals $\gamma_1$ regardless of $\delta_1$** (correlation with unit effects). FE is *more* biased than OLS whenever the within correlation $\gamma_1$ dominates.
+
+---
+
+## Formal Result 2: Bias from a Misspecified Lag Structure
+
+True DGP: $y_{it} = \beta x_{it-1} + u_i + \varepsilon_{it}$  
+Estimated (incorrectly) as: $y_{it} = \beta x_{it} + \varepsilon_{it}$
+
+The probability limit of the **FE** estimator is:
+
+$$\text{plim}(\hat{\beta}_{\text{FE}}) = \beta\frac{\text{Cov}(x_{it-1}, x_{it})}{\text{Var}(x_{it})} - \beta\frac{\text{Var}(\bar{x}_i)}{\text{Var}(x_{it})}$$
+
+The **second term is unique to FE**: discarding between variation *subtracts* additional bias. When $x$ is positively autocorrelated (the typical case), FE bias **exceeds** OLS bias.
+
+---
+
+## The General Mechanism
+
+> Biases from different misspecifications are **not additive**.
+
+FE solves the time-invariant omitted-variable problem **by discarding between variation**. But this concentrates estimation entirely in within variation — making dynamic misspecification **more, not less, damaging**.
+
+- The "fix" for one problem worsens another.
+- In realistic settings where *both* time-invariant and time-varying omissions exist, neither estimator dominates, but FE performs poorly when within correlation is large.
+
+---
+
+## Monte Carlo Design
+
+**Data-generating process:**
+$$y_{it} = x^1_{it} + (x^2_{it}) + u_i + \varepsilon_{it}; \quad N=20 \text{ units}, \quad T \in \{10, 30, 50\}$$
+
+**Three types of dynamic misspecification tested:**
+
+1. *Experiment 1:* Omitted time-varying variable ($x^2_{it}$, omitted)
+2. *Experiment 2:* Common and unit-specific trends in both $x^1$ and $x^2$
+3. *Experiment 3:* Misspecified lag structure ($y_{it} = x^1_{it-1} + u_i + \varepsilon_{it}$, estimated without lag; also heterogeneous unit-specific lag lengths)
+
+**Correlation levels** between $x^1$ and $u_i$: $\{0.0,\, 0.2,\, 0.5\}$
+
+**Dynamic "fixes" compared:** none · LDV · Arellano–Bond · Prais–Winsten · period FE · LDV + period FE · ADL(1,1)
+
+500 replications per cell.
+
+---
+
+## Key Result 1: Omitted Time-Varying Variable
+
+- FE bias **increases** with $\gamma_1$ (within correlation) and is **unaffected** by the correlation with $u_i$.
+- OLS bias is a weighted combination of within and between correlations; it is **smaller** than FE when $\gamma_1$ is large.
+- Common econometric patches (lagged DV, period dummies, Prais–Winsten) **do not reduce** FE bias in this setting.
+- Overall, pooled-OLS produces **up to 45% less bias** than FE across experiments.
+
+---
+
+## Key Result 2: Omitted Trends
+
+When both $x^1$ and an omitted variable share a common trend:
+
+- FE eliminates between variation but trends **survive the within transformation** → FE is still biased.
+- OLS absorbs part of the trend bias through between variation → **lower total bias** in many cells.
+
+When trends are **unit-specific** (heterogeneous), the problem intensifies for FE: each unit's trend component remains in the within variation but now also pollutes FE in ways that partial fixes cannot address.
+
+---
+
+## Key Result 3: Misspecified Lag Structure
+
+When the true effect operates with a one-period lag (or heterogeneous lags across units):
+
+- FE bias is **downward** and **larger in absolute value** than OLS bias whenever $x$ is positively autocorrelated.
+- Bias grows with $T$ for FE (more within variation accumulated, all contaminated by the wrong lag).
+- ADL(1,1) substantially reduces bias in *both* OLS and FE, but FE still suffers more from the residual misspecification.
+
+---
+
+## The Hausman Test Problem
+
+The Hausman test is commonly used to choose between FE and RE/OLS:
+
+> If FE and OLS estimates differ significantly → use FE (it is "consistent")
+
+**P&T show this logic fails under multiple misspecifications:**
+
+- When a time-varying omitted variable exists alongside unit effects, the Hausman test **erratically recommends FE** even when OLS is less biased.
+- Including a lagged DV **biases the Hausman test toward FE**.
+- With no omitted time-invariant variable but dynamic misspecification, the test still frequently **rejects in favour of FE** — the wrong choice.
+
+**Conclusion:** the Hausman test is not a reliable guide to model selection when the world contains both time-varying and time-invariant problems simultaneously.
+
+---
+
+## Summary of Findings
+
+| Condition | Is FE safer than OLS? |
+|---|---|
+| Only omitted time-invariant variables | ✔ Yes (standard result) |
+| Only dynamic misspecification | ✗ No — OLS is strictly less biased |
+| Both omitted TI *and* time-varying/dynamic | Depends on $\gamma_1$ vs $\delta_1$: FE can be *worse* |
+| Common/unit-specific trends, misspecified lags | ✗ FE often worse |
+| After Hausman test | ✗ Test is unreliable — cannot be trusted |
+
+---
+
+## Implications for Applied Researchers
+
+**What P&T are *not* saying:**
+Pooled-OLS is not a recommended alternative — it has its own well-known biases.
+
+**What they *are* saying:**
+
+- Do **not use FE as a default** without justifying that dynamics are correctly specified.
+- **Model dynamics first**, before worrying about time-invariant unobservables.
+- Be **sceptical of the Hausman test** as a sole basis for model selection.
+- Consider **robustness across dynamic specifications** (e.g. distributed lag models, ADL) rather than committing to one.
+- Report evidence on **serial correlation** in residuals — its absence is a prerequisite for trusting FE.
+
+---
+
+## Broader Methodological Point
+
+> Econometric solutions designed to fix a *single* misspecification can *exacerbate* bias from a *different* misspecification.
+
+This challenges the standard practitioner heuristic of applying modular fixes sequentially (add FE → add LDV → done). Multiple simultaneous misspecifications interact in non-additive ways.
+
+P&T call on methodologists to study estimator properties under **combined** misspecifications — not one at a time.
+
+---
+
+## Reference
+
+Plümper, Thomas and Vera E. Troeger. 2019.  
+"Not So Harmless After All: The Fixed-Effects Model."  
+*Political Analysis* **27**(1): 21–45.  
+DOI: [10.1017/pan.2018.17](https://doi.org/10.1017/pan.2018.17)
+
+*Keywords: consistency · efficiency · misspecification · omitted variable bias · panel data · Monte Carlo simulation*
+
+
+## Road Map
+
+1. Panel data and the two dimensions of variation
+2. One-way fixed effects (unit FE · time FE)
+3. Difference-in-Differences (DiD) — the 2 × 2 case
+4. Two-way fixed effects (TWFE) — the model
+5. **Kropko & Kubinec (2020):** why TWFE is hard to interpret
+6. TWFE ≠ DiD in general
+7. Staggered adoption & heterogeneous treatment effects
+8. Recommendations
+
+---
+
+## Panel Data: Two Dimensions of Variation
+
+For unit $i$ at time $t$, observe $(Y_{it},\, X_{it})$.
+
+| Dimension | Question answered |
+|-----------|-------------------|
+| **Within-unit** (over time) | How does $Y$ change *for a given unit* as $X$ changes? |
+| **Cross-sectional** (across units) | How do units with higher $X$ compare to units with lower $X$ *at the same time*? |
+
+::: {.callout-tip}
+**Key insight (Kropko & Kubinec 2020):** These are *different* questions.  
+A good model should answer one clearly.
+:::
+
+---
+
+## One-Way Fixed Effects
+
+**Case (unit) FE:**
+$$Y_{it} = \alpha_i + \beta X_{it} + \varepsilon_{it}$$
+
+- Subtracts each unit's mean → estimates *within-unit*, over-time variation
+- $\hat\beta_{\text{unit FE}}$ = variance-weighted average of unit-specific slopes
+
+**Time FE:**
+$$Y_{it} = \alpha_t + \beta X_{it} + \varepsilon_{it}$$
+
+- Subtracts each period's mean → estimates *cross-sectional* variation
+- $\hat\beta_{\text{time FE}}$ = variance-weighted average of period-specific slopes
+
+::: {.callout-tip}
+Each one-way FE model cleanly isolates **one** dimension.
+:::
+
+---
+
+## Difference-in-Differences (DiD) — 2 × 2 Case
+
+Two groups (treated $s$, never-treated $n$) × two periods (pre/post):
+
+$$\widehat{\text{DiD}} = \bigl(\bar Y_{s,2} - \bar Y_{s,1}\bigr) - \bigl(\bar Y_{n,2} - \bar Y_{n,1}\bigr)$$
+
+**Identifying assumption — Parallel Trends:**
+$$\mathbb{E}[Y_{s,2}(0) - Y_{s,1}(0)] = \mathbb{E}[Y_{n,2}(0) - Y_{n,1}(0)]$$
+
+Under parallel trends, DiD identifies the **Average Treatment Effect on the Treated (ATT)**.
+
+::: {.callout-tip}
+In the 2 × 2 case, TWFE *is* DiD. The trouble starts when we generalise.
+:::
+
+---
+
+## Two-Way Fixed Effects (TWFE)
+
+$$Y_{it} = \alpha_i + \lambda_t + \beta D_{it} + \varepsilon_{it}$$
+
+- $\alpha_i$: unit fixed effects (absorb time-invariant heterogeneity)  
+- $\lambda_t$: time fixed effects (absorb common time shocks)  
+- $D_{it}$: treatment indicator (or intensity)
+
+**Standard interpretation:** $\beta$ is "the causal effect of treatment, controlling for unit- and time-level confounders."
+
+::: {.callout-warn}
+This interpretation is often **wrong** — for subtle but important reasons.
+:::
+
+---
+
+## Kropko & Kubinec (2020): What Does TWFE Actually Estimate?
+
+**PLoS ONE 15(4): e0231349**
+
+::: {.columns}
+::: {.column width="60%"}
+Mathematical decomposition shows:
+
+$$\hat\beta_{\text{TWFE}} = \text{weighted average of } \hat\beta_t(\tilde X)$$
+
+where $\tilde X_{it} = X_{it} - \bar X_i$ (unit-mean centred),  
+and $\hat\beta_t$ is estimated on the *cross-section at time $t$*.
+
+Equivalently (swapping roles):
+
+$$\hat\beta_{\text{TWFE}} = \text{weighted average of } \hat\beta_i(\tilde X)$$
+
+where $\tilde X_{it} = X_{it} - \bar X_t$ (time-mean centred).
+:::
+::: {.column width="40%"}
+**Plain English:**
+
+> "How does a unit whose $X$ is above *its own mean* compare to another unit  
+> whose $X$ is above *its own mean*, at the same point in time?"
+
+This mixes within-unit *and* cross-sectional variation — precisely what one-way FE models avoid.
+:::
+:::
+
+---
+
+## TWFE: A Complex Amalgamation
+
+Kropko & Kubinec simulate TSCS data with *known* within-case slope $\gamma$ and within-time slope $\beta$:
+
+| Model | Recovers |
+|-------|----------|
+| Case (unit) FE | $\gamma$ — pure over-time effect |
+| Time FE | $\beta$ — pure cross-sectional effect |
+| **TWFE** | **Something between $\gamma$ and $\beta$ — pooled, hard to interpret** |
+
+::: {.callout-red}
+Including time dummies *on top of* unit dummies fundamentally changes the estimand — TWFE is no longer a cleaned-up version of unit FE.
+:::
+
+---
+
+## The Identification Problem
+
+::: {.callout-red}
+**Theorem (Kropko & Kubinec 2020):**  
+If the within-unit slopes are *constant* across units **and** the within-time slopes are *constant* across periods, the TWFE estimator is **statistically unidentified**.
+:::
+
+- The design matrix is rank-deficient; software (R, Stata) silently drops a dummy, masking the problem.
+- Near-constant slopes → coefficient variance explodes.
+
+**Why has this gone unnoticed?**  
+Automatic multicollinearity handling in `lm()` and `xtreg` suppresses the error; results look plausible but are essentially arbitrary.
+
+---
+
+## When TWFE = DiD (and When It Doesn't)
+
+| Setting | TWFE = DiD? |
+|---------|-------------|
+| 2 groups, 2 periods, binary treatment | ✅ Yes |
+| 2 groups, many periods | ⚠️ Only under strong homogeneity assumptions |
+| Many groups, staggered adoption | ❌ Generally no |
+| Heterogeneous treatment effects | ❌ No — TWFE can be *negatively* weighted |
+
+Kropko & Kubinec (2020): TWFE should be thought of as a generalised DiD **only in the canonical 2 × 2 design**.
+
+---
+
+## Staggered DiD & Heterogeneous Effects
+
+Recent literature (de Chaisemartin & D'Haultfœuille 2020, 2022; Callaway & Sant'Anna 2021; Goodman-Bacon 2021) shows:
+
+$$\hat\beta_{\text{TWFE}} = \sum_{g,t} w_{g,t} \cdot \text{ATT}(g,t)$$
+
+where some weights $w_{g,t}$ can be **negative** — earlier treated units act as "controls" for later treated units.
+
+::: {.callout-red}
+With heterogeneous or dynamic treatment effects, $\hat\beta_{\text{TWFE}}$ can be the *wrong sign* even when all true ATTs are positive.
+:::
+
+---
+
+## Intuition: The Negative-Weight Problem
+
+```
+Time →        t=1    t=2    t=3    t=4
+Group A       0      1      1      1   ← treated early
+Group B       0      0      1      1   ← treated mid
+Group C       0      0      0      0   ← never treated
+```
+
+TWFE uses Group A (post-treatment) as a **control** for Group B in periods 3–4.  
+If Group A's treatment effect *grows* over time, this biases $\hat\beta_{\text{TWFE}}$ downward.
+
+::: {.callout-warn}
+**Contaminated comparisons** are the rule, not the exception, in staggered designs.
+:::
+
+---
+
+## Recommendations
+
+::: {.callout-tip}
+**Kropko & Kubinec (2020) advice:**
+- Use unit FE if your question is about *over-time* change within units.
+- Use time FE if your question is about *cross-sectional* differences.
+- Use TWFE only in a genuine 2 × 2 DiD where assumptions are explicit.
+:::
+
+**For staggered DiD, use robust estimators:  This is Friday**
+
+| Package (R) | Estimator |
+|-------------|-----------|
+| `did` | Callaway & Sant'Anna (2021) — group-time ATTs |
+| `didimputation` | Borusyak, Jaravel & Spiess (2024) |
+| `fixest::sunab()` | Sun & Abraham (2021) |
+| `DIDmultiplegt` | de Chaisemartin & D'Haultfœuille (2020) |
+
+---
+
+## Summary
+
+```
+Panel data question
+       │
+       ├─ Over-time (within-unit) → Unit FE
+       │
+       ├─ Cross-sectional        → Time FE
+       │
+       └─ Causal treatment effect?
+              │
+              ├─ 2 × 2, parallel trends → TWFE = DiD ✅
+              │
+              └─ Staggered / long panel → Use modern DiD estimators ✅
+                                          Avoid plain TWFE ❌
+```
+
+::: {.callout-red}
+TWFE is **not** a universally robust generalisation of DiD.  
+It mixes dimensions, can be unidentified, and can produce negatively-weighted aggregates.
+:::
+
+---
+
+## Key References
+
+- **Kropko J, Kubinec R** (2020). "Interpretation and identification of within-unit and cross-sectional variation in panel data models." *PLoS ONE* 15(4): e0231349.
+- **de Chaisemartin C, D'Haultfœuille X** (2020). "Two-way fixed effects estimators with heterogeneous treatment effects." *American Economic Review* 110(9): 2964–2996.
+- **Goodman-Bacon A** (2021). "Difference-in-differences with variation in treatment timing." *Journal of Econometrics* 225(2): 254–277.
+- **Callaway B, Sant'Anna PHC** (2021). "Difference-in-differences with multiple time periods." *Journal of Econometrics* 225(2): 200–230.
+- **Sun L, Abraham S** (2021). "Estimating dynamic treatment effects in event studies with heterogeneous treatment effects." *Journal of Econometrics* 225(2): 175–199.
