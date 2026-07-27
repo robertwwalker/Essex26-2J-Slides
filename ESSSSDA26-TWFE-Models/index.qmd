@@ -1,0 +1,262 @@
+---
+title: "Two-Way Fixed Effects & Difference-in-Differences"
+subtitle: "What They Estimate — and When They Go Wrong"
+author: "Robert W. Walker"
+date: "July 27, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: TWFE Models"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+bibliography: references.bib
+---
+
+## Road Map
+
+1. Panel data and the two dimensions of variation
+2. One-way fixed effects (unit FE · time FE)
+3. Difference-in-Differences (DiD) — the 2 × 2 case
+4. Two-way fixed effects (TWFE) — the model
+5. **Kropko & Kubinec (2020):** why TWFE is hard to interpret
+6. TWFE ≠ DiD in general
+7. Staggered adoption & heterogeneous treatment effects
+8. Recommendations
+
+---
+
+## Panel Data: Two Dimensions of Variation
+
+For unit $i$ at time $t$, observe $(Y_{it},\, X_{it})$.
+
+| Dimension | Question answered |
+|-----------|-------------------|
+| **Within-unit** (over time) | How does $Y$ change *for a given unit* as $X$ changes? |
+| **Cross-sectional** (across units) | How do units with higher $X$ compare to units with lower $X$ *at the same time*? |
+
+::: {.callout-tip}
+**Key insight (Kropko & Kubinec 2020):** These are *different* questions.  
+A good model should answer one clearly.
+:::
+
+---
+
+## One-Way Fixed Effects
+
+**Case (unit) FE:**
+$$Y_{it} = \alpha_i + \beta X_{it} + \varepsilon_{it}$$
+
+- Subtracts each unit's mean → estimates *within-unit*, over-time variation
+- $\hat\beta_{\text{unit FE}}$ = variance-weighted average of unit-specific slopes
+
+**Time FE:**
+$$Y_{it} = \alpha_t + \beta X_{it} + \varepsilon_{it}$$
+
+- Subtracts each period's mean → estimates *cross-sectional* variation
+- $\hat\beta_{\text{time FE}}$ = variance-weighted average of period-specific slopes
+
+::: {.callout-tip}
+Each one-way FE model cleanly isolates **one** dimension.
+:::
+
+---
+
+## Difference-in-Differences (DiD) — 2 × 2 Case
+
+Two groups (treated $s$, never-treated $n$) × two periods (pre/post):
+
+$$\widehat{\text{DiD}} = \bigl(\bar Y_{s,2} - \bar Y_{s,1}\bigr) - \bigl(\bar Y_{n,2} - \bar Y_{n,1}\bigr)$$
+
+**Identifying assumption — Parallel Trends:**
+$$\mathbb{E}[Y_{s,2}(0) - Y_{s,1}(0)] = \mathbb{E}[Y_{n,2}(0) - Y_{n,1}(0)]$$
+
+Under parallel trends, DiD identifies the **Average Treatment Effect on the Treated (ATT)**.
+
+::: {.callout-tip}
+In the 2 × 2 case, TWFE *is* DiD. The trouble starts when we generalise.
+:::
+
+---
+
+## Two-Way Fixed Effects (TWFE)
+
+$$Y_{it} = \alpha_i + \lambda_t + \beta D_{it} + \varepsilon_{it}$$
+
+- $\alpha_i$: unit fixed effects (absorb time-invariant heterogeneity)  
+- $\lambda_t$: time fixed effects (absorb common time shocks)  
+- $D_{it}$: treatment indicator (or intensity)
+
+**Standard interpretation:** $\beta$ is "the causal effect of treatment, controlling for unit- and time-level confounders."
+
+::: {.callout-warn}
+This interpretation is often **wrong** — for subtle but important reasons.
+:::
+
+---
+
+## Kropko & Kubinec (2020): What Does TWFE Actually Estimate?
+
+**PLoS ONE 15(4): e0231349**
+
+::: {.columns}
+::: {.column width="60%"}
+Mathematical decomposition shows:
+
+$$\hat\beta_{\text{TWFE}} = \text{weighted average of } \hat\beta_t(\tilde X)$$
+
+where $\tilde X_{it} = X_{it} - \bar X_i$ (unit-mean centred),  
+and $\hat\beta_t$ is estimated on the *cross-section at time $t$*.
+
+Equivalently (swapping roles):
+
+$$\hat\beta_{\text{TWFE}} = \text{weighted average of } \hat\beta_i(\tilde X)$$
+
+where $\tilde X_{it} = X_{it} - \bar X_t$ (time-mean centred).
+:::
+::: {.column width="40%"}
+**Plain English:**
+
+> "How does a unit whose $X$ is above *its own mean* compare to another unit  
+> whose $X$ is above *its own mean*, at the same point in time?"
+
+This mixes within-unit *and* cross-sectional variation — precisely what one-way FE models avoid.
+:::
+:::
+
+---
+
+## TWFE: A Complex Amalgamation
+
+Kropko & Kubinec simulate TSCS data with *known* within-case slope $\gamma$ and within-time slope $\beta$:
+
+| Model | Recovers |
+|-------|----------|
+| Case (unit) FE | $\gamma$ — pure over-time effect |
+| Time FE | $\beta$ — pure cross-sectional effect |
+| **TWFE** | **Something between $\gamma$ and $\beta$ — pooled, hard to interpret** |
+
+::: {.callout-red}
+Including time dummies *on top of* unit dummies fundamentally changes the estimand — TWFE is no longer a cleaned-up version of unit FE.
+:::
+
+---
+
+## The Identification Problem
+
+::: {.callout-red}
+**Theorem (Kropko & Kubinec 2020):**  
+If the within-unit slopes are *constant* across units **and** the within-time slopes are *constant* across periods, the TWFE estimator is **statistically unidentified**.
+:::
+
+- The design matrix is rank-deficient; software (R, Stata) silently drops a dummy, masking the problem.
+- Near-constant slopes → coefficient variance explodes.
+
+**Why has this gone unnoticed?**  
+Automatic multicollinearity handling in `lm()` and `xtreg` suppresses the error; results look plausible but are essentially arbitrary.
+
+---
+
+## When TWFE = DiD (and When It Doesn't)
+
+| Setting | TWFE = DiD? |
+|---------|-------------|
+| 2 groups, 2 periods, binary treatment | ✅ Yes |
+| 2 groups, many periods | ⚠️ Only under strong homogeneity assumptions |
+| Many groups, staggered adoption | ❌ Generally no |
+| Heterogeneous treatment effects | ❌ No — TWFE can be *negatively* weighted |
+
+Kropko & Kubinec (2020): TWFE should be thought of as a generalised DiD **only in the canonical 2 × 2 design**.
+
+---
+
+## Staggered DiD & Heterogeneous Effects
+
+Recent literature (de Chaisemartin & D'Haultfœuille 2020, 2022; Callaway & Sant'Anna 2021; Goodman-Bacon 2021) shows:
+
+$$\hat\beta_{\text{TWFE}} = \sum_{g,t} w_{g,t} \cdot \text{ATT}(g,t)$$
+
+where some weights $w_{g,t}$ can be **negative** — earlier treated units act as "controls" for later treated units.
+
+::: {.callout-red}
+With heterogeneous or dynamic treatment effects, $\hat\beta_{\text{TWFE}}$ can be the *wrong sign* even when all true ATTs are positive.
+:::
+
+---
+
+## Intuition: The Negative-Weight Problem
+
+```
+Time →        t=1    t=2    t=3    t=4
+Group A       0      1      1      1   ← treated early
+Group B       0      0      1      1   ← treated mid
+Group C       0      0      0      0   ← never treated
+```
+
+TWFE uses Group A (post-treatment) as a **control** for Group B in periods 3–4.  
+If Group A's treatment effect *grows* over time, this biases $\hat\beta_{\text{TWFE}}$ downward.
+
+::: {.callout-warn}
+**Contaminated comparisons** are the rule, not the exception, in staggered designs.
+:::
+
+---
+
+## Recommendations
+
+::: {.callout-tip}
+**Kropko & Kubinec (2020) advice:**
+- Use unit FE if your question is about *over-time* change within units.
+- Use time FE if your question is about *cross-sectional* differences.
+- Use TWFE only in a genuine 2 × 2 DiD where assumptions are explicit.
+:::
+
+**For staggered DiD, use robust estimators:  This is Friday**
+
+| Package (R) | Estimator |
+|-------------|-----------|
+| `did` | Callaway & Sant'Anna (2021) — group-time ATTs |
+| `didimputation` | Borusyak, Jaravel & Spiess (2024) |
+| `fixest::sunab()` | Sun & Abraham (2021) |
+| `DIDmultiplegt` | de Chaisemartin & D'Haultfœuille (2020) |
+
+---
+
+## Summary
+
+```
+Panel data question
+       │
+       ├─ Over-time (within-unit) → Unit FE
+       │
+       ├─ Cross-sectional        → Time FE
+       │
+       └─ Causal treatment effect?
+              │
+              ├─ 2 × 2, parallel trends → TWFE = DiD ✅
+              │
+              └─ Staggered / long panel → Use modern DiD estimators ✅
+                                          Avoid plain TWFE ❌
+```
+
+::: {.callout-red}
+TWFE is **not** a universally robust generalisation of DiD.  
+It mixes dimensions, can be unidentified, and can produce negatively-weighted aggregates.
+:::
+
+---
+
+## Key References
+
+- **Kropko J, Kubinec R** (2020). "Interpretation and identification of within-unit and cross-sectional variation in panel data models." *PLoS ONE* 15(4): e0231349.
+- **de Chaisemartin C, D'Haultfœuille X** (2020). "Two-way fixed effects estimators with heterogeneous treatment effects." *American Economic Review* 110(9): 2964–2996.
+- **Goodman-Bacon A** (2021). "Difference-in-differences with variation in treatment timing." *Journal of Econometrics* 225(2): 254–277.
+- **Callaway B, Sant'Anna PHC** (2021). "Difference-in-differences with multiple time periods." *Journal of Econometrics* 225(2): 200–230.
+- **Sun L, Abraham S** (2021). "Estimating dynamic treatment effects in event studies with heterogeneous treatment effects." *Journal of Econometrics* 225(2): 175–199.
