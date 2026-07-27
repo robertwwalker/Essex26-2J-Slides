@@ -135,7 +135,9 @@ this when we look at Hausman because this is the essential issue.
 
 ## The Beck and Katz solution
 
-Beck and Katz take a different tack to the general data types in common use (long $T$).  The basic idea is to generate estimates using OLS because GLS can be quite bad. .red[What do we need to be able to do this?]
+Beck and Katz take a different tack to the general data types in common use (long $T$).  The basic idea is to generate estimates using OLS because GLS can be quite bad. 
+
+**What do we need to be able to do this?**
 
 - Locate a specification to purge serial correlation (in $t$).
 - [p. 638] Construct the panel corrected standard error.  Construct $\Sigma$ ($N \times N$) using $$\hat{\Sigma} = \frac{\sum_{t=1}^{T} e_{it} e_{jt} } {T}.$$  Estimate the cross-sectional correlation matrix.  Kronecker product this in $\mathbf{I}_{T}$ remembering how we got $\mathbf{I}$.
@@ -667,7 +669,7 @@ For virtually all Stata commands, we can acquire multiple variance/covariance ma
 
 ## $\texttt{xtmixed}$
     
-Will allow us to do tons of things.  In particular, we can play with the residual correlation matrix using the option $\texttt{residuals}$.  One can recreate virtually everything that we have seen so far this way.  The remaining task for you in the lab is to figure out what all you can make it do.
+Will allow us to do tons of things.  In particular, we can play with the residual correlation matrix using the option $\texttt{residuals}$.  One can recreate virtually everything that we have seen so far this way.  The remaining task for you in the lab is to figure out what all you can make it do.  In newer stata, it is `xtreg, mixed`.
   
 - exchangeable
 - ar
