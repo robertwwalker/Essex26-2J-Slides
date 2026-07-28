@@ -1,0 +1,281 @@
+---
+title: "Advanced Standard Errors in Time Series & Panel Data"
+subtitle: "HAC, Multi-Way Clustering, PCSE, CCE, Mundlak Duality, & Dynamic CCE"
+author: "RWW"
+date: "July 29, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: SE Fixes"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+     code-overflow: wrap
+---
+
+## 1. TSCS & Panel Challenges: Beck & Katz vs. Parks
+
+In Time-Series Cross-Sectional (TSCS) data ($N$ units over $T$ periods):
+$$y_{it} = X_{it}' \beta + u_{it}, \quad \mathbb{E}[u u'] = \Omega \quad (NT \times NT)$$
+
+### The Parks-Kmenta (1967) FGLS Fallacy
+* **Idea:** Full FGLS estimating unit-specific AR(1) coefficients $\rho_i$, heteroskedasticity $\sigma_i^2$, and cross-sectional covariances $\sigma_{ij}$.
+* **The Problem:** Requires estimating $N(N+1)/2$ covariance parameters. When $T$ is not vastly larger than $N$, sample variability in $\hat{\Sigma}$ causes FGLS standard errors to be **severely underestimated** (by 50%--80%), leading to extreme over-rejection of $H_0$.
+
+### Beck & Katz (1995) Panel-Corrected Standard Errors (PCSE)
+* Retains OLS coefficient estimates $\hat{\beta}_{\text{OLS}}$ and replaces the standard error formula with:
+  $$\hat{\Sigma}_{\text{PCSE}} = \frac{E' E}{T} \quad (N \times N \text{ matrix of OLS residuals } E)$$
+* **Trade-off:** Works very well for $T > N$. However, if $N > T$, $E'E$ is **rank-deficient/singular** and PCSE fails completely.
+
+
+
+## 2. Multi-Way Clustering (Cameron, Gelbach, & Miller 2011)
+
+When errors are correlated across multiple non-nested or nested dimensions (e.g., entity $i$ and period $t$):
+
+### Inclusion-Exclusion Principle
+$$\hat{V}_{\text{Two-Way}} = \hat{V}_{i} + \hat{V}_{t} - \hat{V}_{i \cap t}$$
+
+Where:
+* $\hat{V}_i$: One-way cluster covariance matrix by entity $i$ (handles within-entity serial correlation).
+* $\hat{V}_t$: One-way cluster covariance matrix by period $t$ (handles aggregate cross-sectional shocks).
+* $\hat{V}_{i \cap t}$: Cluster covariance matrix by $(i, t)$ cell (subtracted to avoid double-counting heteroskedasticity).
+
+### Asymptotic & Practical Requirements
+* Requires $N_{\text{cluster1}} \to \infty$ AND $N_{\text{cluster2}} \to \infty$ (typically $\ge 30$--$50$ clusters per dimension).
+* Flexible: Extends easily to 3-way or multi-way clustering (e.g., firm, worker, time).
+
+
+
+## 3. Pesaran (2006) Common Correlated Effects (CCE)
+
+Instead of adjusting standard errors *post hoc*, **CCE** models cross-sectional dependence directly using an **interactive fixed effects / factor structure**:
+
+$$y_{it} = X_{it}' \beta_i + \gamma_i' f_t + e_{it}$$
+
+where $f_t$ is an unobserved $m \times 1$ vector of common aggregate factors with unit-specific factor loadings $\gamma_i$.
+
+### The Pesaran (2006) Innovation
+Filter out unobserved factors $f_t$ by including **cross-sectional averages** of $y_{it}$ and $X_{it}$ as proxies:
+$$\bar{y}_t = \frac{1}{N} \sum_{i=1}^N y_{it}, \quad \bar{X}_t = \frac{1}{N} \sum_{i=1}^N X_{it}$$
+
+### Operational CCE Regression Model
+$$y_{it} = X_{it}' \beta + d_{1i} \bar{y}_t + d_{2i}' \bar{X}_t + e_{it}$$
+
+* **Pooled CCE (CCEP):** Constrains $\beta_i = \beta$ across all units.
+* **Mean Group CCE (CCEMG):** Estimates $\hat{\beta}_i$ unit-by-unit and averages across $i$: $\hat{\beta}_{\text{CCEMG}} = \frac{1}{N}\sum_{i=1}^N \hat{\beta}_i$.
+
+
+
+## 4. Parameter Interpretation in CCE: Structural vs. Nuisance
+
+### Structural Parameters ($\beta$)
+* **Pooled CCE ($\hat{\beta}_{\text{CCEP}}$):** Represents the within-unit partial effect of $X_{it}$ on $y_{it}$, holding constant time-invariant heterogeneity ($\alpha_i$) and unobserved common shocks ($f_t$).
+* **Mean Group CCE ($\hat{\beta}_{\text{CCEMG}}$):** Represents the Average Partial Effect (APE) across heterogeneous entities.
+
+### Cross-Sectional Averages ($d_{1i}$ and $d_{2i}$): Pure Nuisance Parameters
+> **Critical Pitfall:** $d_{1i}$ and $d_{2i}$ must **NEVER** be interpreted as peer effects, neighborhood spillovers, or network coefficients.
+
+* They are purely a **mathematical projection device**.
+* Because $\bar{y}_t \approx \bar{X}_t \bar{\beta} + \bar{\gamma}' f_t$, solving for $f_t$ yields:
+  $$\gamma_i' f_t \approx d_{1i} \bar{y}_t + d_{2i}' \bar{X}_t$$
+* The coefficients $d_{1i}$ and $d_{2i}$ are complex, non-linear combinations of unit loadings $\gamma_i$, average loadings $\bar{\gamma}$, and average slopes $\bar{\beta}$, stripped of direct economic meaning.
+
+
+
+## 5. CCE and the Mundlak (1978) Connection
+
+Pesaran CCE shares a fundamental theoretical duality with **Mundlak's Correlated Random Effects (CRE)** framework. Both eliminate endogeneity caused by unobserved confounders by projecting them onto sample averages.
+
+### Spatial vs. Temporal Projection Duality
+
+1. **Mundlak (1978) CRE Device:**
+   * **Confounder:** Unobserved time-invariant entity effect $\alpha_i$.
+   * **Projection:** Averages across **Time ($T$)** for unit $i$: $\bar{X}_i = \frac{1}{T}\sum_{t=1}^T X_{it}$.
+   * **Model:** $\alpha_i = \bar{X}_i' \delta + \eta_i \implies y_{it} = X_{it}' \beta + \bar{X}_i' \delta + \eta_i + u_{it}$.
+
+2. **Pesaran (2006) CCE Estimator:**
+   * **Confounder:** Unobserved time-varying common factors $f_t$.
+   * **Projection:** Averages across **Space ($N$)** for time $t$: $\bar{z}_t = (\bar{y}_t, \bar{X}_t')'$.
+   * **Model:** $\gamma_i' f_t \approx d_{1i}\bar{y}_t + d_{2i}'\bar{X}_t$.
+
+> **Takeaway:** Mundlak integrates over $T$ to control for individual fixed effects; Pesaran integrates over $N$ to control for common macro factor shocks.
+
+
+
+## 6. Dynamic CCE (Chudik & Pesaran, 2015)
+
+When the model includes lagged dependent variables:
+$$y_{it} = \rho y_{i,t-1} + X_{it}' \beta + \gamma_i' f_t + e_{it}$$
+
+### The Failure of Standard CCE
+In dynamic models, contemporaneous cross-sectional averages $\bar{z}_t = (\bar{y}_t, \bar{X}_t')'$ remain correlated with $e_{i,t-1}$ at finite $T$. Standard CCE produces inconsistent estimates for $\rho$ and $\beta$.
+
+### The Chudik & Pesaran Solution
+To restore consistency, include $p_T$ lags of the cross-sectional averages alongside contemporaneous averages:
+$$y_{it} = \rho_i y_{i,t-1} + X_{it}' \beta_i + \sum_{\ell=0}^{p_T} \delta_{i,\ell}' \bar{z}_{t-\ell} + e_{it}$$
+
+* **Lag Selection Rule:** Set $p_T = \lfloor T^{1/3} \rfloor$ (e.g., $p_T \approx 3$ or $4$ for $T = 30$--$60$).
+* **Requirement:** Requires $N, T \to \infty$ jointly.
+
+
+
+## 7. Applied Synergy: Combining Mundlak CRE & CCE
+
+In empirical settings with short/unbalanced panels, micro-level selection, and macro shocks, researchers increasingly combine both projection devices:
+
+$$y_{it} = X_{it}' \beta + \underbrace{\bar{X}_i' \delta}_{\text{Mundlak (CRE for } \alpha_i)} + \underbrace{d_{1i} \bar{y}_t + d_{2i}' \bar{X}_t + \sum_{\ell=1}^{p_T} \delta_{i,\ell}' \bar{z}_{t-\ell}}_{\text{Dynamic CCE for } f_t} + \varepsilon_{it}$$
+
+### Why Use Both?
+* **Mundlak Component ($\bar{X}_i$):** Controls for time-invariant selection bias and correlated random effects, retaining the ability to estimate coefficients on time-invariant regressors (e.g., gender, location, distance).
+* **CCE Component ($\bar{z}_{t-\ell}$):** Controls for unobserved time-varying macro trends, interactive fixed effects, and spatial dependence.
+
+
+
+## 8. Master Econometric Taxonomy Matrix
+
+| Estimator / Method | Serial Correlation? | Cross-Sectional Dependence? | Small-Sample Requirement | Primary Domain |
+| :--- | :---: | :---: | :--- | :--- |
+| **Parks FGLS (1967)** | Yes (AR(1)) | Yes (Full covariance) | **$T \gg N$ mandatory** | *Historical TSCS (Deprecated)* |
+| **Beck-Katz PCSE (1995)** | Yes (AR(1) prefilter) | Yes (Contemporaneous $E'E/T$) | **$T \ge N$ required** | Political Science TSCS ($T > N$) |
+| **Arellano CRSE (1987)** | Yes (Arbitrary within $i$) | No ($i \neq j$ independent) | $N \ge 30$--$50$ | Short panels ($N \gg T$) |
+| **Two-Way Cluster (2011)** | Yes (Within $i$) | Yes (Within period $t$) | $N \ge 30$ AND $T \ge 30$ | Macro / Firm panels |
+| **Driscoll-Kraay (1998)** | Yes (HAC kernel) | Yes (General cross-sectional) | **$T \to \infty$ required** | Large $T$ macro/finance panels |
+| **Pesaran CCE (2006)** | Yes | Yes (Factor model filter) | $N, T \to \infty$ | Heterogeneous panels |
+| **Dynamic CCE (2015)** | Yes (Lagged dependent) | Yes (Factor model filter) | $N, T \to \infty$, $p_T = T^{1/3}$ | Dynamic macro/firm panels |
+
+---
+
+## 9. Software Implementation: Canonical Grunfeld Application
+
+We apply these panel estimators to the canonical **Grunfeld Panel Data** ($N=10$ firms, $T=20$ years, $1935$--$1954$).
+* **Dependent Variable ($y$):** `inv` (Gross Investment)
+* **Regressors ($X$):** `value` (Market Value of Firm), `capital` (Stock of Plant & Equipment)
+
+::: {.panel-tabset}
+
+### R Implementation
+
+```{r}
+#| echo: true
+#| eval: true
+#| warning: false
+#| message: false
+
+library(plm)
+library(fixest)
+library(pcse)
+library(dplyr)
+
+# Load canonical Grunfeld dataset (N=10 firms, T=20 years)
+data("Grunfeld", package = "plm")
+
+# 1. Two-Way Fixed Effects & Two-Way Clustering (fixest)
+tw_mod <- feols(inv ~ value + capital | firm + year, 
+               data = Grunfeld, 
+               cluster = ~firm + year)
+summary(tw_mod)
+
+# 2. Beck & Katz PCSE (pcse)
+ols_mod <- plm(inv ~ value + capital, data = Grunfeld)
+summary(ols_mod, vcov = vcovBK)
+
+# 3. Pesaran Static CCE (plm)
+pgrun <- pdata.frame(Grunfeld, index = c("firm", "year"))
+ccep_mod  <- pcce(inv ~ value + capital, data = pgrun, model = "p")  # Pooled CCE
+ccemg_mod <- pcce(inv ~ value + capital, data = pgrun, model = "mg") # Mean Group CCE
+
+summary(ccep_mod)
+
+# 4. Dynamic CCE & Mundlak CRE Synergy
+# Calculate unit time-means (Mundlak) and period cross-sectional means (CCE)
+Grunfeld_aug <- Grunfeld %>%
+  group_by(firm) %>%
+  mutate(val_mean = mean(value), cap_mean = mean(capital)) %>%
+  group_by(year) %>%
+  mutate(inv_bar = mean(inv), val_bar = mean(value), cap_bar = mean(capital)) %>%
+  ungroup() %>%
+  pdata.frame(index = c("firm", "year"))
+
+# Dynamic CCE with Lagged Dependent Variable + CS Averages
+dcce_mod <- feols(inv ~ lag(inv, 1) + value + capital + 
+                    val_mean + cap_mean + 
+                    inv_bar + val_bar + cap_bar + 
+                    lag(inv_bar, 1) + lag(val_bar, 1) | firm,
+                  data = Grunfeld_aug, 
+                  cluster = ~firm + year)
+summary(dcce_mod)
+```
+
+### Stata Implementation
+
+```stata
+* ====================================================================
+* Canonical Grunfeld Application in Stata
+* ====================================================================
+
+* Load canonical Grunfeld dataset
+webuse grunfeld, clear
+xtset firm year
+
+* 1. Two-Way Fixed Effects with Two-Way Clustering (reghdfe)
+reghdfe inv value capital, absorb(firm year) vce(cluster firm year)
+
+* 2. Beck & Katz PCSE (xtpcse)
+xtpcse inv value capital, correlation(ar1) hett
+
+* 3. Pesaran Static CCE (xtcce package)
+* ssc install xtcce
+xtcce inv value capital, pooled                 // Pooled CCE (CCEP)
+xtcce inv value capital, mg                     // Mean Group CCE (CCEMG)
+
+* 4. Dynamic CCE (Chudik & Pesaran 2015 via xtcce)
+* Fits dynamic model with 1 lag of cross-sectional averages (p_T = 1)
+xtcce inv value capital, pooled cr(inv value capital) cr_lags(1)
+
+* 5. Mundlak CRE + Dynamic CCE Synergy
+bysort firm: egen val_mean = mean(value)
+bysort firm: egen cap_mean = mean(capital)
+
+xtcce inv L.inv value capital val_mean cap_mean, pooled cr(inv value capital) cr_lags(1)
+```
+
+:::
+
+---
+
+## 10. Applied Decision Rules for Econometricians
+
+```
+                              Is N > T or T > N?
+                                      │
+            ┌─────────────────────────┴─────────────────────────┐
+            ▼                                                   ▼
+       Short Panel (N >> T)                               Long Panel (T >> N or T ≈ N)
+            │                                                   │
+    Are units correlated                               Does spatial correlation decay
+    across space/time?                                  with physical distance?
+      ┌─────┴─────┐                                       ┌─────┴─────┐
+      ▼           ▼                                       ▼           ▼
+     NO          YES                                     YES          NO
+      │           │                                       │           │
+   Cluster     Two-Way                                 Conley       Driscoll-
+    (id)       Cluster                                 Spatial       Kraay /
+            (id + time)                                  SEs          PCSE
+                                                                        │
+                                                            Unobserved Macro Shocks?
+                                                                        │
+                                                                   Pesaran CCE
+                                                                        │
+                                                             Dynamic Model (y_{t-1})?
+                                                                        │
+                                                                   Dynamic CCE
+                                                              (Chudik & Pesaran 2015)
+```
