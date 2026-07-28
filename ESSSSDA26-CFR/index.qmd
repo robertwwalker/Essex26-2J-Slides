@@ -1,0 +1,438 @@
+---
+title: "Common Factor Restrictions in ARDL(*p*,*q*) Models"
+subtitle: "Derivations, Test Statistics, and General Cases"
+author: "Robert Walker"
+date: "July 27, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: Common Factor Restrictions"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+## Outline
+
+::: {.incremental}
+1. **General Framework** — the ARDL(*p*,*q*) model; COMFAC definition; the Wald and Sargan *F* tests
+2. **Specific cases** — full derivations for ARDL(1,0), (1,1), (2,1), (1,2), (2,2)
+3. **New cases** — ARDL(3,1); general ARDL(1,*q*); general ARDL(*p*,1); ARDL(*n*,*n*) full factorisation
+4. **Summary table**, structural patterns, sequential testing, references
+:::
+
+# Part I — Framework
+
+## The ARDL(*p*,*q*) Model
+
+Suppressing the intercept without loss of generality:
+
+$$A(L)\,y_t = B(L)\,x_t + \varepsilon_t, \qquad \varepsilon_t \sim \mathrm{i.i.d.}(0,\,\sigma^2)$$
+
+$$A(L) = 1 - \phi_1 L - \cdots - \phi_p L^p, \qquad B(L) = \beta_0 + \beta_1 L + \cdots + \beta_q L^q$$
+
+. . .
+
+| | |
+|---|---|
+| **Parameter vector** | $\theta = (\phi_1,\ldots,\phi_p,\,\beta_0,\ldots,\beta_q)^\intercal \in \mathbb{R}^{k_u}$ |
+| **Free parameters** | $k_u = p + q + 1$ (the $+1$ from the contemporaneous term $\beta_0$) |
+| **OLS covariance** | $\hat{V} = \hat\sigma^2(X'X)^{-1}$, $\quad \hat\sigma^2 = \mathrm{RSS}_u/(T-k_u)$ |
+
+## Common Factor Restriction — Definition
+
+A **COMFAC restriction of order** $r$ holds when $\exists$ polynomial $C(L) = \prod_{j=1}^r(1-\rho_j L)$ such that
+
+$$A(L) = C(L)\,A^*(L), \qquad B(L) = C(L)\,B^*(L)$$
+
+with $\deg A^* = p-r$, $\deg B^* = q-r$, and **maximum testable order** $r_{\max} = \min(p,q)$.
+
+. . .
+
+**Equivalent condition:** $A(z)$ and $B(z)$ share $r$ common roots, i.e., $\exists\, z_0$ such that
+
+$$A(z_0) = 0 \quad \text{and} \quad B(z_0) = 0 \quad \text{simultaneously}$$
+
+. . .
+
+**Implication:** Under the restriction, $A^*(L)y_t = B^*(L)x_t + u_t$ with $C(L)u_t = \varepsilon_t$ — a *simpler model with coloured errors* rather than a correctly-specified lag structure.
+
+. . .
+
+::: {.callout-important}
+Cochrane–Orcutt / Prais–Winsten GLS on a static regression **imposes** a COMFAC restriction. It should be **tested**, not assumed. — Hendry & Mizon (1978)
+:::
+
+## The General Wald Test Statistic
+
+Let $H_0: g(\theta) = 0$ where $g:\mathbb{R}^{k_u}\to\mathbb{R}^r$ is smooth. Define the $r\times k_u$ Jacobian $G(\theta) = \partial g / \partial\theta'$.
+
+**Wald statistic** (Sargan, 1980):
+
+$$\mathcal{W} = \hat{g}'\;\bigl[\hat{G}\,\hat{V}\,\hat{G}'\bigr]^{-1}\;\hat{g} \;\xrightarrow{d}\; \chi^2(r), \qquad \hat{g} = g(\hat\theta),\quad \hat{G} = G(\hat\theta)$$
+
+. . .
+
+**Sargan *F*-statistic** — compares NLS restricted residuals to OLS unrestricted residuals:
+
+$$F_S = \frac{(\mathrm{RSS}_r - \mathrm{RSS}_u)\,/\,r}{\mathrm{RSS}_u\,/\,(T - k_u)} \;\sim\; F(r,\,T-k_u) \quad \text{under } H_0$$
+
+. . .
+
+::: {.callout-note}
+$\mathcal{W}$, $F_S$, and the LR statistic $T\log(\mathrm{RSS}_r/\mathrm{RSS}_u)$ are **asymptotically equivalent** under $H_0$. The $F_S$ form is preferred when the Jacobian $\hat{G}$ is near-singular at the null — a genuine risk in ARDL(2,2) with $r=1$.
+:::
+
+# Part II — Specific Cases
+
+## ARDL(1,0) — No COMFAC Possible
+
+$$y_t = \phi\,y_{t-1} + \beta_0\,x_t + \varepsilon_t$$
+
+$$r_{\max} = \min(1,0) = 0 \quad\Longrightarrow\quad \textbf{no common factor restriction exists}$$
+
+. . .
+
+- Standard partial-adjustment specification
+- $B(L) = \beta_0$ has degree zero; there is no lag for $B$ to share a root with $A$
+- This is the terminus of sequential testing: if testing reduces to $q=0$, the procedure stops
+- Serves as the restricted model when $r=1$ is accepted in ARDL(2,1) or ARDL(3,1)
+
+## ARDL(1,1) — The Canonical Case {.smaller}
+
+$$y_t = \phi\,y_{t-1} + \beta_0\,x_t + \beta_1\,x_{t-1} + \varepsilon_t$$
+$$\theta = (\phi,\,\beta_0,\,\beta_1)^\intercal, \quad k_u = 3, \quad r_{\max} = 1$$
+
+**Step 1.** Postulate $C(L) = 1-\rho L$. Since $p-r=0$ we require $A^*(L)=1$, forcing $\rho = \phi$.
+
+**Step 2.** Require $(1-\phi L)\mid B(L)$, i.e. $B(1/\phi)=0$:
+$$\beta_0 + \beta_1/\phi = 0 \implies \boxed{g(\theta) = \beta_1 + \phi\,\beta_0 = 0}$$
+
+. . .
+
+**Jacobian** ($1\times 3$):
+$$G(\theta) = \bigl(\beta_0,\;\phi,\;1\bigr)$$
+
+**Wald statistic:**
+$$\mathcal{W} = \frac{(\hat\beta_1 + \hat\phi\,\hat\beta_0)^2}{\hat\beta_0^2\widehat{\mathrm{Var}}(\hat\phi) + \hat\phi^2\widehat{\mathrm{Var}}(\hat\beta_0) + \widehat{\mathrm{Var}}(\hat\beta_1) + 2\hat\beta_0\hat\phi\,\widehat{\mathrm{Cov}}(\hat\phi,\hat\beta_0) + 2\hat\beta_0\,\widehat{\mathrm{Cov}}(\hat\phi,\hat\beta_1) + 2\hat\phi\,\widehat{\mathrm{Cov}}(\hat\beta_0,\hat\beta_1)} \sim \chi^2(1)$$
+
+**Sargan *F*:** Restricted model is $y_t = \beta_0^* x_t + u_t$, $u_t = \phi u_{t-1} + e_t$ ($k_r = 2$):
+$$F_S = \frac{\mathrm{RSS}_r - \mathrm{RSS}_u}{\mathrm{RSS}_u/(T-3)} \sim F(1,\,T-3)$$
+
+> **Citations:** Hendry & Mizon (1978) — identification of the restriction; Sargan (1980) — formal Wald test.
+
+## ARDL(2,1) — One Restriction {.smaller}
+
+$$y_t = \phi_1 y_{t-1} + \phi_2 y_{t-2} + \beta_0 x_t + \beta_1 x_{t-1} + \varepsilon_t$$
+$$\theta = (\phi_1,\,\phi_2,\,\beta_0,\,\beta_1)^\intercal, \quad k_u = 4, \quad r_{\max} = 1$$
+
+**Step 1.** Postulate $C(L) = 1-\rho L$ with $A^*(L) = 1-\lambda L$. The common root condition is:
+$$\rho^2 - \phi_1\rho - \phi_2 = 0 \tag{i}$$
+
+**Step 2.** Require $B(1/\rho)=0$:
+$$\beta_0 + \beta_1/\rho = 0 \implies \rho = -\beta_0/\beta_1 \tag{ii}$$
+
+**Step 3.** Substitute (ii) into (i) and multiply by $\beta_1^2$:
+$$\boxed{g(\theta) = \beta_1^2 + \phi_1\beta_0\beta_1 - \phi_2\beta_0^2 = 0}$$
+
+This is the **resultant** of $A(z)$ and $B(z)$: it vanishes if and only if they share a common root.
+
+. . .
+
+**Jacobian** ($1\times 4$):
+$$G(\theta) = \bigl(\beta_0\beta_1,\;\;-\beta_0^2,\;\;\phi_1\beta_1 - 2\phi_2\beta_0,\;\;2\beta_1 + \phi_1\beta_0\bigr)$$
+
+**Sargan *F*:** Restricted model is ARDL(1,0) with AR(1) errors ($k_r=3$):
+$$F_S = \frac{\mathrm{RSS}_r - \mathrm{RSS}_u}{\mathrm{RSS}_u/(T-4)} \sim F(1,\,T-4)$$
+
+> **Citation:** Sargan (1980, Section 2, Example 1).
+
+## ARDL(1,2) — One Restriction  (*q* > *p* case) {.smaller}
+
+$$y_t = \phi\,y_{t-1} + \beta_0 x_t + \beta_1 x_{t-1} + \beta_2 x_{t-2} + \varepsilon_t$$
+$$\theta = (\phi,\,\beta_0,\,\beta_1,\,\beta_2)^\intercal, \quad k_u = 4, \quad r_{\max} = 1$$
+
+**Step 1.** Since $p - r = 0$ the only candidate is $C(L) = A(L) = 1-\phi L$, so $\rho = \phi$.
+
+**Step 2.** Require $(1-\phi L)\mid B(L)$, i.e. $B(1/\phi)=0$:
+$$\beta_0 + \beta_1/\phi + \beta_2/\phi^2 = 0$$
+
+Multiply by $\phi^2$:
+$$\boxed{g(\theta) = \phi^2\beta_0 + \phi\,\beta_1 + \beta_2 = 0}$$
+
+. . .
+
+**Jacobian** ($1\times 4$):
+$$G(\theta) = \bigl(2\phi\beta_0 + \beta_1,\;\;\phi^2,\;\;\phi,\;\;1\bigr)$$
+
+**Sargan *F*:** Restricted model is ARDL(0,1) with AR(1) errors ($k_r=3$):
+$$F_S = \frac{\mathrm{RSS}_r - \mathrm{RSS}_u}{\mathrm{RSS}_u/(T-4)} \sim F(1,\,T-4)$$
+
+::: {.callout-caution}
+The $q>p$ case yields a restricted model whose "signal" is ARDL(0,1) rather than a purely static regression. The interpretation is less natural; most applied work focuses on $p \geq q$.
+:::
+
+> **Citations:** Sargan (1980); Banerjee, Dolado, Galbraith & Hendry (1993), Ch. 3.
+
+## ARDL(2,2) — One Restriction (*r* = 1) {.smaller}
+
+$$y_t = \phi_1 y_{t-1} + \phi_2 y_{t-2} + \beta_0 x_t + \beta_1 x_{t-1} + \beta_2 x_{t-2} + \varepsilon_t$$
+$$\theta = (\phi_1,\,\phi_2,\,\beta_0,\,\beta_1,\,\beta_2)^\intercal, \quad k_u = 5, \quad r_{\max} = 2$$
+
+**Step 1.** The shared root $z_0$ satisfies both:
+$$(A)\!: 1 - \phi_1 z_0 - \phi_2 z_0^2 = 0 \qquad (B)\!: \beta_0 + \beta_1 z_0 + \beta_2 z_0^2 = 0$$
+
+**Step 2.** Multiply $(A)$ by $\beta_0$ and subtract from $(B)$; divide by $z_0 \neq 0$:
+$$\underbrace{(\phi_1\beta_0+\beta_1)}_{Q} + \underbrace{(\phi_2\beta_0+\beta_2)}_{P}\,z_0 = 0 \implies z_0 = -Q/P$$
+
+**Step 3.** Substitute $z_0 = -Q/P$ into $(A)$ and multiply by $P^2$:
+
+$$\boxed{g(\theta) = P^2 + \phi_1\,PQ - \phi_2\,Q^2 = 0}$$
+$$P = \phi_2\beta_0+\beta_2, \quad Q = \phi_1\beta_0+\beta_1$$
+
+> **Citation:** Sargan (1980, Theorem 1 — resultant characterisation).
+
+## ARDL(2,2) — One Restriction (*r* = 1): Jacobian {.smaller}
+
+From $g = P^2 + \phi_1 PQ - \phi_2 Q^2$ with $\partial P/\partial\phi_2 = \partial Q/\partial\phi_1 = \beta_0$, all other $\phi$-partials zero, and $\partial P/\partial\beta_2 = \partial Q/\partial\beta_1 = 1$:
+
+$$G(\theta) = \Bigl(
+\underbrace{PQ + \beta_0(\phi_1 P - 2\phi_2 Q)}_{\partial g/\partial\phi_1},\;\;
+\underbrace{\beta_0(2P+\phi_1 Q)-Q^2}_{\partial g/\partial\phi_2},\;\;
+\underbrace{(\phi_1^2+2\phi_2)P - \phi_1\phi_2 Q}_{\partial g/\partial\beta_0},\;\;
+\underbrace{\phi_1 P - 2\phi_2 Q}_{\partial g/\partial\beta_1},\;\;
+\underbrace{2P+\phi_1 Q}_{\partial g/\partial\beta_2}
+\Bigr)$$
+
+. . .
+
+**Wald statistic:**
+$$\mathcal{W} = \frac{\bigl(\hat P^2 + \hat\phi_1\hat P\hat Q - \hat\phi_2\hat Q^2\bigr)^2}{\hat G\,\hat V\,\hat G'} \sim \chi^2(1)$$
+
+**Sargan *F*:** Restricted model is ARDL(1,1) with AR(1) errors ($k_r = 4$):
+$$F_S = \frac{\mathrm{RSS}_r - \mathrm{RSS}_u}{\mathrm{RSS}_u/(T-5)} \sim F(1,\,T-5)$$
+
+::: {.callout-warning}
+When $\hat Q = \hat\phi_1\hat\beta_0 + \hat\beta_1 \approx 0$, the scalar $\hat G\hat V\hat G'$ degenerates. Use the Sargan $F_S$ form in this situation.
+:::
+
+## ARDL(2,2) — Two Restrictions (*r* = 2) {.smaller}
+
+$r_{\max} = 2$. Both polynomials share **all** roots, forcing $B(L) = \beta_0^*\,A(L)$:
+$$B(L) = \beta_0\bigl(1 - \phi_1 L - \phi_2 L^2\bigr) = \beta_0 - \phi_1\beta_0 L - \phi_2\beta_0 L^2$$
+
+Matching coefficients of $L^1$ and $L^2$ yields **two bilinear constraints**:
+$$\boxed{g(\theta) = \begin{pmatrix}g_1 \\ g_2\end{pmatrix} = \begin{pmatrix}\beta_1 + \phi_1\beta_0 \\ \beta_2 + \phi_2\beta_0\end{pmatrix} = \mathbf{0}}$$
+
+. . .
+
+**Jacobian** ($2\times 5$), ordering $\theta = (\phi_1,\,\phi_2,\,\beta_0,\,\beta_1,\,\beta_2)^\intercal$:
+$$G(\theta) = \begin{pmatrix}\beta_0 & 0 & \phi_1 & 1 & 0 \\[4pt] 0 & \beta_0 & \phi_2 & 0 & 1\end{pmatrix}$$
+
+**Wald statistic** (now a $2\times 2$ sandwich):
+$$\mathcal{W} = \hat{g}'\,\bigl[\hat{G}\,\hat{V}\,\hat{G}'\bigr]^{-1}\,\hat{g} \sim \chi^2(2)$$
+
+**Sargan *F*:** Restricted model is $y_t = \beta_0^* x_t + u_t$ with AR(2) errors $A(L)u_t = \varepsilon_t$ ($k_r = 3$):
+$$F_S = \frac{(\mathrm{RSS}_r - \mathrm{RSS}_u)/2}{\mathrm{RSS}_u/(T-5)} \sim F(2,\,T-5)$$
+
+> **Citations:** Sargan (1980, Example 2); Hendry (1995, Ch. 7).
+
+# Part III — New and General Cases
+
+## ARDL(3,1) — One Restriction *(new)* {.smaller}
+
+$$y_t = \phi_1 y_{t-1} + \phi_2 y_{t-2} + \phi_3 y_{t-3} + \beta_0 x_t + \beta_1 x_{t-1} + \varepsilon_t$$
+$$\theta = (\phi_1,\,\phi_2,\,\phi_3,\,\beta_0,\,\beta_1)^\intercal, \quad k_u = 5, \quad r_{\max} = 1$$
+
+**Step 1.** From $B(z_0) = 0$: $\;\beta_0 + \beta_1 z_0 = 0 \implies z_0 = -\beta_0/\beta_1$.
+
+**Step 2.** Evaluate $A(z_0) = 0$:
+$$1 + \phi_1(\beta_0/\beta_1) - \phi_2(\beta_0/\beta_1)^2 + \phi_3(\beta_0/\beta_1)^3 = 0$$
+
+Multiply by $\beta_1^3$:
+$$\boxed{g(\theta) = \beta_1^3 + \phi_1\beta_0\beta_1^2 - \phi_2\beta_0^2\beta_1 + \phi_3\beta_0^3 = 0}$$
+
+The alternating sign pattern follows the powers of $z_0 = -\beta_0/\beta_1$ in $A(z_0)$.
+
+. . .
+
+**Jacobian** ($1\times 5$):
+$$G(\theta) = \bigl(\beta_0\beta_1^2,\;\;-\beta_0^2\beta_1,\;\;\beta_0^3,\;\;\phi_1\beta_1^2 - 2\phi_2\beta_0\beta_1 + 3\phi_3\beta_0^2,\;\;3\beta_1^2 + 2\phi_1\beta_0\beta_1 - \phi_2\beta_0^2\bigr)$$
+
+**Sargan *F*:** Restricted model is ARDL(2,0) with AR(1) errors ($k_r = 4$):
+$$F_S = \frac{\mathrm{RSS}_r - \mathrm{RSS}_u}{\mathrm{RSS}_u/(T-5)} \sim F(1,\,T-5)$$
+
+> **Citation:** Sargan (1980) general framework; the explicit constraint follows from $\mathrm{Res}(A,B) = \beta_1^p\,A(-\beta_0/\beta_1)$.
+
+## General ARDL(1,*q*) — One Restriction *(new)* {.smaller}
+
+$$y_t = \phi\,y_{t-1} + \sum_{j=0}^q \beta_j\,x_{t-j} + \varepsilon_t, \qquad r_{\max} = 1$$
+
+Since $p=1$ and $p-r=0$, the only candidate is $C(L) = A(L)$, forcing $\rho = \phi$.
+
+**Constraint** $B(1/\phi)=0$, multiplied through by $\phi^q$:
+
+$$\boxed{g(\theta) = \sum_{j=0}^q \beta_j\,\phi^{q-j} \;=\; \beta_0\phi^q + \beta_1\phi^{q-1} + \cdots + \beta_{q-1}\phi + \beta_q = 0}$$
+
+Linear in the $\beta_j$'s; polynomial of degree $q$ in $\phi$.
+
+. . .
+
+**Jacobian** ($1\times(q+2)$):
+$$G(\theta) = \Bigl(\underbrace{\sum_{j=0}^{q-1}(q-j)\,\beta_j\,\phi^{q-j-1}}_{\partial g/\partial\phi},\;\;\underbrace{\phi^q,\;\;\phi^{q-1},\;\;\ldots,\;\;\phi,\;\;1}_{\partial g/\partial\beta_0,\;\partial g/\partial\beta_1,\;\ldots,\;\partial g/\partial\beta_q}\Bigr)$$
+
+**Sargan *F*:** $\;F_S \sim F(1,\,T-q-2)$.
+
+| $q$ | Constraint $g(\theta)=0$ | Recovers |
+|-----|--------------------------|---------|
+| 1 | $\beta_1 + \phi\beta_0$ | ARDL(1,1) |
+| 2 | $\phi^2\beta_0 + \phi\beta_1 + \beta_2$ | ARDL(1,2) |
+| 3 | $\phi^3\beta_0 + \phi^2\beta_1 + \phi\beta_2 + \beta_3$ | ARDL(1,3) |
+
+## General ARDL(*p*,1) — One Restriction *(new)* {.smaller}
+
+$$y_t = \sum_{j=1}^p \phi_j\,y_{t-j} + \beta_0\,x_t + \beta_1\,x_{t-1} + \varepsilon_t, \qquad r_{\max} = 1$$
+
+From $B(z_0)=0$: $z_0 = -\beta_0/\beta_1$. Evaluating $A(z_0)=0$ and multiplying by $\beta_1^p$:
+
+$$\boxed{g(\theta) = \beta_1^p + \sum_{j=1}^p (-1)^{j+1}\phi_j\,\beta_0^j\,\beta_1^{p-j} = 0}$$
+
+This equals the **resultant** $\mathrm{Res}(A,B) = \beta_1^p\,A(-\beta_0/\beta_1)$.
+
+. . .
+
+**Sargan *F*:** $\;F_S \sim F(1,\,T-p-2)$.
+
+| $p$ | Constraint $g(\theta)=0$ | Recovers |
+|-----|--------------------------|---------|
+| 1 | $\beta_1 + \phi_1\beta_0$ | ARDL(1,1) |
+| 2 | $\beta_1^2 + \phi_1\beta_0\beta_1 - \phi_2\beta_0^2$ | ARDL(2,1) |
+| 3 | $\beta_1^3 + \phi_1\beta_0\beta_1^2 - \phi_2\beta_0^2\beta_1 + \phi_3\beta_0^3$ | ARDL(3,1) |
+
+::: {.callout-note}
+The unifying structure: the constraint for any ARDL($p$,1) is obtained by evaluating $A$ at the root $z_0 = -\beta_0/\beta_1$ of $B$ and clearing denominators. The sign alternation $(-1)^{j+1}$ arises directly from the powers of $z_0 = -\beta_0/\beta_1$ in $A(z_0)$.
+:::
+
+## General ARDL(*n*,*n*) — Full Factorisation, *r* = *n* *(new)* {.smaller}
+
+When $r = n = p = q$, both polynomials share **all** $n$ roots: $B(L) = \beta_0^*\,A(L)$, identifying $\beta_0^* = \beta_0$.
+
+Matching coefficients of $L^k$ for $k = 1, \ldots, n$:
+$$\boxed{g_k(\theta) = \beta_k + \phi_k\,\beta_0 = 0, \qquad k = 1, 2, \ldots, n}$$
+
+$n$ **linear** constraints. Restricted model: $y_t = \beta_0^* x_t + u_t$ with AR($n$) errors $A(L)u_t = \varepsilon_t$.
+
+. . .
+
+**Jacobian** ($n \times (2n+1)$), with $\theta = (\phi_1,\ldots,\phi_n,\beta_0,\beta_1,\ldots,\beta_n)^\intercal$:
+$$G(\theta) = \begin{pmatrix}\beta_0 & \cdots & 0 & \phi_1 & 1 & \cdots & 0 \\ \vdots & \ddots & \vdots & \vdots & & \ddots & \vdots \\ 0 & \cdots & \beta_0 & \phi_n & 0 & \cdots & 1\end{pmatrix}$$
+
+Row $k$ has $\beta_0$ in column $k$, $\phi_k$ in column $n+1$, and $1$ in column $n+1+k$.
+
+**Wald:** $\mathcal{W} = \hat{g}'\,[\hat{G}\hat{V}\hat{G}']^{-1}\,\hat{g} \sim \chi^2(n)$ $\qquad$
+**Sargan *F*:** $F_S \sim F(n,\,T-2n-1)$
+
+| $n$ | Number of constraints | Restricted model |
+|-----|-----------------------|-----------------|
+| 1 | 1 | Static regression + AR(1) errors |
+| 2 | 2 | Static regression + AR(2) errors |
+| $n$ | $n$ | Static regression + AR($n$) errors |
+
+> **Citations:** Sargan (1980, Example 2 and general framework); Hendry (1995, Ch. 7).
+
+# Part IV — Summary
+
+## Summary of All Derived Constraints {.smaller .scrollable}
+
+| Model | $r$ | Constraint $g(\theta) = 0$ | d.f. | Sargan $F$ |
+|-------|:---:|:--------------------------|:----:|:----------:|
+| ARDL(1,1) | 1 | $\beta_1 + \phi\beta_0$ | $\chi^2(1)$ | $F(1,\,T-3)$ |
+| ARDL(2,1) | 1 | $\beta_1^2 + \phi_1\beta_0\beta_1 - \phi_2\beta_0^2$ | $\chi^2(1)$ | $F(1,\,T-4)$ |
+| ARDL(1,2) | 1 | $\phi^2\beta_0 + \phi\beta_1 + \beta_2$ | $\chi^2(1)$ | $F(1,\,T-4)$ |
+| ARDL(2,2) | 1 | $P^2 + \phi_1 PQ - \phi_2 Q^2$ | $\chi^2(1)$ | $F(1,\,T-5)$ |
+| ARDL(2,2) | 2 | $\beta_1+\phi_1\beta_0=0\;$ and $\;\beta_2+\phi_2\beta_0=0$ | $\chi^2(2)$ | $F(2,\,T-5)$ |
+| ARDL(3,1) | 1 | $\beta_1^3 + \phi_1\beta_0\beta_1^2 - \phi_2\beta_0^2\beta_1 + \phi_3\beta_0^3$ | $\chi^2(1)$ | $F(1,\,T-5)$ |
+| ARDL(1,$q$) | 1 | $\displaystyle\sum_{j=0}^q\beta_j\phi^{q-j}$ | $\chi^2(1)$ | $F(1,\,T-q-2)$ |
+| ARDL($p$,1) | 1 | $\displaystyle\beta_1^p + \sum_{j=1}^p(-1)^{j+1}\phi_j\beta_0^j\beta_1^{p-j}$ | $\chi^2(1)$ | $F(1,\,T-p-2)$ |
+| ARDL($n$,$n$) | $n$ | $\beta_k+\phi_k\beta_0=0,\; k=1,\ldots,n$ | $\chi^2(n)$ | $F(n,\,T-2n-1)$ |
+
+*For ARDL(2,2) $r=1$: $P = \phi_2\beta_0+\beta_2$, $\;Q = \phi_1\beta_0+\beta_1$.*
+
+## Structural Patterns {.smaller}
+
+:::: {.columns}
+::: {.column width="50%"}
+**Algebraic complexity scales with** $\min(p,q)$:
+
+- ARDL(1,1), $r=1$: **linear** constraint
+- ARDL(2,1), $r=1$: **quadratic** in $(\beta_0,\beta_1)$
+- ARDL(1,2), $r=1$: **quadratic** in $\phi$
+- ARDL(2,2), $r=1$: **quadratic** after root elimination
+- ARDL(3,1), $r=1$: **cubic** in $(\beta_0,\beta_1)$
+
+**Full factorisation $r=r_{\max}=n$:**  
+Always $n$ **linear** constraints $\beta_k = -\phi_k\beta_0$,  
+regardless of $n$.
+:::
+::: {.column width="50%"}
+**Unifying characterisation (Sargan 1980):**
+
+The COMFAC condition is equivalent to the **resultant condition**:
+
+$$\mathrm{Res}(A(z),\,B(z)) = 0$$
+
+For $B$ linear: $\;\mathrm{Res}(A,B) = \beta_1^p\,A(-\beta_0/\beta_1)$
+
+For $A$ linear: $\;\mathrm{Res}(A,B) = \beta_0^q\,B(-\phi/\beta_0) \cdot (-1)^q$
+
+For $r = r_{\max}$: $B(L) = \beta_0 A(L)$ directly, giving linear constraints.
+:::
+::::
+
+## Sequential Testing and Remarks {.smaller}
+
+**Sequential procedure** (Sargan, 1980):  
+Test $r = 1, 2, \ldots, r_{\max}$ in increasing order; accept the smallest $r$ for which the null is not rejected.
+
+. . .
+
+**Degeneracy of the Wald form.** For ARDL(2,2) $r=1$, the denominator $\hat{G}\hat{V}\hat{G}'$ degenerates when
+
+$$\hat{Q} = \hat\phi_1\hat\beta_0 + \hat\beta_1 \approx 0 \quad (\text{i.e., } z_0 = -\hat Q/\hat P \to \infty \text{ at the estimated root})$$
+
+In such cases prefer the **Sargan $F_S$** (NLS-based) or the **LR statistic** $T\log(\mathrm{RSS}_r/\mathrm{RSS}_u)$.
+
+. . .
+
+**Interpretation.** Failing to reject COMFAC does **not** validate the AR-error model — it means only that the data are *consistent* with it. The unrestricted ARDL is always preferable on specification grounds:
+
+> *"A common factor restriction is a testable parametric restriction, not a modelling principle."*  
+> — Mizon (1977); Hendry & Mizon (1978)
+
+. . .
+
+**Connection to cointegration.** The ECM reparametrisation of ARDL(*p*,*q*) is always a valid linear reparametrisation; COMFAC is an **additional nonlinear restriction** on top of the ECM. The bounds-testing approach of Pesaran, Shin & Smith (2001) exploits the ECM form without imposing any COMFAC.
+
+## References {.smaller}
+
+- **Hendry, D.F. and Mizon, G.E.** (1978). Serial correlation as a convenient simplification, not a nuisance. *Economic Journal*, 88, 549–563. *[First identification of the ARDL(1,1) restriction as the Cochrane–Orcutt imposition.]*
+
+- **Sargan, J.D.** (1980). Some tests of dynamic specification for a single equation. *Econometrica*, 48(4), 879–897. *[Foundational paper — Theorem 1 (resultant condition), Examples 1–2 (ARDL(2,1) and full factorisation).]*
+
+- **Mizon, G.E.** (1977). Model selection procedures. In Artis & Nobay (eds.), *Studies in Modern Economic Analysis*. Blackwell.
+
+- **Banerjee, A., Dolado, J., Galbraith, J.W., and Hendry, D.F.** (1993). *Co-integration, Error Correction, and the Econometric Analysis of Non-Stationary Data*. Oxford University Press, Ch. 3. *[Asymmetric $q>p$ case; textbook synthesis.]*
+
+- **Hendry, D.F.** (1995). *Dynamic Econometrics*. Oxford University Press, Ch. 7. *[Full factorisation $r=r_{\max}$ and Sargan F.]*
+
+- **Pesaran, M.H., Shin, Y., and Smith, R.J.** (2001). Bounds testing approaches to the analysis of level relationships. *Journal of Applied Econometrics*, 16(3), 289–326.
+
+- **Pesaran, M.H. and Smith, R.P.** (1995). Estimating long-run relationships from dynamic heterogeneous panels. *Journal of Econometrics*, 68, 79–113.
+
+- **Nickell, S.** (1981). Biases in dynamic models with fixed effects. *Econometrica*, 49(6), 1417–1426.
