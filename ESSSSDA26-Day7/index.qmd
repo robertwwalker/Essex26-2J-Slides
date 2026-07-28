@@ -124,7 +124,7 @@ abline(lm(y ~ x, data = df4), lty = 2)
 - As a practical matter, we can't really establish the true nature of missingness.
 - BUT, we can at least examine missingness as a function of observed covariates.  Doing this, we should be careful to engage functional forms above and beyond simple linearity.
 
-
+**This is a modelling exercise on created variables: what is missing and what determines missingness?**
 
 ## Multiple Imputation
 
@@ -197,3 +197,49 @@ There is almost no reason not to impute data.  Not imputing throws away informat
 ## The Bayes Approach
 
 Missing data are like anything else that is missing.  In the Bayesian framework, we want to sample the missing quantities.  We can learn about their distributions, covariances, and the like but we fundamentally want to learn as little as possible from the missing data but maximize the quantity of information recovered from other nonmissing things.  Imputation simply becomes another part of the sampler.
+
+While [Simon Jackman’s fully Bayesian framework](https://www.cambridge.org/core/journals/political-analysis/article/abs/estimation-and-inference-are-missing-data-problems-unifying-social-science-statistics-via-bayesian-simulation/7BAC50088882C072D08DD06173C23303), detailed in an AJPS paper and a Political Analysis paper and Honaker & King’s Amelia II software both handle missing political science data, they rely on fundamentally different computational philosophies. [1, 2] 
+
+The primary difference lies in their execution: Jackman estimates parameters and missing data simultaneously in a single loop, while Amelia II decouples the imputation from your ultimate analysis model. [3] 
+
+## Methodological Comparison
+
+| Feature | Simon Jackman's MCMC Approach | Honaker & King's Amelia II |
+|---|---|---|
+| Core Algorithm | Markov Chain Monte Carlo (MCMC) / Gibbs Sampling | Expectation-Maximization with Bootstrapping (EMB) |
+| Statistical Paradigm | Fully Bayesian (Joint estimation of parameters and data) | Frequentist-based Multiple Imputation |
+| Computational Speed | Slow (Requires thousands of iterative simulation draws) | Fast (EM converges quickly on bootstrapped data matrices) |
+| Handling of Time/Space | Hardcoded via custom conditional distributions | Specialized features for time-series cross-sectional (TSCS) data |
+| Software Barrier | High (Requires writing custom WinBUGS, JAGS, or Stan code) | Low (Plug-and-play R package or GUI AmeliaView) |
+
+# Key Philosophical Differences
+
+## 1. Joint Estimation vs. Two-Step Imputation
+
+ 
+* Jackman's MCMC: Treats missing data cells as unknown parameters to be estimated within the actual model. The algorithm loops through estimating the regression parameters, then draws missing observations based on those parameters, constantly updating both. [4] 
+* Amelia II: Follows Donald Rubin’s traditional two-step Multiple Imputation structure. You use Amelia II to create m discrete "completed" datasets first. You then run your standard regression model on each separate dataset and combine the results using Rubin’s rules. [5, 6] 
+
+## 2. The EMB Algorithm vs. Chained Simulations
+
+ 
+* Jackman's MCMC: Relies on an un-converged random walk that slowly constructs a joint posterior probability distribution.
+* Amelia II: Replaces tedious MCMC iterations with the EMB (Expectation-Maximization with Bootstrapping) algorithm. It takes a bootstrap sample of the incomplete data, uses the EM algorithm to rapidly find the point-estimate Maximum Likelihood (MLE), and extracts imputations. This yields the same statistical properties as MCMC but in a fraction of the time. [2, 3, 7, 8, 9] 
+ 
+
+## 3. Political Science Specifics
+
+ 
+* Jackman's MCMC: Ideal for latent variable models common in AJPS literature, such as measuring legislator ideal points (roll-call analysis) alongside missing voter demographics.
+* Amelia II: Tailored perfectly for macro-comparative politics. It contains built-in features to account for time-series cross-sectional (TSCS) data, regional fixed effects, and smooth time trends. [2] 
+
+
+[1] [https://www.researchgate.net](https://www.researchgate.net/publication/318758118_Statistical_Inference_in_Missing_Data_by_MCMC_and_Non-MCMC_Multiple_Imputation_Algorithms_Assessing_the_Effects_of_Between-Imputation_Iterations)
+[2] [https://www.jstatsoft.org](https://www.jstatsoft.org/v45/i07/)
+[3] [https://www.mattblackwell.org](https://www.mattblackwell.org/files/papers/amelia-jss.pdf)
+[4] [https://pmc.ncbi.nlm.nih.gov](https://pmc.ncbi.nlm.nih.gov/articles/PMC9718541/)
+[5] [https://gking.harvard.edu](http://gking.harvard.edu/files/amelia_jss.pdf)
+[6] [https://gking.harvard.edu](https://gking.harvard.edu/publication/amelia-ii-a-program-for-missing-data/)
+[7] [https://datascience.codata.org](https://datascience.codata.org/articles/10.5334/dsj-2017-037)
+[8] [https://metricgate.com](https://metricgate.com/calculator/amelia-em-imputation)
+[9] [https://www.tandfonline.com](https://www.tandfonline.com/doi/full/10.1080/03610918.2021.1960374)
