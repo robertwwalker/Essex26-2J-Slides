@@ -46,7 +46,7 @@ When the dependent variable $Y_{it}$ is limited (non-continuous), standard linea
 
 1. **Serial Correlation**: Repeated observations across time $t = 1, \dots, T_i$ within individual/unit $i = 1, \dots, N$ violate independence assumptions.
 2. **Subject-Specific Heterogeneity**: Unobserved heterogeneity $ lpha_i$ must be addressed.
-3. **Incidental Parameter Problem**: In non-linear models with fixed $T$ as $N 	o \infty$, estimating $N$ parameters $\alpha_i$ yields inconsistent estimates for structural parameters $\eta$.
+3. **Incidental Parameter Problem**: In non-linear models with fixed $T$ as $N 	o \infty$, estimating $N$ parameters $\alpha_i$ yields inconsistent estimates for structural parameters $\beta$.
 
 ## Marginal vs. Conditional Models
 
@@ -57,7 +57,7 @@ Understanding the core distinction between modeling approaches is key:
 ::: {.column width="50%"}
 ### Conditional (GLMM / RE)
 - Models response **conditional on individual random effect**:
-  $$E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} \eta_{\text{cond}} + u_i)$$
+  $$E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} \beta_{\text{cond}} + u_i)$$
 - **Interpretation**: Effect of $X$ on a *specific individual's* log-odds or rate.
 - Subject-specific inference.
 :::
@@ -65,7 +65,7 @@ Understanding the core distinction between modeling approaches is key:
 ::: {.column width="50%"}
 ### Marginal (GEE)
 - Models the **population average**:
-  $$E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} \eta_{\text{marg}})$$
+  $$E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} \beta_{\text{marg}})$$
 - **Interpretation**: Effect of $X$ on the *average outcome across the population*.
 - Population-averaged inference (ideal for policy evaluation).
 :::
@@ -73,7 +73,7 @@ Understanding the core distinction between modeling approaches is key:
 :::
 
 ::: {.callout-tip}
-For linear models, $\eta_{\text{cond}} =  \eta_{\text{marg}}$. For non-linear models (e.g., Logistic),| $\eta_{\text{cond}}| > | \eta_{\text{marg}}|$ due to attenuation from integrating over the random effect distribution.
+For linear models, $\beta_{\text{cond}} =  \beta_{\text{marg}}$. For non-linear models (e.g., Logistic),| $\beta_{\text{cond}}| > | \beta_{\text{marg}}|$ due to attenuation from integrating over the random effect distribution.
 :::
 
 ---
@@ -84,7 +84,7 @@ GEE extends Generalized Linear Models (GLM) to correlated/clustered data without
 
 ### 1. Link Function & Mean Structure
 For panel unit $i \in \{1, \dots, N\}$ observed at waves $t \in \{1, \dots, T_i\}$:
-$$g(\mu_{it}) = X_{it} \eta \implies \mu_{it} = g^{-1}(X_{it} \eta)$$
+$$g(\mu_{it}) = X_{it} \beta \implies \mu_{it} = g^{-1}(X_{it} \beta)$$
 
 ### 2. Variance & Working Correlation
 The variance of individual observation $Y_{it}$ is defined as:
@@ -94,15 +94,15 @@ where $\phi$ is a dispersion parameter and $v(\mu_{it})$ is a variance function 
 
 ---
 
-## Working Correlation Matrices $R( lpha)$
+## Working Correlation Matrices $R(\alpha)$
 
 The covariance matrix for subject $i$ is modeled as:
 $$V_i = \phi \, A_i^{1/2} \, R_i(\alpha) \, A_i^{1/2}$$
 
 where $A_i$ is a diagonal matrix of variance functions $v(\mu_{it})$ and $R_i(\alpha)$ is the **working correlation matrix**.
 
-### Common Choices for $R( lpha)$:
-1. **Independence**: $R_{ts} = 0$ ($t \eq s$) $\implies$ Assumes no intra-subject correlation.
+### Common Choices for $R(\alpha)$:
+1. **Independence**: $R_{ts} = 0$ ($t \neq s$) $\implies$ Assumes no intra-subject correlation.
 2. **Exchangeable (Compound Symmetry)**: $R_{ts} =  \alpha$ $\implies$ Equal correlation across all waves.
 3. **Autoregressive (AR-1)**: $R_{ts} =  \alpha^{|t-s|}$ $\implies$ Correlation decays over time.
 4. **Unstructured**: $R_{ts} =  \alpha_{ts}$ $\implies$ Fully general $T 	\times T$ correlation matrix.
@@ -112,16 +112,16 @@ where $A_i$ is a diagonal matrix of variance functions $v(\mu_{it})$ and $R_i(\a
 ## The Estimating Equations & Sandwich Estimator
 
 ### Generalized Estimating Equation
-The parameter vector $ eta$ is solved via:
+The parameter vector $\beta$ is solved via:
 $$\sum_{i=1}^N D_i^T V_i^{-1} \left( Y_i - \mu_i 
 \right) = 0$$
 
-where $D_i = \frac{\partial \mu_i}{\partial  \eta}$ is the matrix of partial derivatives.
+where $D_i = \frac{\partial \mu_i}{\partial  \beta}$ is the matrix of partial derivatives.
 
 ### The "Huber-White" Sandwich Variance
-Even if $R(\alpha)$ is incorrectly specified, the asymptotic variance of $\hat{\eta}$ is consistently estimated by the **sandwich estimator**:
-$$	\text{Var}(\hat{\eta}) = M_0^{-1} M_1 M_0^{-1}$$
-$$	ext{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D_i^T V_i^{-1} (Y_i - \mu_i)(Y_i - \mu_i)^T V_i^{-1} D_i$$
+Even if $R(\alpha)$ is incorrectly specified, the asymptotic variance of $\hat{\beta}$ is consistently estimated by the **sandwich estimator**:
+$$	\text{Var}(\hat{\beta}) = M_0^{-1} M_1 M_0^{-1}$$
+$$\text{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D_i^T V_i^{-1} (Y_i - \mu_i)(Y_i - \mu_i)^T V_i^{-1} D_i$$
 
 ::: {.callout-important}
 **Key Property**: As $N 	o \infty$, $\hat{ eta}$ remains consistent and standard errors are asymptotically correct, even with misspecified working correlation!
@@ -133,11 +133,9 @@ $$	ext{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D
 
 | Outcome Type | Link Function $g(\mu)$ | Variance Function $v(\mu)$ | Social Science Application |
 | :--- | :--- | :--- | :--- |
-| **Binary** | Logit: $\ln\left(\frac{\mu}{1-\mu}
-ight)$ | $\mu(1-\mu)$ | Voter turnout, reform adoption, employment status |
+| **Binary** | Logit: $\ln\left(\frac{\mu}{1-\mu}\right)$ | $\mu(1-\mu)$ | Voter turnout, reform adoption, employment status |
 | **Count** | Log: $\ln(\mu)$ | $\mu$ (Poisson) or $\mu + k\mu^2$ (NegBin) | Protest frequency, legislative bills passed, conflict fatalities |
-| **Ordinal** | Cumulative Logit: $\ln\left(\frac{P(Y \le k)}{P(Y > k)}
-ight)$ | $\mu(1-\mu)$ | Policy support levels, institutional trust (1-5 Likert) |
+| **Ordinal** | Cumulative Logit: $\ln\left(\frac{P(Y \le k)}{P(Y > k)}\right)$ | $\mu(1-\mu)$ | Policy support levels, institutional trust (1-5 Likert) |
 | **Bounded/Proportion** | Logit or Beta Link | $\mu(1-\mu)$ | Vote shares, municipal budget allocation proportions |
 
 ---
@@ -146,7 +144,7 @@ ight)$ | $\mu(1-\mu)$ | Policy support levels, institutional trust (1-5 Likert) 
 
 | Feature | Fixed Effects (FE) GLM | Random Effects (GLMM) | GEE (Marginal) |
 | :--- | :--- | :--- | :--- |
-| **Target Parameter** | Conditional ($\eta_i$) | Conditional ($\eta_{\text{cond}}$) | **Marginal / Population Avg ($ \eta_{\text{marg}}$)** |
+| **Target Parameter** | Conditional ($\beta_i$) | Conditional ($\beta_{\text{cond}}$) | **Marginal / Population Avg ($ \beta_{\text{marg}}$)** |
 | **Distributional Assumptions** | Parametric | Full Parametric (Random effect distribution) | **Semi-parametric (Mean & Variance only)** |
 | **Incidental Parameter Problem** | Severe (drops constant units / biased) | N/A (Assumes $u_i \sim \mathcal{N}(0, \sigma^2)$) | **None** |
 | **Time-Invariant Covariates** | Cannot estimate | Can estimate | **Can estimate** |

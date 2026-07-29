@@ -1159,7 +1159,7 @@ Robert W. Walker
 <ol type="1">
 <li class="fragment"><strong>Serial Correlation</strong>: Repeated observations across time <span class="math inline">t = 1, \dots, T_i</span> within individual/unit <span class="math inline">i = 1, \dots, N</span> violate independence assumptions.</li>
 <li class="fragment"><strong>Subject-Specific Heterogeneity</strong>: Unobserved heterogeneity $ lpha_i$ must be addressed.</li>
-<li class="fragment"><strong>Incidental Parameter Problem</strong>: In non-linear models with fixed <span class="math inline">T</span> as <span class="math inline">N  o \infty</span>, estimating <span class="math inline">N</span> parameters <span class="math inline">\alpha_i</span> yields inconsistent estimates for structural parameters <span class="math inline">\eta</span>.</li>
+<li class="fragment"><strong>Incidental Parameter Problem</strong>: In non-linear models with fixed <span class="math inline">T</span> as <span class="math inline">N  o \infty</span>, estimating <span class="math inline">N</span> parameters <span class="math inline">\alpha_i</span> yields inconsistent estimates for structural parameters <span class="math inline">\beta</span>.</li>
 </ol>
 </section>
 <section id="marginal-vs.-conditional-models" class="slide level2">
@@ -1169,14 +1169,14 @@ Robert W. Walker
 <div class="column" style="width:50%;">
 <h3 id="conditional-glmm-re">Conditional (GLMM / RE)</h3>
 <ul>
-<li class="fragment">Models response <strong>conditional on individual random effect</strong>: <span class="math display">E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} \eta_{\text{cond}} + u_i)</span></li>
+<li class="fragment">Models response <strong>conditional on individual random effect</strong>: <span class="math display">E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} \beta_{\text{cond}} + u_i)</span></li>
 <li class="fragment"><strong>Interpretation</strong>: Effect of <span class="math inline">X</span> on a <em>specific individual’s</em> log-odds or rate.</li>
 <li class="fragment">Subject-specific inference.</li>
 </ul>
 </div><div class="column" style="width:50%;">
 <h3 id="marginal-gee">Marginal (GEE)</h3>
 <ul>
-<li class="fragment">Models the <strong>population average</strong>: <span class="math display">E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} \eta_{\text{marg}})</span></li>
+<li class="fragment">Models the <strong>population average</strong>: <span class="math display">E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} \beta_{\text{marg}})</span></li>
 <li class="fragment"><strong>Interpretation</strong>: Effect of <span class="math inline">X</span> on the <em>average outcome across the population</em>.</li>
 <li class="fragment">Population-averaged inference (ideal for policy evaluation).</li>
 </ul>
@@ -1190,7 +1190,7 @@ Robert W. Walker
 <p><strong>Tip</strong></p>
 </div>
 <div class="callout-content">
-<p>For linear models, <span class="math inline">\eta_{\text{cond}} =  \eta_{\text{marg}}</span>. For non-linear models (e.g., Logistic),| <span class="math inline">\eta_{\text{cond}}| &gt; | \eta_{\text{marg}}|</span> due to attenuation from integrating over the random effect distribution.</p>
+<p>For linear models, <span class="math inline">\beta_{\text{cond}} =  \beta_{\text{marg}}</span>. For non-linear models (e.g., Logistic),| <span class="math inline">\beta_{\text{cond}}| &gt; | \beta_{\text{marg}}|</span> due to attenuation from integrating over the random effect distribution.</p>
 </div>
 </div>
 </div>
@@ -1199,18 +1199,18 @@ Robert W. Walker
 <h2>Mathematical Foundations of GEE</h2>
 <p>GEE extends Generalized Linear Models (GLM) to correlated/clustered data without specifying the full joint likelihood.</p>
 <h3 id="link-function-mean-structure">1. Link Function &amp; Mean Structure</h3>
-<p>For panel unit <span class="math inline">i \in \{1, \dots, N\}</span> observed at waves <span class="math inline">t \in \{1, \dots, T_i\}</span>: <span class="math display">g(\mu_{it}) = X_{it} \eta \implies \mu_{it} = g^{-1}(X_{it} \eta)</span></p>
+<p>For panel unit <span class="math inline">i \in \{1, \dots, N\}</span> observed at waves <span class="math inline">t \in \{1, \dots, T_i\}</span>: <span class="math display">g(\mu_{it}) = X_{it} \beta \implies \mu_{it} = g^{-1}(X_{it} \beta)</span></p>
 <h3 id="variance-working-correlation">2. Variance &amp; Working Correlation</h3>
 <p>The variance of individual observation <span class="math inline">Y_{it}</span> is defined as: <span class="math display">  \text{Var}(Y_{it}) = \phi \, v(\mu_{it})</span></p>
 <p>where <span class="math inline">\phi</span> is a dispersion parameter and <span class="math inline">v(\mu_{it})</span> is a variance function (e.g., <span class="math inline">\mu(1-\mu)</span> for binary).</p>
 </section>
-<section id="working-correlation-matrices-r-lpha" class="slide level2 scrollable">
-<h2>Working Correlation Matrices <span class="math inline">R( lpha)</span></h2>
+<section id="working-correlation-matrices-ralpha" class="slide level2 scrollable">
+<h2>Working Correlation Matrices <span class="math inline">R(\alpha)</span></h2>
 <p>The covariance matrix for subject <span class="math inline">i</span> is modeled as: <span class="math display">V_i = \phi \, A_i^{1/2} \, R_i(\alpha) \, A_i^{1/2}</span></p>
 <p>where <span class="math inline">A_i</span> is a diagonal matrix of variance functions <span class="math inline">v(\mu_{it})</span> and <span class="math inline">R_i(\alpha)</span> is the <strong>working correlation matrix</strong>.</p>
-<h3 id="common-choices-for-r-lpha">Common Choices for <span class="math inline">R( lpha)</span>:</h3>
+<h3 id="common-choices-for-ralpha">Common Choices for <span class="math inline">R(\alpha)</span>:</h3>
 <ol type="1">
-<li class="fragment"><strong>Independence</strong>: <span class="math inline">R_{ts} = 0</span> (<span class="math inline">t \eq s</span>) <span class="math inline">\implies</span> Assumes no intra-subject correlation.</li>
+<li class="fragment"><strong>Independence</strong>: <span class="math inline">R_{ts} = 0</span> (<span class="math inline">t \neq s</span>) <span class="math inline">\implies</span> Assumes no intra-subject correlation.</li>
 <li class="fragment"><strong>Exchangeable (Compound Symmetry)</strong>: <span class="math inline">R_{ts} =  \alpha</span> <span class="math inline">\implies</span> Equal correlation across all waves.</li>
 <li class="fragment"><strong>Autoregressive (AR-1)</strong>: <span class="math inline">R_{ts} =  \alpha^{|t-s|}</span> <span class="math inline">\implies</span> Correlation decays over time.</li>
 <li class="fragment"><strong>Unstructured</strong>: <span class="math inline">R_{ts} =  \alpha_{ts}</span> <span class="math inline">\implies</span> Fully general <span class="math inline">T    \times T</span> correlation matrix.</li>
@@ -1219,11 +1219,11 @@ Robert W. Walker
 <section id="the-estimating-equations-sandwich-estimator" class="slide level2">
 <h2>The Estimating Equations &amp; Sandwich Estimator</h2>
 <h3 id="generalized-estimating-equation">Generalized Estimating Equation</h3>
-<p>The parameter vector $ eta$ is solved via: <span class="math display">\sum_{i=1}^N D_i^T V_i^{-1} \left( Y_i - \mu_i
+<p>The parameter vector <span class="math inline">\beta</span> is solved via: <span class="math display">\sum_{i=1}^N D_i^T V_i^{-1} \left( Y_i - \mu_i
 \right) = 0</span></p>
-<p>where <span class="math inline">D_i = \frac{\partial \mu_i}{\partial  \eta}</span> is the matrix of partial derivatives.</p>
+<p>where <span class="math inline">D_i = \frac{\partial \mu_i}{\partial  \beta}</span> is the matrix of partial derivatives.</p>
 <h3 id="the-huber-white-sandwich-variance">The “Huber-White” Sandwich Variance</h3>
-<p>Even if <span class="math inline">R(\alpha)</span> is incorrectly specified, the asymptotic variance of <span class="math inline">\hat{\eta}</span> is consistently estimated by the <strong>sandwich estimator</strong>: <span class="math display">  \text{Var}(\hat{\eta}) = M_0^{-1} M_1 M_0^{-1}</span> <span class="math display">  ext{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D_i^T V_i^{-1} (Y_i - \mu_i)(Y_i - \mu_i)^T V_i^{-1} D_i</span></p>
+<p>Even if <span class="math inline">R(\alpha)</span> is incorrectly specified, the asymptotic variance of <span class="math inline">\hat{\beta}</span> is consistently estimated by the <strong>sandwich estimator</strong>: <span class="math display">  \text{Var}(\hat{\beta}) = M_0^{-1} M_1 M_0^{-1}</span> <span class="math display">\text{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D_i^T V_i^{-1} (Y_i - \mu_i)(Y_i - \mu_i)^T V_i^{-1} D_i</span></p>
 <div class="callout callout-important callout-titled callout-style-default">
 <div class="callout-body">
 <div class="callout-title">
@@ -1258,8 +1258,7 @@ Robert W. Walker
 <tbody>
 <tr class="odd">
 <td style="text-align: left;"><strong>Binary</strong></td>
-<td style="text-align: left;">Logit: <span class="math inline">\ln\left(\frac{\mu}{1-\mu}
-ight)</span></td>
+<td style="text-align: left;">Logit: <span class="math inline">\ln\left(\frac{\mu}{1-\mu}\right)</span></td>
 <td style="text-align: left;"><span class="math inline">\mu(1-\mu)</span></td>
 <td style="text-align: left;">Voter turnout, reform adoption, employment status</td>
 </tr>
@@ -1271,8 +1270,7 @@ ight)</span></td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"><strong>Ordinal</strong></td>
-<td style="text-align: left;">Cumulative Logit: <span class="math inline">\ln\left(\frac{P(Y \le k)}{P(Y &gt; k)}
-ight)</span></td>
+<td style="text-align: left;">Cumulative Logit: <span class="math inline">\ln\left(\frac{P(Y \le k)}{P(Y &gt; k)}\right)</span></td>
 <td style="text-align: left;"><span class="math inline">\mu(1-\mu)</span></td>
 <td style="text-align: left;">Policy support levels, institutional trust (1-5 Likert)</td>
 </tr>
@@ -1305,8 +1303,8 @@ ight)</span></td>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;"><strong>Target Parameter</strong></td>
-<td style="text-align: left;">Conditional (<span class="math inline">\eta_i</span>)</td>
-<td style="text-align: left;">Conditional (<span class="math inline">\eta_{\text{cond}}</span>)</td>
+<td style="text-align: left;">Conditional (<span class="math inline">\beta_i</span>)</td>
+<td style="text-align: left;">Conditional (<span class="math inline">\beta_{\text{cond}}</span>)</td>
 <td style="text-align: left;">**Marginal / Population Avg ($ _{}$)**</td>
 </tr>
 <tr class="even">
