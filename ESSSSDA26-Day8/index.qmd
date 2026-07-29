@@ -1,6 +1,6 @@
 ---
-title: "GLMs for Panel Data"
-subtitle: "Baltagi, *Econometric Analysis of Panel Data*, Chapter 11 and others"
+title: "Nonlinear Panel Data Models"
+subtitle: "Limited Dependent Variable Models in Panel Data"
 author: "Robert W. Walker"
 date: "July 29, 2026"
 format: 
