@@ -1,0 +1,259 @@
+---
+title: "Generalized Estimating Equations (GEE)"
+subtitle: "Panel Data Analysis for Limited Outcomes in Social Science"
+author: "Robert W. Walker"
+date: "July 29, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: Panel GEE"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+## Executive Summary
+
+::: {.callout-note}
+### The Methodological Gap
+Social science research frequently analyzes **longitudinal panel data** with **limited dependent variables** (binary choices, counts, ordinal Likert scales, bounded fractions). 
+:::
+
+- **Standard Toolkit Limitations**:
+  - *Fixed Effects (FE) Non-Linear Models*: Suffer from the **incidental parameter problem** in non-linear settings (except Poisson and specific Logit settings) and drop time-invariant covariates.
+  - *Random Effects (RE / GLMMs)*: Require strong distributional assumptions for random effects, rely on numerical integration, and model subject-specific (conditional) rather than population-wide dynamics.
+- **The GEE Solution**:
+  - Pioneered by **Liang & Zeger (1986)** in biostatistics.
+  - Focuses on **population-averaged (marginal) effects**.
+  - Provides **robust standard errors** (sandwich estimator) even if the intra-subject correlation structure is misspecified.
+  - Computationally efficient and highly applicable to political science, sociology, economics, and policy evaluation.
+
+---
+
+## Panel Data with Limited Outcomes: The Challenge
+
+When the dependent variable $Y_{it}$ is limited (non-continuous), standard linear panel models (e.g., Within-Estimator / FE OLS) fail due to non-linearity, boundary constraints, and heteroskedasticity.
+
+### The Dilemma in Non-Linear Panel Models
+
+1. **Serial Correlation**: Repeated observations across time $t = 1, \dots, T_i$ within individual/unit $i = 1, \dots, N$ violate independence assumptions.
+2. **Subject-Specific Heterogeneity**: Unobserved heterogeneity $ lpha_i$ must be addressed.
+3. **Incidental Parameter Problem**: In non-linear models with fixed $T$ as $N 	o \infty$, estimating $N$ parameters $ lpha_i$ yields inconsistent estimates for structural parameters $ eta$.
+
+---
+
+## Marginal vs. Conditional Models
+
+Understanding the core distinction between modeling approaches is key:
+
+::: {.columns}
+
+::: {.column width="50%"}
+### Conditional (GLMM / RE)
+- Models response **conditional on individual random effect**:
+  $$E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} eta_{	ext{cond}} + u_i)$$
+- **Interpretation**: Effect of $X$ on a *specific individual's* log-odds or rate.
+- Subject-specific inference.
+:::
+
+::: {.column width="50%"}
+### Marginal (GEE)
+- Models the **population average**:
+  $$E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} eta_{	ext{marg}})$$
+- **Interpretation**: Effect of $X$ on the *average outcome across the population*.
+- Population-averaged inference (ideal for policy evaluation).
+:::
+
+:::
+
+::: {.callout-tip}
+For linear models, $ eta_{	ext{cond}} =  eta_{	ext{marg}}$. For non-linear models (e.g., Logistic), $| eta_{	ext{cond}}| > | eta_{	ext{marg}}|$ due to attenuation from integrating over the random effect distribution.
+:::
+
+---
+
+## Mathematical Foundations of GEE
+
+GEE extends Generalized Linear Models (GLM) to correlated/clustered data without specifying the full joint likelihood.
+
+### 1. Link Function & Mean Structure
+For panel unit $i \in \{1, \dots, N\}$ observed at waves $t \in \{1, \dots, T_i\}$:
+$$g(\mu_{it}) = X_{it} eta \implies \mu_{it} = g^{-1}(X_{it} eta)$$
+
+### 2. Variance & Working Correlation
+The variance of individual observation $Y_{it}$ is defined as:
+$$	ext{Var}(Y_{it}) = \phi \, v(\mu_{it})$$
+
+where $\phi$ is a dispersion parameter and $v(\mu_{it})$ is a variance function (e.g., $\mu(1-\mu)$ for binary).
+
+---
+
+## Working Correlation Matrices $R( lpha)$
+
+The covariance matrix for subject $i$ is modeled as:
+$$V_i = \phi \, A_i^{1/2} \, R_i( lpha) \, A_i^{1/2}$$
+
+where $A_i$ is a diagonal matrix of variance functions $v(\mu_{it})$ and $R_i( lpha)$ is the **working correlation matrix**.
+
+### Common Choices for $R( lpha)$:
+1. **Independence**: $R_{ts} = 0$ ($t 
+eq s$) $\implies$ Assumes no intra-subject correlation.
+2. **Exchangeable (Compound Symmetry)**: $R_{ts} =  lpha$ $\implies$ Equal correlation across all waves.
+3. **Autoregressive (AR-1)**: $R_{ts} =  lpha^{|t-s|}$ $\implies$ Correlation decays over time.
+4. **Unstructured**: $R_{ts} =  lpha_{ts}$ $\implies$ Fully general $T 	imes T$ correlation matrix.
+
+---
+
+## The Estimating Equations & Sandwich Estimator
+
+### Generalized Estimating Equation
+The parameter vector $ eta$ is solved via:
+$$\sum_{i=1}^N D_i^T V_i^{-1} \left( Y_i - \mu_i 
+ight) = 0$$
+
+where $D_i = rac{\partial \mu_i}{\partial  eta}$ is the matrix of partial derivatives.
+
+### The "Huber-White" Sandwich Variance
+Even if $R( lpha)$ is incorrectly specified, the asymptotic variance of $\hat{ eta}$ is consistently estimated by the **sandwich estimator**:
+$$	ext{Var}(\hat{ eta}) = M_0^{-1} M_1 M_0^{-1}$$
+$$	ext{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D_i^T V_i^{-1} (Y_i - \mu_i)(Y_i - \mu_i)^T V_i^{-1} D_i$$
+
+::: {.callout-important}
+**Key Property**: As $N 	o \infty$, $\hat{ eta}$ remains consistent and standard errors are asymptotically correct, even with misspecified working correlation!
+:::
+
+---
+
+## GEE Across Limited Outcome Types
+
+| Outcome Type | Link Function $g(\mu)$ | Variance Function $v(\mu)$ | Social Science Application |
+| :--- | :--- | :--- | :--- |
+| **Binary** | Logit: $\ln\left(rac{\mu}{1-\mu}
+ight)$ | $\mu(1-\mu)$ | Voter turnout, reform adoption, employment status |
+| **Count** | Log: $\ln(\mu)$ | $\mu$ (Poisson) or $\mu + k\mu^2$ (NegBin) | Protest frequency, legislative bills passed, conflict fatalities |
+| **Ordinal** | Cumulative Logit: $\ln\left(rac{P(Y \le k)}{P(Y > k)}
+ight)$ | $\mu(1-\mu)$ | Policy support levels, institutional trust (1-5 Likert) |
+| **Bounded/Proportion** | Logit or Beta Link | $\mu(1-\mu)$ | Vote shares, municipal budget allocation proportions |
+
+---
+
+## Methodological Comparison Matrix
+
+| Feature | Fixed Effects (FE) GLM | Random Effects (GLMM) | GEE (Marginal) |
+| :--- | :--- | :--- | :--- |
+| **Target Parameter** | Conditional ($ eta_i$) | Conditional ($ eta_{	ext{cond}}$) | **Marginal / Population Avg ($ eta_{	ext{marg}}$)** |
+| **Distributional Assumptions** | Parametric | Full Parametric (Random effect distribution) | **Semi-parametric (Mean & Variance only)** |
+| **Incidental Parameter Problem** | Severe (drops constant units / biased) | N/A (Assumes $u_i \sim \mathcal{N}(0, \sigma^2)$) | **None** |
+| **Time-Invariant Covariates** | Cannot estimate | Can estimate | **Can estimate** |
+| **Correlation Robustness** | N/A | Sensitive to distributional misspecification | **Highly Robust (Sandwich SEs)** |
+| **Primary Use Case** | Within-unit causal identification | Individual heterogeneity / prediction | **Population policy effects & trends** |
+
+---
+
+## GEE with Mundlak / Hybrid Transformations
+
+Can GEE address time-invariant unobserved heterogeneity like Fixed Effects? **Yes, via Hybrid / Mundlak Modeling!**
+
+### The Hybrid GEE Specification
+Include subject-level means of time-varying predictors ($ ar{X}_i$):
+$$g(\mu_{it}) = X_{it} eta_{	ext{within}} +  ar{X}_i  eta_{	ext{between}} + Z_i \gamma$$
+
+::: {.callout-tip}
+### Benefits of Hybrid GEE:
+1. **Identifies Within-Effects**: $\hat{ eta}_{	ext{within}}$ yields estimates equivalent to Fixed Effects.
+2. **Identifies Between-Effects**: Allows estimation of time-invariant predictors $Z_i$ (e.g., gender, institutional design).
+3. **Robust Variance**: Retains GEE sandwich standard errors for longitudinal clustering.
+:::
+
+---
+
+## Software Implementation Guide
+
+### R (`geepack` & `multgee`)
+```r
+library(geepack)
+
+# Binary Outcome Panel Model
+gee_bin <- geeglm(vote_turnout ~ policy_reform + income + age,
+                  id = subject_id, data = panel_df,
+                  family = binomial(link = "logit"),
+                  corstr = "ar1")
+summary(gee_bin)
+
+# Ordinal Outcome Panel Model
+library(multgee)
+gee_ord <- ord_gee(trust_govt ~ reform + party_id,
+                   id = subject_id, data = panel_df,
+                   model = "cumulative")
+```
+
+### Stata (`xtgee`)
+```stata
+* Set panel structure
+xtset subject_id wave
+
+* Run GEE model for count outcome
+xtgee protest_count policy_change repression_index, ///
+      family(poisson) link(log) corr(exchangeable) vce(robust)
+```
+
+### Python (`statsmodels`)
+```python
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+model = smf.gee("voted ~ reform + income", "subject_id", data=panel_df,
+                family=sm.families.Binomial(),
+                cov_struct=sm.cov_struct.Autoregressive(dist_func=None))
+result = model.fit()
+print(result.summary())
+```
+
+---
+
+## Key Limitations & Best Practices
+
+::: {.columns}
+
+::: {.column width="50%"}
+### Limitations
+1. **Requires Sufficient $N$**: Sandwich standard errors can be downward biased if $N < 30-50$ clusters.
+2. **Missing Data Sensitivity**: Standard GEE requires **MCAR** (Missing Completely at Random). Use Weighted GEE (WGEE) for MAR.
+3. **No Joint Likelihood**: Cannot compute AIC/BIC directly; use **QIC** (Quasi-likelihood under Information Criterion).
+:::
+
+::: {.column width="50%"}
+### Best Practices
+1. Choose $R( lpha)$ based on substantive theory (e.g., AR-1 for panel time-series).
+2. Always report **robust (sandwich) standard errors**.
+3. Use **Hybrid/Mundlak formulations** when time-invariant confounding is a concern.
+4. Use **QIC** to compare competing working correlation structures.
+:::
+
+:::
+
+---
+
+## Conclusion: Why Social Scientists Should Adopt GEE
+
+1. **Alignment with Policy Goals**: Most social science and public policy questions are fundamentally interested in **population-averaged marginal effects** rather than conditional individual predictions.
+2. **Methodological Flexibility**: Effortlessly handles binary, count, ordinal, and continuous panel outcomes within a unified framework.
+3. **Statistical Efficiency & Robustness**: Provides consistent parameter estimates and robust standard errors even under dynamic correlation misspecification.
+4. **Ease of Computation**: Avoids non-convergence issues and numerical integration bottlenecks common in non-linear GLMMs/Random Effects models.
+
+---
+
+## References & Further Reading
+
+- **Liang, K. Y., & Zeger, S. L. (1986)**. Longitudinal data analysis using generalized linear models. *Biometrika*, 73(1), 13-22.
+- **Zorn, C. J. (2001)**. Generalized estimating equations for clustered and panel data in political science. *American Journal of Political Science*, 45(2), 470-486.
+- **Ballinger, G. A. (2004)**. Using generalized estimating equations for longitudinal data analysis. *Organizational Research Methods*, 7(2), 127-150.
+- **Neuhaus, J. M., Kalbfleisch, J. D., & Hauck, W. W. (1991)**. A comparison of cluster-specific and population-averaged approaches for analyzing correlated binary data. *International Statistical Review*, 59(1), 25-35.
+- **Halaby, C. N. (2004)**. Panel models in sociological research: Theory and practice. *Annual Review of Sociology*, 30(1), 507-544.

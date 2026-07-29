@@ -1,341 +1,1932 @@
 ---
-title: "Day 8: Panel GLM"
+title: "GLMs for Panel Data"
+subtitle: "Baltagi, *Econometric Analysis of Panel Data*, Chapter 11 and others"
 author: "Robert W. Walker"
 date: "July 29, 2026"
 format: 
    revealjs:
      theme: [custom.scss]
-     scrollable: true
      logo: AGSMlogo.jpeg
      footer: "ESSSSDA26-2J: Panel GLM"
      multiplex:
        url: 'https://multiplex-5adl.onrender.com'
-     self-contained: true
+     self-contained: false
      html-math-method: katex
-     incremental: true
      slide-number: c/t
      transition: zoom
      preview-links: true
+     chalkboard: true
+     incremental: false
+     scrollable: true
+     fig-align: center
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=TRUE, comment=NA, prompt=FALSE, fig.height=6, fig.width=6.5, fig.retina = 3, dev = 'svg', dev.args = list(bg = "white"), eval=TRUE)
-library(tidyverse)
-library(kableExtra)
+# Motivation and Taxonomy {background-color="#1a2a4a"}
+
+## Why Standard Panel Estimators Fail
+
+**The linear panel model** eliminates $\mu_i$ via the Within transformation:
+
+$$\tilde{y}_{it} = \tilde{x}'_{it}\beta + \tilde{v}_{it}$$
+
+This works because demeaning is a **linear** operation — $\mu_i$ cancels exactly.
+
+. . .
+
+**The nonlinear panel model** with binary, count, censored, or ordered $y_{it}$:
+
+$$\Pr[y_{it} = 1 \mid x_{it}, \mu_i] = F(x'_{it}\beta + \mu_i)$$
+
+$F(\cdot)$ is nonlinear $\Rightarrow$ **$\mu_i$ cannot be swept out algebraically.**
+
+. . .
+
+Three consequences:
+
+- MLE of $\beta$ is **inconsistent** (incidental parameters problem)
+- Partial effects $\partial F / \partial x_{it}$ are contaminated by $\hat{\mu}_i$
+- Standard panel "fixes" (first-differences, Within) are no longer valid
+
+::: {.notes}
+The key insight is that $F(a + b) \neq F(a) + F(b)$ in general, so applying the Within transformation to the arguments of $F(\cdot)$ does not eliminate $\mu_i$. This is the fundamental obstacle. For the linear model, the information matrix is block-diagonal between $\beta$ and the $\mu_i$ parameters (Hsiao 2003), so MLE of $\beta$ and $\{\mu_i\}$ are asymptotically independent. For nonlinear models this block-diagonality breaks down, and the inconsistency in $\hat{\mu}_i$ (estimated from only $T$ observations each) propagates into $\hat{\beta}$.
+:::
+
+## A Unified Latent Variable Framework
+
+A latent continuous $y^*_{it}$ underlies all limited dependent variable models:
+
+$$y^*_{it} = x'_{it}\beta + \mu_i + v_{it}$$
+
+Different **observability rules** generate different model families:
+
+| Outcome Type | Observability Rule | Example |
+|---|---|---|
+| Binary choice | $y_{it} = \mathbf{1}[y^*_{it} > 0]$ | Employment |
+| Ordered | $y_{it} = j$ if $\kappa_{j-1} < y^*_{it} \leq \kappa_j$ | Terror scale |
+| Censored (Tobit) | $y_{it} = \max(0,\, y^*_{it})$ | Hours worked |
+| Truncated | $y_{it} = y^*_{it}$ if $y^*_{it} > 0$ | Positive wages |
+| Count | $\lambda_{it} = \exp(x'_{it}\beta + \mu_i)$ | Patents, arrests |
+
+::: {.notes}
+For count models the latent variable interpretation is slightly different: we work with $E[y_{it} \mid \mu_i, x_{it}] = \exp(x'_{it}\beta + \mu_i)$, where $\mu_i$ acts as a multiplicative scaling factor on the expected count. For the binary/ordered/censored cases, $v_{it}$ is typically assumed normal (probit/Tobit) or logistic (logit), symmetric around zero, so that $\Pr[y_{it} = 1] = F(x'_{it}\beta + \mu_i)$.
+:::
+
+## Roadmap: A Three-Axis Taxonomy
+
+Three dimensions determine which estimator to use:
+
+. . .
+
+**Axis 1 — Outcome type:**
+Binary $\to$ Ordered $\to$ Count $\to$ Censored / Truncated
+
+. . .
+
+**Axis 2 — Effect treatment:**
+Fixed effects (FE) $\to$ Random effects (RE) $\to$ Correlated RE (Mundlak/Chamberlain)
+
+. . .
+
+**Axis 3 — Temporal structure:**
+Static $\to$ Observation-driven Markov $\to$ Parameter-driven state space
+
+. . .
+
+After heterogeneity, we will have a dynamics taxonomy; at the end, there is a complete decision flowchart.
+
+::: {.notes}
+This three-axis taxonomy organises the entire deck [and the class]. The FE vs RE choice depends on whether $\mu_i$ is correlated with $x_{it}$ (Hausman test). The temporal structure choice depends on whether past outcomes $y_{i,t-1}$ directly enter the conditional distribution (observation-driven) or dynamics arise through a latent evolving process (parameter-driven). The observation-driven approach has closed-form likelihoods; the parameter-driven approach requires integration over the latent path.
+:::
+
+
+
+# The Incidental Parameters Problem {background-color="#1a2a4a"}
+
+## The Problem Stated Precisely
+
+**Setting:** $N$ individuals, $T$ periods, individual effects $\{\mu_1,\ldots,\mu_N\}$ unknown.
+
+As $N \to \infty$ with **$T$ fixed**, the number of nuisance parameters grows at the same rate as the sample — the MLE for $(\beta, \mu_1,\ldots,\mu_N)$ is **inconsistent** for $\beta$.
+
+. . .
+
+**Why it does not arise in the linear model:**
+
+The Within estimator eliminates $\mu_i$ *exactly* before estimation. The MLE of $\beta$ and $\{\mu_i\}$ are asymptotically independent in the linear case (Hsiao 2003).
+
+. . .
+
+**Why it arises in nonlinear models:**
+
+Each $\hat{\mu}_i$ is estimated from only $T$ observations. Inconsistency in $\hat{\mu}_i$ is **transmitted to $\hat{\beta}$** because the nonlinear information matrix is not block-diagonal between $\beta$ and $\{\mu_i\}$.
+
+::: {.notes}
+Neyman and Scott (1948) first identified this problem. The fundamental issue is that with $T$ fixed, each $\mu_i$ is estimated imprecisely, and this imprecision feeds into the estimate of $\beta$ through the cross-derivatives in the Hessian of the log-likelihood. For the logit model specifically, Chamberlain (1980) and Hsiao (2003) demonstrate the bias analytically.
+:::
+
+## Magnitude of the Bias: Monte Carlo Evidence
+
+For **fixed effects logit** as $N \to \infty$ with $T$ fixed:
+
+| $T$ | Asymptotic bias in $\hat{\beta}_{MLE}$ | Direction |
+|-----|---------------------------------------|-----------|
+| 2   | $\hat{\beta}_{MLE} \xrightarrow{p} 2\beta$ | Away from zero |
+| 10  | $\approx 16\%$ | Away from zero |
+| 20  | $\approx 6.9\%$ | Away from zero |
+
+*Sources: Hsiao (2003); Greene (2004a)*
+
+. . .
+
+- Bias is **always away from zero** (upward in absolute value)
+- At $N = 1000, T = 2$: bias $\approx 100\%$ (Greene 2004a)
+- For **probit** the bias is similar in direction but slightly smaller
+- **Exception:** Fixed effects Poisson has *no* incidental parameters problem.  
+
+::: {.notes}
+Greene (2004a) runs Monte Carlo with $N = 1000$ and $T = 2, 3, 5, 8, 10, 20$ and 200 replications, finding these bias percentages. The direction is always away from zero: the MLE overestimates $|\beta|$. For probit, Heckman (1981b) found at most 10% bias in early experiments; Greene (2004a) finds 10-24% bias always away from zero. The Poisson exception is the most important: the conditioning argument works perfectly for Poisson, giving no incidental parameters problem at all.
+:::
+
+## Three Strategies for the Incidental Parameters Problem
+
+**Strategy 1 — Condition out $\mu_i$** *(FE approach)*
+
+Find a sufficient statistic $S_i$ for $\mu_i$; condition the likelihood on $S_i$.
+$\mu_i$ is eliminated without being estimated.
+$\to$ Exact for logit (Chamberlain 1980) and Poisson (Hausman et al. 1984).
+$\to$ Not available for probit or Tobit in general.
+
+. . .
+
+**Strategy 2 — Integrate out $\mu_i$** *(RE approach)*
+
+Assume $\mu_i \sim F(\sigma_\mu^2)$; replace $\mu_i$ by integrating over its distribution.
+$\to$ Consistent if distribution correctly specified; correlated RE (Mundlak) relaxes independence.
+
+. . .
+
+**Strategy 3 — Model and correct the bias** *(Modified MLE)*
+
+Reduce bias from $O(1/T)$ to $O(1/T^2)$ via jackknife or analytic correction.
+$\to$ Carro (2007); Hahn & Newey (2004); especially useful for dynamic models.
+
+::: {.notes}
+Strategy 1 is exact and requires no distributional assumptions on $\mu_i$, but requires the logistic distribution (for binary) or Poisson distribution (for counts). Strategy 2 is broadly applicable but requires correct specification of the distribution of $\mu_i$. The Mundlak (1978) device ($\mu_i = \bar{x}'_i\delta + \varepsilon_i$) relaxes the independence assumption. Strategy 3 is valuable for dynamic models where strategies 1 and 2 face additional complications from the initial conditions problem.
+:::
+
+## The Incidental Parameters Problem in Dynamic Models
+
+In **static** models the IPP involves only $\beta$ and $\{\mu_i\}$.
+
+In **dynamic** models with $y_{i,t-1}$ as a regressor:
+
+$$\Pr[y_{it} = 1 \mid x_{it}, y_{i,t-1}, \mu_i] = F(x'_{it}\beta + \gamma y_{i,t-1} + \mu_i)$$
+
+. . .
+
+**Why it is worse dynamically:**
+
+- $y_{i,t-1}$ is itself a function of $\mu_i$ (generated by the same model)
+- This introduces a second bias channel in $\hat{\gamma}$, beyond the standard IPP
+- The initial condition $y_{i0}$ is correlated with $\mu_i$ by construction
+
+. . .
+
+**The initial conditions problem:** $y_{i0}$ is typically not exogenous. Ignoring this biases estimates of $\gamma$ (state dependence) and compounds the IPP bias. $\to$ We will  address dynamic complications systematically after heterogeneity.
+
+::: {.notes}
+Heckman (1981a,b,c) first systematically studied dynamic limited dependent variable panel models and identified the initial conditions problem. The key issue is that if we start observing the panel at $t = 1$, the initial value $y_{i0}$ was generated by the model at some earlier time, making it correlated with $\mu_i$. Treating $y_{i0}$ as exogenous introduces bias in $\hat{\gamma}$. Heckman (1981b) proposed a reduced-form approximation; Wooldridge (2005) proposed a simpler conditional approach that dominates in practice.
+:::
+
+
+# Fixed Effects Binary Choice — Conditional MLE {background-color="#1a2a4a"}
+
+## Chamberlain's Sufficient Statistic
+
+**Key result** (Chamberlain 1980): For the fixed effects logit, $S_i = \sum_{t=1}^T y_{it}$ is a minimal sufficient statistic for $\mu_i$.
+
+Conditional on $S_i$, the joint distribution of $(y_{i1},\ldots,y_{iT})$ does **not** depend on $\mu_i$.
+
+$$L_c(\beta) = \prod_{i=1}^N \Pr\!\left(y_{i1},\ldots,y_{iT} \;\Big|\; \sum_{t=1}^T y_{it}\right)$$
+
+. . .
+
+Maximising $L_c$ gives the **CMLE** — consistent and asymptotically normal as $N \to \infty$ for fixed $T$. No incidental parameters problem.
+
+::: {.notes}
+The sufficient statistic result follows from the exponential family structure of the logistic likelihood. Conditioning on $\sum_t y_{it}$ cancels $\mu_i$ from both numerator and denominator of the conditional probability, leaving a likelihood depending only on $\beta$. This is special to the logistic distribution — it does not hold for the normal (probit), which is why there is no analogous FE probit.
+:::
+
+## The $T = 2$ Closed Form
+
+For $T = 2$, conditioning on $y_{i1} + y_{i2} = 1$ (only "switchers" contribute):
+
+$$\Pr[y_{i1}=1, y_{i2}=0 \mid y_{i1}+y_{i2}=1] = \frac{1}{1 + e^{(x_{i2}-x_{i1})'\beta}}$$
+
+$$\Pr[y_{i1}=0, y_{i2}=1 \mid y_{i1}+y_{i2}=1] = \frac{1}{1 + e^{(x_{i1}-x_{i2})'\beta}}$$
+
+. . .
+
+**Key observations:**
+
+- $\mu_i$ has completely dropped out — consistent estimation possible
+- Units with $y_{i1} = y_{i2}$ (non-switchers) contribute **nothing** to $L_c$
+- Equivalent to standard logit on the "switcher" subsample with $\Delta x_i$ as regressors
+
+::: {.notes}
+Equations (11.10) and (11.11) in Baltagi. The $T=2$ CMLE can be implemented as a standard logit of $\mathbf{1}[\Delta y_i = 1]$ on $\Delta x_i = x_{i2} - x_{i1}$, restricted to the switcher subsample. In Stata: `clogit y x1 x2, group(id)` or `xtlogit y x1 x2, fe`. An important practical concern: non-switchers are discarded, which can dramatically reduce the effective sample size in many social science panels where binary outcomes are stable (e.g., employment, treaty ratification).
+:::
+
+## Generalising to $T > 2$ and Manski's Alternative
+
+For $T > 2$: $\sum_t y_{it}$ can be $0,1,\ldots,T$. Observations with $\sum_t y_{it} \in \{0,T\}$ contribute nothing. Conditional probabilities computed recursively — implemented in `xtlogit, fe` and `clogit`.
+
+. . .
+
+**Manski's (1987) maximum score estimator:** Semiparametric alternative when the logistic assumption is too strong:
+
+$$\max_\beta \; \frac{1}{n} \sum_{i=1}^n z_i \cdot \text{sgn}(x'_i \beta), \quad z_i = 2y_i - 1$$
+
+Maximises correct predictions; no likelihood assumed.
+
+**Limitations:** Convergence rate $N^{1/3}$ not $\sqrt{N}$; no information-matrix standard errors — bootstrap required.
+
+::: {.notes}
+Problem 11.1 in Baltagi asks the student to extend the $T=2$ case to $T=3$. For $T=3$, conditioning is on $\sum_t y_{it} \in \{1,2\}$. The conditional probabilities involve ratios of sums of exponentials and can be computed analytically but are more complex than the $T=2$ case.
+
+Manski's maximum score estimator is consistent under conditions weaker than the logit model — it allows the distribution of $v_{it}$ to be unknown. The $N^{1/3}$ convergence rate is a significant disadvantage for inference in practical samples.
+:::
+
+## Testing: Hausman Test for Individual Effects
+
+**$H_0$:** No individual effects — pooled logit is consistent and efficient.
+
+Under $H_1$: CMLE is consistent; pooled MLE is not.
+
+$$m = (\hat{\beta}_{CML} - \hat{\beta}_{MLE})' \left[\widehat{V}_{CML} - \widehat{V}_{MLE}\right]^{-1} (\hat{\beta}_{CML} - \hat{\beta}_{MLE}) \;\sim\; \chi^2_K$$
+
+under $H_0$.
+
+. . .
+
+**Practical note:** CMLE discards non-switchers so it is less efficient under $H_0$. The test asks: is the efficiency cost worth the bias protection under $H_1$? An alternative: use the Mundlak test in `xtprobit`
+
+::: {.notes}
+The constant must be dropped from the pooled logit for this comparison since CMLE has no constant. The variance difference $\widehat{V}_{CML} - \widehat{V}_{MLE}$ should be PSD under $H_0$; if not, use a generalised inverse. Many applied researchers skip the Hausman test and justify the FE approach on substantive grounds (correlation between $\mu_i$ and $x_{it}$ is likely).
+:::
+
+## Semiparametric Extensions and Bounds
+
+**Honoré & Lewbel (2002):** Chamberlain's negative identification result can be overturned if at least one continuous "special regressor" is independent of $\mu_i$. Allows $\sqrt{N}$-consistent semiparametric estimation without the logistic assumption.
+
+. . .
+
+**Magnac (2004):** $\sum_t y_{it}$ is a sufficient statistic under necessary and sufficient conditions strictly weaker than the logit model — the result generalises beyond logit to the "odds ratio" restriction.
+
+. . .
+
+**Honoré & Tamer (2006):** When point identification fails, **bounds** on $\beta$ can be constructed. The identified set is often informatively small in practice — useful when exact point identification requires implausible assumptions.
+
+::: {.notes}
+Honoré and Lewbel (2002) identify the key requirement for semiparametric root-N consistency: a single continuous regressor whose coefficient is known and whose variation is independent of $\mu_i$ and $v_{it}$. This "special regressor" condition is restrictive but sometimes naturally available (e.g., exogenous price variation).
+
+Honoré and Tamer (2006) use moment inequalities to construct the identified set. Their bounds can be computed using linear programming and are often quite informative. This is increasingly important in political science and economics where the logistic distribution assumption is routinely questioned.
+:::
+
+# Random Effects Binary Choice {background-color="#1a2a4a"}
+
+## The $T$-Dimensional Integral Problem
+
+For RE probit, $u_{it} = \mu_i + v_{it}$, where $\mu_i \sim \text{IIN}(0,\sigma_\mu^2)$, $v_{it} \sim \text{IIN}(0,1)$.
+
+The individual likelihood is a **$T$-dimensional integral** — infeasible for large $T$.
+
+Conditioning on $\mu_i$ makes the $v_{it}$ independent, reducing to a **single integral:**
+
+$$L_i = \int \left[\prod_{t=1}^T \Phi\!\left(q_{it}(x'_{it}\beta + \mu_i)\right)\right] \phi\!\left(\frac{\mu_i}{\sigma_\mu}\right) \frac{d\mu_i}{\sigma_\mu}$$
+
+where $q_{it} = 2y_{it} - 1$ and $\Phi$ is the standard normal CDF.
+
+::: {.notes}
+Equations (11.12) and (11.13) in Baltagi. The key step: write the joint density as the product of conditional densities of $v_{it}$ given $\mu_i$, times the marginal density of $\mu_i$. Integrating over $v_{it}$ is analytically available for probit (giving $\Phi(\cdot)$), leaving only the integral over $\mu_i$. For the logit model, the integral over $v_{it}$ doesn't simplify when $\mu_i$ is normally distributed — this is one reason RE probit is more commonly used than RE logit with normal random effects.
+:::
+
+## Butler–Moffitt (1982) Gauss–Hermite Quadrature
+
+The single remaining integral is approximated by **Gauss–Hermite quadrature:**
+
+$$\ln L_h = \sum_{i=1}^N \ln\!\left[\frac{1}{\sqrt{\pi}} \sum_{h=1}^H w_h \prod_{t=1}^T \Phi\!\left(q_{it}(x'_{it}\beta + \theta z_h)\right)\right]$$
+
+where $\theta = \sigma_\mu\sqrt{2}$, and $w_h$, $z_h$ are quadrature weights and nodes.
+
+. . .
+
+- $H$ = number of quadrature points; accuracy increases with $H$
+- Default $H = 12$ in Stata; $H = 24$ recommended for larger $\sigma_\mu$
+- **Adaptive Gauss–Hermite quadrature (AGQ):** More accurate, default in `lme4` (R)
+
+::: {.notes}
+The Butler-Moffitt approximation uses $\int g(x) e^{-x^2} dx \approx \sum_{h=1}^H w_h g(z_h)$ where $w_h$ and $z_h$ are Gauss-Hermite weights and nodes. With the change of variables $\mu_i = \theta z$, the integral over the normal density becomes a Gaussian integral. The accuracy depends on $H$ and on $\sigma_\mu$: when $\sigma_\mu$ is large, more quadrature points are needed. In Stata, use `intpoints(#)` to increase $H$. In R, `lme4::glmer()` has the `nAGQ` argument; AGQ (adaptive quadrature) centres the quadrature at the conditional mode of $\mu_i$ given the data, substantially improving accuracy.
+:::
+
+## Mundlak Device and Chamberlain Correlated RE
+
+**Problem with basic RE probit:** Assumes $\mu_i \perp x_{it}$ — often unrealistic.
+
+. . .
+
+**Mundlak (1978) device:** Let $\mu_i = \bar{x}'_i \delta + \varepsilon_i$ where $\bar{x}_i = T^{-1}\sum_t x_{it}$.
+
+$$\Pr[y_{it} = 1 \mid x_{it}, \bar{x}_i] = \Phi\!\left((1+\sigma_\varepsilon^2)^{-1/2}(x'_{it}\beta + \bar{x}'_i \delta)\right)$$
+
+Consistent even when $\mu_i$ is correlated with $x_{it}$. Implement by adding $\bar{x}_i$ as regressors to `xtprobit`.
+
+. . .
+
+**Chamberlain (1984) extension:** $\mu_i = x'_{i1}a_1 + \cdots + x'_{iT}a_T + \varepsilon_i$ — more flexible but uses $TK$ additional parameters.
+
+**Test:** $H_0: \delta = 0$ in Mundlak specification tests whether RE assumption is valid.
+
+::: {.notes}
+The Mundlak (1978) device is a pragmatic compromise between FE and RE. By including $\bar{x}_i$ as additional regressors, the model absorbs the correlation between $\mu_i$ and $x_{it}$ through the projection $E[\mu_i | x_i] = \bar{x}'_i\delta$. The test of $H_0: \delta = 0$ using a Wald test after `xtprobit` is an alternative to the Hausman test that is more robust to heteroskedasticity and can be computed directly in standard RE software.
+
+The Chamberlain (1984) extension is equivalent to the Mundlak device when $T$ is moderate, but uses more degrees of freedom. For large $K$ (many regressors) and small $T$, the Mundlak device is preferred. For small $K$ and moderate $T$, the Chamberlain specification may be worth the additional parameters.
+:::
+
+## Choosing Between FE Logit and RE Probit
+
+:::: {.columns}
+::: {.column width="50%"}
+**FE Conditional Logit**
+
+- No distributional assumption on $\mu_i$
+- Allows arbitrary $\text{Corr}(\mu_i, x_{it})$
+- Requires logistic distribution for $v_{it}$
+- Discards all non-switchers
+- No partial effects for time-invariant $x$
+:::
+::: {.column width="50%"}
+**RE Probit (Mundlak)**
+
+- Uses full sample
+- Normal distribution for $v_{it}$
+- Partial effects for time-invariant $x$ available
+- Requires distributional assumption on $\mu_i$
+- Consistent even if $\text{Corr}(\mu_i, x_{it}) \neq 0$ (via Mundlak)
+:::
+::::
+
+. . .
+
+**Practical recommendation:** Use correlated RE probit (Mundlak device) as the default. Report FE logit as a robustness check. Test $H_0: \delta = 0$ to guide the choice.
+
+::: {.notes}
+In most social science applications with not-too-short panels ($T \geq 5$), the Mundlak-device RE probit is a good default: it allows correlation between $\mu_i$ and $x_{it}$, uses the full sample, and allows partial effects for time-invariant variables. The FE conditional logit is preferred when: (1) the logistic distribution is credible, (2) the non-switcher loss is modest, and (3) strict robustness to the distribution of $\mu_i$ is required.
+:::
+
+
+# Ordinal Outcomes — Static Models {background-color="#1a2a4a"}
+
+## The Ordered Latent Variable Model
+
+Observable $y_{it} \in \{1,2,\ldots,J\}$ generated by threshold-crossing of $y^*_{it}$:
+
+$$y_{it} = j \iff \kappa_{j-1} < y^*_{it} \leq \kappa_j, \quad -\infty = \kappa_0 < \kappa_1 < \cdots < \kappa_J = +\infty$$
+
+With panel structure: $y^*_{it} = x'_{it}\beta + \mu_i + v_{it}$
+
+$$\Pr[y_{it} = j \mid x_{it}, \mu_i] = F(\kappa_j - x'_{it}\beta - \mu_i) - F(\kappa_{j-1} - x'_{it}\beta - \mu_i)$$
+
+. . .
+
+**The panel complication:** $\mu_i$ shifts the entire probability distribution — the same incidental parameters problem as in binary choice, but across $J$ categories.
+
+**No sufficient statistic for $\mu_i$ in general** for $J > 2$ — hence no FE ordered probit analogous to FE logit.
+
+::: {.notes}
+The ordered probit/logit assumes proportional odds: the same $\beta$ governs all thresholds. For political science: the Political Terror Scale (PTS) runs 1–5, where 1 = secure rule of law and 5 = terror extending to the whole population. With country fixed effects, $\mu_i$ captures time-invariant country characteristics (historical institutions, colonial legacy) that shift the entire repression level. The $\kappa_j$ thresholds are estimated along with $\beta$. The absence of a sufficient statistic for $\mu_i$ (unlike the binary logit case) is why FE ordered logit requires the BUC workaround discussed next.
+:::
+
+## Random Effects Ordered Probit
+
+Direct extension of RE Probit: $\mu_i \sim \text{IIN}(0,\sigma_\mu^2)$ independent of $v_{it} \sim \text{IIN}(0,1)$.
+
+The individual likelihood involves the same single integral as RE probit — Butler–Moffitt quadrature applies directly.
+
+. . .
+
+**Stata:** `xtoprobit y x1 x2, intpoints(24)`
+
+**R:** `ordinal::clmm(ordered(y) ~ x1 + x2 + (1|id), link = "probit")`
+
+. . .
+
+**Correlated RE (Mundlak device):** Add $\bar{x}_i$ as regressors to allow $\text{Corr}(\mu_i, x_{it}) \neq 0$.
+
+**Post-estimation:** `margins` / `marginaleffects` for category-specific average partial effects.
+
+::: {.notes}
+RE ordered probit is the workhorse for ordered panel outcomes. In Stata, `xtoprobit` uses adaptive Gauss-Hermite quadrature by default. In R, `ordinal::clmm()` provides flexible options including different link functions (probit, logistic, complementary log-log) and random effects structures. The `marginaleffects` package in R provides `avg_slopes()` for average partial effects on each probability $\Pr[y_{it} = j]$, which vary by category — the partial effect on $\Pr[y_{it} = 1]$ typically has the opposite sign from the partial effect on $\Pr[y_{it} = J]$.
+:::
+
+## Fixed Effects Ordered Logit — The BUC Estimator
+
+**Problem:** No general sufficient statistic for $\mu_i$ in the ordered logit with $J > 2$.
+
+**Baetschmann, Staub & Winkelmann (2015) — "Blow-Up and Cluster" (BUC):**
+
+1. For each threshold $j \in \{1,\ldots,J-1\}$, dichotomise: $\tilde{y}_{it}^{(j)} = \mathbf{1}[y_{it} > j]$
+2. Run FE conditional logit on each binary outcome $\tilde{y}_{it}^{(j)}$ separately
+3. **"Blow-up":** Stack all $J-1$ binary datasets into one long dataset
+4. **"Cluster":** Constrain $\beta$ equal across $j$; cluster-robust SEs for dependence
+
+. . .
+
+**Stata:** `ssc install buc` then `buc y x1 x2, group(id) vce(cluster id)`
+
+**R:** `bife::bife()` for each binary collapse, then stack and cluster
+
+::: {.notes}
+Baetschmann, Staub and Winkelmann (2015) prove the BUC estimator is consistent and asymptotically normal under fixed $T$ as $N \to \infty$, provided the true model is an ordered logit with proportional odds. The key insight: any binary collapse of an ordered logit is also a logit with the same $\beta$ but different thresholds. Conditioning on the binary sum within each collapsed dataset eliminates individual effects. Pooling across all binary collapses uses all available information. The cluster-robust SEs account for the fact that the same individual appears in $J-1$ binary datasets.
+
+An alternative is Ferrer-i-Carbonell and Frijters (2004), which uses a different computational strategy but similar idea. For very long panels ($T \to \infty$), Carro and Traferri (2014) derive an analytic bias correction for FE ordered probit MLE.
+
+:::
+
+## Generalised Ordered Models and Parallel Regression
+
+**The parallel regression assumption:** Same $\beta$ governs all thresholds $j$. Often violated.
+
+. . .
+
+**Generalised ordered logit:** Allow $\beta$ to vary across thresholds:
+
+$$\Pr[y_{it} > j \mid x_{it}] = F(x'_{it}\beta_j), \quad j = 1,\ldots,J-1$$
+
+. . .
+
+**Stata:** `gologit2` (Williams 2006) — partial proportionality available (`pl()` option)
+
+**R:** `VGAM::vglm(y ~ x, family = cumulative(parallel = FALSE))`
+
+. . .
+
+**Testing:** Brant test in Stata (`brant` after `ologit`); LR test comparing constrained vs unconstrained models.
+
+**Panel extension:** `xtgologit2` (community SSC) for RE generalised ordered probit; Mundlak device as workaround for FE.
+
+::: {.notes}
+Williams (2006) proposes `gologit2` as a flexible implementation allowing partial proportionality: some coefficients are constrained to be equal across thresholds while others are allowed to vary. This is useful when the proportional odds assumption fails for some but not all regressors.
+
+Das and van Soest (1999) find that the proportional odds assumption is rejected for subjective income expectations, motivating the generalised ordered model. Their dynamic extension naturally accommodates the generalised ordered structure with lagged category-specific effects.
+
+For the PTS application: it is worth testing proportional odds since different covariates (e.g., democracy, GDP) may have qualitatively different effects at low vs high repression levels.  **This is common advice, and very bad advice.**
+
+:::
+
+# Panel Count Models — Static {background-color="#1a2a4a"}
+
+## Why Counts Need Special Treatment
+
+Panel count outcomes: patents, doctor visits, arrests, protest events, conflict incidents.
+
+The natural model — Poisson with $E[y_{it} \mid x_{it}, \mu_i] = \exp(x'_{it}\beta + \mu_i)$ — faces three complications:
+
+. . .
+
+1. **Incidental parameters:** $\mu_i$ cannot be swept out by demeaning $\exp(\cdot)$
+2. **Overdispersion:** $\text{Var}[y_{it}] > E[y_{it}]$ is ubiquitous in practice
+3. **Excess zeros:** Many panels have a large fraction of zero counts
+
+. . .
+
+**But:** The FE Poisson model has a unique property that exempts it from the incidental parameters problem — the most important positive result in this chapter.
+
+::: {.notes}
+Count data are pervasive in political science (conflict events, legislative bills, coup attempts), economics (patents, strikes, job changes), sociology (arrests, divorces), and public health (hospital visits, disease incidence). The multiplicative form $\exp(x'_{it}\beta + \mu_i) = \exp(x'_{it}\beta) \cdot \exp(\mu_i)$ means that $\mu_i$ acts as a multiplicative scaling factor on the expected count — the natural generalisation of the additive $\mu_i$ in the linear model. This multiplicative structure generates a likelihood in the exponential family with sufficient statistic $\sum_t y_{it}$, which is the key to the FE Poisson result.
+:::
+
+## Fixed Effects Poisson — The "Blessing"
+
+**Hausman, Hall & Griliches (1984):** $S_i = \sum_{t=1}^T y_{it}$ is a sufficient statistic for $\mu_i$ in the Poisson model — and, uniquely, **there is no incidental parameters problem.**
+
+The conditional likelihood reduces to a **multinomial likelihood** depending only on $\beta$:
+
+$$\Pr\!\left[y_{it} \;\Big|\; \sum_t y_{it}\right] \;\propto\; \prod_t \left(\frac{\exp(x'_{it}\beta)}{\sum_s \exp(x'_{is}\beta)}\right)^{y_{it}}$$
+
+. . .
+
+**Wooldridge (1999) QMLE:** FE Poisson is consistent even if the count distribution is misspecified, provided $E[y_{it} \mid \mu_i, x_{it}] = \exp(x'_{it}\beta + \mu_i)$ holds. Only the conditional mean needs to be correctly specified.
+
+**Stata:** `xtpoisson y x1 x2, fe vce(cluster id)`
+
+**R:** `fixest::fepois(y ~ x1 + x2 | id, vcov = ~ id, data = df)`
+
+::: {.notes}
+The HHG (1984) result is remarkable: unlike the binary logit case (where CMLE discards non-switchers), the FE Poisson CMLE uses all observations and has no incidental parameters bias. All individuals contribute to the conditional likelihood, including those with constant count patterns.
+
+Wooldridge's (1999) QMLE result strengthens the FE Poisson even further: it is consistent under misspecification of the count distribution (overdispersion, zero-inflation) as long as the conditional mean is correctly specified. The robust sandwich variance estimator (`vce(cluster id)` in Stata) provides valid standard errors under any pattern of overdispersion and serial correlation.
+
+This makes FE Poisson the recommended default for panel count data in most social science applications.
+:::
+
+## Overdispersion and the Negative Binomial
+
+**Overdispersion** ($\text{Var}[y_{it}] > E[y_{it}]$) is nearly universal in practice.
+
+. . .
+
+**Approach 1 — RE Negative Binomial (HHG 1984):**
+Assume $\exp(\mu_i) \sim \text{Gamma}(\alpha,\alpha)$. Integrating out $\mu_i$ gives the NB marginal distribution. **Stata:** `xtnbreg, re`
+
+. . .
+
+**Approach 2 — Robust FE Poisson (recommended):**
+Use FE Poisson QMLE with robust standard errors. Overdispersion inflates SE but does not bias $\hat{\beta}$. **Stata:** `xtpoisson, fe vce(cluster id)`
+
+. . .
+
+**Warning on `xtnbreg, fe`:** The FE NB in Stata absorbs $\mu_i$ through the overdispersion parameter (not the mean) — Allison & Waterman (2002) showed this does NOT fully control for time-invariant heterogeneity. Use with caution; prefer robust FE Poisson.
+
+::: {.notes}
+The Allison-Waterman (2002) critique of `xtnbreg, fe` is important: Stata's FE NB parameterisation allows the overdispersion parameter $\alpha$ to vary by individual, absorbing $\mu_i$ there rather than in the mean. This is different from what most researchers assume when they use "FE NB" — it does not eliminate all time-invariant unobserved heterogeneity from the mean equation. The practical consequence is that `xtnbreg, fe` estimates may be biased in ways that differ from the Poisson FE.
+
+Wooldridge's (1999) recommendation: use FE Poisson QMLE with robust standard errors as the primary estimator, even when there is overdispersion. The overdispersion affects efficiency but not consistency. Only if there is strong evidence of systematic misspecification of the conditional mean should one consider alternatives.
+:::
+
+## Random Effects Count Models and Specification Tests
+
+**RE Poisson with Normal mixing:** $\mu_i \sim \text{Normal}(0,\sigma_\mu^2)$ — requires quadrature.
+**Stata:** `xtpoisson, re` (Normal mixing) or `xtpoisson, gamma` (Gamma mixing)
+
+. . .
+
+**Specification tests:**
+
+| Test | Command (Stata) | $H_0$ |
+|---|---|---|
+| Random effects | `xttest0` after `xtpoisson, re` | $\sigma_\mu^2 = 0$ |
+| Overdispersion | LR: `xtpoisson, re` vs `xtnbreg, re` | No extra dispersion |
+| FE vs RE | `hausman fe re` | $E[\mu_i \mid x_{it}] = 0$ |
+| Serial correlation | `xtserial` (SSC) | No serial correlation |
+
+. . .
+
+**Pre-sample mean proxy** (Blundell, Griffith & Windmeijer 2002): Include $\log(\bar{y}_{i,\text{pre}})$ as offset or regressor — a practical proxy for $\mu_i$ that avoids conditioning on $\sum_t y_{it}$.
+
+::: {.notes}
+The `xttest0` command after `xtpoisson, re` tests $H_0: \sigma_\mu^2 = 0$ using a Lagrange multiplier test. Rejection suggests unobserved heterogeneity is important and pooled Poisson would be biased. In practice, this is almost always rejected with real data.
+
+For the LR test of overdispersion: the null $H_0: \alpha \to \infty$ (no overdispersion in NB, equivalent to Poisson) is a boundary test — the p-value is half the $\chi^2_1$ tail probability.
+
+The pre-sample mean approach (BGW 2002): if firm $i$ has pre-sample patent counts $y_{i,-4},\ldots,y_{i,-1}$, use $\log(\bar{y}_{i,\text{pre}} + 0.5)$ as an additional regressor (the $+0.5$ handles zeros). Consistent under mild conditions; provides an alternative to the conditional Poisson that uses between-firm variation.
+:::
+
+## Zero-Inflation and Dynamic Counts
+
+**Zero-inflated Poisson (ZIP):** Two-part model — probability $\pi$ of structural zero + Poisson count. For panel data: `zip` with `vce(cluster id)` in Stata; community-contributed `xtzip`.
+
+. . .
+
+**Hurdle model:** Separate binary participation equation + truncated count equation (positive counts only). More interpretable than ZIP when zeros and positives have different determinants.
+
+. . .
+
+**Blundell, Griffith & Windmeijer (2002) pre-sample mean:** A practical dynamic proxy:
+
+```stata
+gen log_pre = log(pre_sample_mean + 0.5)
+xtpoisson y x1 x2 log_pre l.y i.year, fe vce(cluster id)
 ```
 
+. . .
 
-# Outline for Day 8
+**Testing dynamics:** LR test comparing static vs dynamic Poisson; check residual ACF after `xtpoisson, fe` for remaining serial correlation.
 
-1. Panel GLM Models: An Overview
-1. Panel GLM Models: Heterogeneity
-1. Panel GLM Models: Dynamics
+::: {.notes}
+For zero-inflated panel count models, the `xtzip` community command (Stata, SSC) implements a random effects ZIP model. The interpretation is that a structural zero can occur for two reasons: (1) the individual is in the "always-zero" state (probability $\pi$, modeled as a logit/probit), or (2) the individual is in the "at-risk" state but happened to observe zero counts (probability $(1-\pi) \cdot e^{-\lambda}$ for Poisson).
 
+For dynamic count models: the INGARCH approach provides a principled observation-driven dynamic model. The BGW pre-sample mean approach can be extended to include lagged counts directly as regressors in the FE Poisson — the QMLE consistency result still holds under the correct conditional mean specification.
+:::
 
 
-## Dirty Pool and Fixed Effects
+# Dynamics — The Unifying Framework {background-color="#1a2a4a"}
 
-- Green, Kim, Yoon point out that the addition of dyad fixed effects undercut much of what we think we know about the causes of dyadic trade and war.
-- Oneal and Russett expand the data, argue that the approach is not very sound (especially for the conflicts), and that the critique is overstated.
-- Beck and Katz make a compelling case for problems with the application of fixed effects estimators to these binary circumstances, especially with rare events.
-- King provides a nice summary of the issues and brings much of the debate to some central points.
+## Cox's Taxonomy: Two Types of Dynamic Models
 
+**Cox (1981)** distinguishes two fundamental classes of dynamic models:
 
+. . .
 
-## A Brief MLE Background using the Binary Example
+**Observation-driven:** The conditional distribution $f(y_{it} \mid \mathcal{F}_{i,t-1}, x_{it}, \mu_i)$ depends on past outcomes directly through the filtration $\mathcal{F}_{i,t-1} = \{y_{i,t-1}, y_{i,t-2}, \ldots\}$.
+$\to$ Likelihood is a product of closed-form one-period-ahead predictive densities.
+$\to$ Examples: dynamic logit/probit, ordered Markov, INGARCH.
 
+. . .
 
-- Data type: Binary data
-- Densities: Mostly symmetric and unimodal [exception: cloglog]
-- Interpretation: Nonlinear models require the specification of the entire prediction vector.  Standard errors are not nuisance parameters.
-- Testing: Z-scores and Wald tests [bad small sample properties].  Likelihood Ratio.
+**Parameter-driven:** A latent process $\alpha_{it}$ evolves by its own Markov law; $y_{it}$ depends on $\alpha_{it}$ and $x_{it}$ but not directly on $y_{i,t-1}$.
+$\to$ Likelihood requires integrating over the path of $\alpha_{it}$ — computationally intensive.
+$\to$ Examples: state space probit, dynamic factor models with discrete outcomes.
 
+::: {.notes}
+Cox (1981) "Statistical Analysis of Time Series: Some Recent Developments" introduced this distinction in the context of continuous-time series, but it applies equally well to discrete-time panel models. The distinction has profound consequences for computation: observation-driven models have tractable closed-form likelihoods (as products of one-period-ahead predictive densities), while parameter-driven models require numerical integration over the path of the latent process.
 
+In the parameter-driven case, the integral over the path of $\alpha_{it}$ is a $T$-dimensional integral for a panel of length $T$, which quickly becomes infeasible as $T$ grows. This motivates the simulation estimation methods (GHK simulator).
 
-## Data Types
+For the observation-driven case, the key is that $y_{i,t-1}$ enters the conditional distribution directly. This means that the "state" of the system at time $t$ is fully summarised by $(y_{i,t-1}, x_{it}, \mu_i)$ — we do not need to track the entire history $\mathcal{F}_{i,t-1}$. This is the first-order Markov property.
+:::
 
-- Survey responses: $\{yes, no\}$
-- Choices: $\{Capital controls, Free Capital Movements\}$
-- Votes in a Two-Party System $\{Democrat, Republican\}$
-- A Host of Others...
+## True vs Spurious State Dependence
 
-Typical Interpretation:
+**Heckman (1981c)** distinguishes two reasons for persistence in panel outcomes:
 
-**Some unobserved continuous random variable crosses a threshold.**
+. . .
 
+**True state dependence:** The past outcome $y_{i,t-1}$ *causally* changes future probabilities.
 
+$$\Pr[y_{it} = 1 \mid x_{it}, y_{i,t-1}=1, \mu_i] > \Pr[y_{it} = 1 \mid x_{it}, y_{i,t-1}=0, \mu_i]$$
 
-## Binary Choice Models
+. . .
 
-The generic distribution for a binary choice situation is the Bernoulli distribution.  A *Bernoulli trial* requires two first principles based on two alternatives: 
-- Mutual exclusivity $\Rightarrow Pr(y=1 | y=0)=0$ or $Pr(y=0 | y=1) = 0$ 
-- Exhaustion $\Rightarrow Pr(y=1) = 1 - Pr(y=0)$  
+**Spurious state dependence:** Persistence driven by unobserved $\mu_i$ that is stable over time — certain individuals always have high (or low) probabilities regardless of history.
 
-If we define $$\pi = Pr(y=1)$$ Relying on this equation and *Exhaustion*, we can define the probability mass function for a Bernoulli random variable as:
+. . .
 
-$$Y_i \sim f_{Bernoulli}(y_i | \pi) = \begin{cases} \pi^{y_{i}}(1-\pi)^{1-y_{i}} & \textrm{ for } y=0,1 \\ 0 & otherwise \end{cases}$$
+**Why it matters:** True state dependence implies interventions should be early (to break the cycle). Spurious state dependence implies targeting the underlying heterogeneity.
 
+**Testing:** $\gamma \neq 0$ in $F(x'_{it}\beta + \gamma y_{i,t-1} + \mu_i)$, after controlling for $\mu_i$.
 
+::: {.notes}
+Heckman (1981c) used this distinction in the context of unemployment, arguing that unemployment can be "contagious" (true state dependence through discouragement, skill loss, and employer stigma) or merely reflective of stable individual characteristics (spurious state dependence through ability, motivation, or health). The empirical challenge is that both generate positive autocorrelation in observed outcomes.
 
-## Binary Choice Models, II
+A critical point: if we observe $\hat{\gamma} \neq 0$ in a simple dynamic probit that ignores $\mu_i$, we cannot determine whether this is true or spurious state dependence. Only after properly controlling for individual heterogeneity (through FE conditioning or RE integration) can we interpret $\hat{\gamma}$ as true state dependence.
 
-Let $u_{i}^*$ be some unobserved latent utility for an action $y_i$ taken by actor $i$.  
+In the human rights literature, "path dependence" in repression could reflect either true state dependence (repressive institutions self-reinforce) or spurious state dependence (countries with strong authoritarian characteristics always repress). Walker (2006) addresses this using an ordered Markov model.
+:::
 
-Though we cannot observe $u^*_{i}$, expected utility theory requires that taking an action generate nonnegative utility.  As a result, we should only observe $y_i =1$ if $u_{i}^* \geq 0$.  In compact notation with $1=T$ and $0=F$, $y_i = I[u_{i}^* \geq 0]$. 
+## The Initial Conditions Problem: A Unified Treatment
 
-To derive the maximum likelihood estimator is fairly simple, we simply need the product of $y_i$ multiplied by the action probability ($\pi_{i})$) associated with $y_i$.  Thus, 
+In any dynamic panel GLM, $y_{i0}$ is typically not exogenous — it was generated by the same model containing $\mu_i$.
 
-$$\mathcal{L}(\pi | \vec{y}) = \prod_{i=1}^{N} \pi_{i}^{y_{i}} (1 - \pi_{i})^{1 - y_{i}}$$
+. . .
 
-Of course, this model is not very interesting, because we have only have data on $\vec{y}$ and the MLE of $\pi$ is simply $\frac{1}{N}\sum_{i=1}^{N} y_{i}$.  What we really want is a conditional mean function for $u_{i}^*$ and an assumption about the distribution of the latent errors.  Let's consider some candidates.
+**Three solutions, applicable across all outcome types:**
 
+| Approach | Method | Software |
+|---|---|---|
+| Heckman (1981b) | Reduced-form approximation for $f(y_{i0} \mid x_i, \mu_i)$ | Custom code |
+| Wooldridge (2005) | Model $\mu_i \mid (y_{i0}, \bar{x}'_i)$ as normal; add $y_{i0}$, $\bar{x}_i$ as regressors | Standard RE routines |
+| Semiparametric | Condition on sufficient statistics (logit, Poisson) | `clogit`, `xtpoisson, fe` |
 
+. . .
 
-## Specifying a Conditional Mean Function
+**Practical recommendation:** The Wooldridge (2005) device is the most versatile — it applies to binary, ordered, count, and Tobit models with minimal additional code.
 
-Let $$u^*_{i} = X_{i}\beta + \epsilon_{i}$$  
+::: {.notes}
+Heckman's (1981b) approach involves specifying a parametric model for the initial conditions distribution $f(y_{i0} | x_i, \mu_i)$ and integrating over $\mu_i$ jointly. This is flexible but requires specifying the distribution of $\mu_i$ given the initial conditions and covariates, which is a non-trivial modelling decision.
 
-The conditional expectation of $u^*_{i}$ is a linear additive function of $X_{i}$ and unobserved parameters $\beta$.  The way to concoct probabilities from this setup is to engage in a bit of transformation.  So, let's substitute, $$u^*_{i} = X_{i}\beta \geq - \epsilon_{i}$$  If the distribution is symmetric [about zero as are logistics and normals] we can engage in some trickery, $$Pr (y=1)  =  F(-X\beta) \\  =  \Lambda(-X\beta)$$ 
+Wooldridge's (2005) approach avoids this by modelling the conditional distribution of $\mu_i$ given observed variables: $\mu_i | y_{i0}, x_i \sim \text{Normal}(y_{i0}\gamma_0 + \bar{x}'_i \delta, \sigma_a^2)$. This is a Mundlak-type correlated RE specification augmented with the initial condition $y_{i0}$. The model is then estimated as a standard RE model with $y_{i0}$ and $\bar{x}_i$ as additional regressors. Wooldridge shows this approach is consistent under the stated conditions and is generally more robust than Heckman's approach.
+:::
 
-This allows us to write the relevant likelihoods as follows: 
 
-$$\mathcal{L}_{N}(\beta | y_i , X_i)  =  \prod_{i=1}^{N} \Phi(-X_{i}\beta)^{y_{i}} \Phi(X_{i}\beta)^{1 - y_{i}}$$
-$$\mathcal{L}_{L}(\beta | y_i , X_i)  =  \prod_{i=1}^{N} \Lambda(-X_{i}\beta)^{y_{i}} \Lambda(X_{i}\beta)^{1 - y_{i}}$$
 
 
+# Dynamic Binary Panel Models {background-color="#1a2a4a"}
 
-and to write the logs of the likelihood functions as
+## The Dynamic Binary Choice Model
 
-$$\ln \mathcal{L}_{N}(\beta | y_i , X_i)  = \sum_{i=1}^{N} y_i \ln \Phi(-X_{i}\beta) + (1-y_{i}) \ln \Phi(X_{i}\beta)$$
-$$\ln \mathcal{L}_{L}(\beta | y_i , X_i)  =  \sum_{i=1}^{N} y_i \ln \Lambda(-X_{i}\beta) + (1 - y_i ) \ln \Lambda(X_{i}\beta)$$
+The first-order Markov binary panel model:
 
+$$\Pr[y_{it} = 1 \mid x_{it}, y_{i,t-1}, \mu_i] = F(x'_{it}\beta + \gamma y_{i,t-1} + \mu_i)$$
 
+$\gamma \neq 0$ implies true state dependence (conditional on individual effects).
 
-Or, for arbitrary c.d.f. $F$, $$\ln \mathcal{L} = \sum_{i=1}^{N} (1-y_{i}) \ln  F(X\beta) + y \ln (1 - F(X\beta))$$
+. . .
 
-This gives us everything we need for logits, probits, and a host of other Bernoulli-based MLE's.
+**Key challenge:** The incidental parameters problem gets worse — both $\mu_i$ and the lagged outcome $y_{i,t-1}$ create bias channels in the MLE.
 
-Some cumulative distribution functions:
+. . .
 
-- Normal [S]:  $\Phi$ which does not have a closed form integral
-- Logistic [S]:  $\Lambda = \frac{e^{X_{i}\beta}}{1 + e^{X_{i}\beta}}$
-- Cauchy [S]: $\frac{1}{\pi}\arctan(X\beta) + \frac{1}{2}$
-- Complementary log-log: $1 - e^{-e ^{X_{i} \beta } }$
-- Log-log:  $e^{-e ^{-X_{i}\beta}}$
+**Testing state dependence:** An LR test of $H_0: \gamma = 0$ after properly controlling for $\mu_i$ is the cleanest diagnostic. A Wald test also works.
 
+. . .
 
+**Static model bias from ignoring dynamics:** If $\gamma \neq 0$, omitting $y_{i,t-1}$ from the static model causes omitted variable bias in $\hat{\beta}$ (through the correlation of $x_{it}$ with past outcomes).
 
+::: {.notes}
+The dynamic binary choice panel model is the workhorse for studying state dependence in panel settings. It is widely used in labour economics (union membership, employment), political science (war initiation, repression), and health economics (health status, insurance take-up).
 
-![](./img/cumulative-lines.png)
+The bias from ignoring dynamics is subtle: if the true model includes $\gamma y_{i,t-1}$, then omitting it introduces omitted variable bias in the static model even if we control for $\mu_i$ — because $y_{i,t-1}$ is correlated with $x_{it}$ (through the autocorrelation of $x_{it}$) and with $\mu_i$ (because $y_{i,t-1}$ was generated by a model containing $\mu_i$). The direction of bias in $\hat{\beta}$ depends on the sign of $\gamma$ and the correlation between $x_{it}$ and $y_{i,t-1}$.
+:::
 
+## Wooldridge (2005) Initial Conditions Device in Practice
 
+**Step-by-step implementation:**
 
+**Step 1:** Compute group means $\bar{x}_i = T^{-1}\sum_t x_{it}$
 
+**Step 2:** Specify the conditional distribution of $\mu_i$:
 
-![](./img/densities.png)
+$$\mu_i \mid y_{i0}, \bar{x}_i \;\sim\; \text{Normal}(\gamma_0 y_{i0} + \bar{x}'_i \delta, \sigma_a^2)$$
 
+**Step 3:** Substitute and run standard RE probit with augmented regressors:
 
+$$\Pr[y_{it}=1] = \Phi\!\left(\tilde{x}'_{it}\tilde{\beta} + \tilde{\gamma} y_{i,t-1} + \gamma_0 y_{i0} + \bar{x}'_i \delta\right)$$
 
-## Identification of Binary Choice Models
+. . .
 
-Most of the distributions described above are not single-parameter distributions.  However, there is not really enough information in the data to identify two parameters.  As a result, we tend to work with standardized distributions.  For example, the probit model [based on the normal] sets $\sigma=1$.  The logit model [based on the logistic distribution] sets $\sigma=\frac{\pi}{\sqrt{3}}$.  Because of this fact, we do not actually estimate $\beta$, we estimate a scaled parameter $\frac{\beta}{\sigma}$.  *NB: It is for this reason that we can come up with an approximation relating logit and probit estimates of $\hat{\beta}$.  The ratio is 1.8, but as Long mentions, others are argued to work better.*  It also means that $\hat{u}_{i}^*$ is scaled to $\sigma$.  $\hat{\pi}$ is unaffected.
+**In Stata:**
 
-This does not influence hypothesis testing on $\beta$ nor does it inhibit our ability to uncover consistent estimates of the probabilities -- the quantities of interest.
+```stata
+bysort id: egen xbar1 = mean(x1)
+bysort id: egen xbar2 = mean(x2)
+xtprobit y x1 x2 l.y y0 xbar1 xbar2, re
+```
 
+::: {.notes}
+The Wooldridge (2005) device is elegant in its simplicity: it requires only one additional step (computing group means and including the initial condition $y_{i0}$) and can be implemented in any RE probit routine. The key assumption is that $\mu_i | y_{i0}, x_i$ is normally distributed — a parametric assumption that allows correlation between $\mu_i$ and $x_i$ through the projection $E[\mu_i | y_{i0}, x_i] = \gamma_0 y_{i0} + \bar{x}'_i \delta$.
 
+In R, the Wooldridge device is implemented by:
+1. Computing `xbar` = within-person mean of each covariate
+2. Including `y0` (initial condition) and `xbar1, xbar2, ...` as additional regressors in `glmer()` or `pglm()`
+3. Using the `random = ~ 1 | id` random effect structure
 
-## Marginal Effects
+Wooldridge (2005) shows via simulations that this approach performs well in typical panels ($N = 1000$, $T = 4, 8$), even when the distribution of $\mu_i | y_{i0}, x_i$ is not exactly normal.
+:::
 
+## Honoré & Kyriazidou (2000): Semiparametric FE Dynamic Logit
 
-- Marginal effects should generally be calculated at theoretically interesting [referential] values of the independent variables. 
-- For nonlinear models, marginal effects depend on decisions about where to set other variables.
-- King, et. al. have some software for Stata [clarify] and R [Zelig] to do this for you.
-- If you use software to do it, know how they do it.  Some of the choices of the programmers are not innocuous.
-- Unknowns have sampling distributions; estimated quantities have associated uncertainty and the transparent communication of relevant quantities requires that we pay serious attention to this.
+For the dynamic FE logit model, the sufficient statistic argument does not directly extend because $y_{i,t-1}$ is correlated with $\mu_i$.
 
+. . .
 
+**Honoré & Kyriazidou (2000):** Identification requires the strict exogeneity condition $x'_{i2} = x'_{i3}$ for $T = 3$. Under this condition, a conditional likelihood is available that eliminates $\mu_i$.
 
+. . .
 
-![](./img/logit-constants-betas-plus.png)
+**Kernel weighting:** Since $x'_{i2} = x'_{i3}$ exactly is a zero-probability event with continuous $x$, kernel weights $K\!\left(\frac{x_{i2}-x_{i3}}{h_N}\right)$ are applied.
 
-##
+**Limitation:** Convergence rate slower than $\sqrt{N}$; computationally intensive.
 
-![](./img/logit-constants-betas-minus.png)
+**Practical guidance:** For most applied datasets, the Wooldridge (2005) device is more practical.
 
+::: {.notes}
+Honoré and Kyriazidou (2000) is the main semiparametric approach to the dynamic FE binary logit model. The key identification insight is that when $x_{i2} = x_{i3}$ (or close to it, handled by kernel weighting), the sufficient statistic argument can be applied to the conditional likelihood — the conditioning on $y_{i1} + y_{i2}$ and $y_{i2} + y_{i3}$ eliminates both $\mu_i$ and the initial condition bias simultaneously.
 
+The requirement $x'_{i2} = x'_{i3}$ is a strong restriction: it requires that the covariates take the same value in two consecutive periods for identification. In practice, this means the estimator can only use variation in covariates between periods that are not part of the identifying pair, and uses kernel smoothing to handle the continuous covariate case.
 
-## Some Notation
+The convergence rate of the HK estimator is $N^{1/3}$ in the bandwidth $h_N$, which is slower than the $\sqrt{N}$ rate. This means very large samples are needed for precise inference.
+:::
 
-Reviewing, let us define: $\mathcal{L}(\theta | \vec{y})$ as the *likelihood*,  simplify to $\mathcal{L}(\theta)$.
+## Carro (2007) and Application: Union Membership
 
-1. The Score Vector $$S(\theta) \equiv \frac{\partial \ln \mathcal{L}(\theta)}{\partial \theta}$$ 
-1. The Hessian Matrix $$H(\theta) \equiv \frac{\partial^2 \ln \mathcal{L}(\theta)}{\partial \theta \partial \theta^{'}}$$
-1. The Information Matrix $$- E \left[ \frac{\partial^2 \ln \mathcal{L}(\theta)}{\partial \theta  \partial \theta^{'}}\right]^{*} = I(\theta) \equiv E[S(\theta)S(\theta)^{'}]$$
+**Carro (2007):** Modified MLE (MMLE) — corrects the concentrated loglikelihood to eliminate the first-order $O(1/T)$ bias term. Performs well for $T \geq 8$.
 
+| Panel length | Recommended estimator |
+|---|---|
+| $T \leq 3$ | Wooldridge (2005) device |
+| $T = 4$–$8$ | Wooldridge (2005) or Carro (2007) |
+| $T > 8$ | FE MLE with Carro bias correction, or Wooldridge |
 
+. . .
 
-## Cramer and Rao's Inequality
+**Vella & Verbeek (1998) / Wooldridge (2005):** PSID, 545 full-time male workers, 1980–87. Dynamic RE probit (Wooldridge device), **average partial effects of state dependence:**
 
-Assuming that the density of $y$ satisfies regularity conditions, the variance of an unbiased estimator $\hat{\theta}$ of a parameter $\theta$, $$V(\hat{\theta}) \geq \left[I(\theta)\right]^{-1} = \left( - E \left[ \frac {\partial^2 \ln \mathcal{L}(\theta)}{\partial \theta  \partial \theta^{'}} \right] \right)^{-1}$$  
+| Sample | $\hat{\gamma}_{\text{APE}}$ | Std. Error |
+|---|---|---|
+| Married men | 0.182 | (0.041) |
+| Unmarried men | 0.173 | (0.052) |
 
-I will spare you the proof on this.  Loosely, the regularity conditions are on the density of the random variable that appears in  $\mathcal{L}$ that ensure that the Lindberg-Levy CLT will apply to observations on the random vector $y = \frac{\partial \ln f(x | \theta)}{\partial \theta}$.  Among them are finite moments of $x$ to order 3 and that the range of the $x$'s is independent of the parameters.
+Prior union membership increases $\Pr[\text{union}]$ by $\approx 18\%$ — **true state dependence.**
 
+::: {.notes}
+Wooldridge (2005) reanalyses the Vella and Verbeek (1998) data as an illustration of his initial conditions device. The lagged union status is statistically significant after controlling for individual effects (via the Mundlak device) and the initial condition (union membership in 1980). The average partial effect of 0.182 for married men means that holding $x_{it}$ and $\mu_i$ fixed at their sample means, switching $y_{i,t-1}$ from 0 to 1 increases $\Pr[y_{it} = 1]$ by 0.182. This is a large and economically significant effect.
 
+The finding of true state dependence in union membership is consistent with job search theories where union membership leads to union-seeking in future job transitions, and with the social capital theories where union membership increases the probability of being offered union jobs through networks.
 
-## Properties of MLE's
+Problem 11.7 in Baltagi asks the reader to replicate these results using Stata's `xtprobit, re` with the constructed variables.
+:::
 
-- Consistency:  $\textrm{plim } \hat{\theta}_{MLE} = \theta$
-- Asymptotic Efficiency:  $$V(\hat{\theta}_{MLE}) = I(\theta)^{-1} = \left(- E \left[ \frac{\partial^2 \ln \mathcal{L}(\theta)}{\partial \theta  \partial \theta^{'}}\right]\right)^{-1}$$
-- Asymptotic Normality: $$\hat{\theta}_{MLE} \stackrel{a}{\sim} N(0, I[\theta]^{-1})$$
-- Invariance: MLE of $\gamma = c(\theta)$ is $c(\hat{\theta}_{MLE})$
 
+# Dynamic Ordered Panel Models {background-color="#1a2a4a"}
 
+## Why Ordered Outcomes Need Their Own Dynamic Treatment
 
-## Asymptotically Equivalent Tests
+With binary outcomes: one lag $y_{i,t-1} \in \{0,1\}$ — one parameter $\gamma$.
 
-Define likelihoods $\mathcal{L}(\theta)$ in two variants:
+. . .
 
-$\mathcal{L}_{U}(\theta)$ as an \textbf{unrestricted} model.
-$\mathcal{L}_{R}(\theta)$ as a restricted model, nested in $\mathcal{L}_{U}(\theta)$: $\theta_{R} \subsetneq \theta_{U}$.
+With $J$ ordered categories, $y_{i,t-1}$ can enter in three ways:
 
-1. Wald:  Requires only the computation of $\mathcal{L}_{U}$ 
-   - Can use a robust var/cov matrix.
-   - Worst small sample properties, see Fears, et. al. (1996) and Pawitan (2000) 
-1. Lagrange Multiplier: Requires only the computation of $\mathcal{L}_{R}$  
-    - Can use a robust var/cov matrix.
-1. Likelihood Ratio: Requires the computation of $\mathcal{L}_{U}$ and $\mathcal{L}_{R}$  
-    - Cannot use a robust var/cov matrix.
-    - $2(\ln \mathcal{L}_{U} - \ln \mathcal{L}_{R}) \sim \chi_{m}^2$ where $m$ is the number of restrictions.  Indeed, doesn't need one and that's good.
+1. **Single continuous score:** $\gamma \cdot y_{i,t-1}$ — assumes equal spacing, restrictive
+2. **$J-1$ category dummies:** $\sum_{k=1}^{J-1} \gamma_k \mathbf{1}[y_{i,t-1}=k]$ — fully flexible, $J-1$ persistence parameters
+3. **Full transition matrix:** $P(y_{it}=j \mid y_{i,t-1}=k)$ — the Markov chain estimand
 
+. . .
 
+The transition matrix approach is the most general — it allows **asymmetric persistence**: escalation may differ from de-escalation, a key substantive question in conflict, repression, and disease progression research.
 
-## A Brief Diversion to GEE
+::: {.notes}
+The distinction between the three parameterisations of the lagged ordered outcome is important. The single continuous score restriction assumes that moving from state 1 to state 2 has the same effect as moving from state 4 to state 5 — a strong and often implausible restriction. The category dummy approach is much more flexible: each $\gamma_k$ captures the effect of being in state $k$ yesterday on today's outcome (relative to the baseline state 0).
 
-- Semi-parametric regression that relies on specifying the first-two moments.
-- Random effects and variances are nuisance (this is the PA option)
-- Estimating equations, not likelihoods so no L-R tests.
-- Specifies the within-group structure.
-- Uses the sandwich for variance/covariance matrix
+The full transition matrix $P(y_{it} = j | y_{i,t-1} = k, x_{it}, \mu_i)$ provides the richest description. From the category dummy parameterisation:
+$$P(y_{it} = j | y_{i,t-1} = k, x_{it}, \mu_i) = F(\kappa_j - x'_{it}\beta - \gamma_k - \mu_i) - F(\kappa_{j-1} - x'_{it}\beta - \gamma_k - \mu_i)$$
 
+This shows that $\gamma_k$ simply shifts the entire distribution of $y_{it}$ for individuals currently in state $k$, through the index. The asymmetric persistence hypothesis is that $\gamma_k$ is not constant in $k$ — persistence differs depending on the current state.
+:::
 
+## The First-Order Markovian Ordered Probit/Logit
 
-## Back to the Story
+The **ordered observation-driven Markov model:**
 
-- Is the effect that we want to identify a within or a between effect?
-- A brief aside on the population issue
-- BIG PICTURE ISSUE: Just because data are not continuous does not mean heterogeneity and dynamics don't matter.
+$$\Pr[y_{it} \leq j \mid y_{i,t-1}, x_{it}, \mu_i] = F\!\left(\kappa_j - x'_{it}\beta - \sum_{k=1}^{J-1} \gamma_k \mathbf{1}[y_{i,t-1}=k] - \mu_i\right)$$
 
+. . .
 
+**Estimands of interest:**
 
-## Nuisance v. Substance
-There are methods, like GEE, that treat dynamics and other issues as nuisance.  Specify some correlation structure and then utilize a moment-based quasi-likelihood estimator to get parameter estimates because we don't care about the correlation.  In many instances, this is probably fine.  But many times, the precise time issues are essential.
+- $\gamma_k$: state-specific persistence — the shift in $\Pr[y_{it} \leq j]$ when in state $k$ yesterday
+- $\partial \Pr[y_{it}=j] / \partial x_{it}$: conditional marginal effects
+- Full $J \times J$ predicted transition matrix $P_{kj}(x_{it}, \mu_i)$
 
+. . .
 
+The $J \times J$ predicted transition matrix evaluated at covariate means gives the **most interpretable summary** of dynamic persistence.
 
-## Panel Data Count Models
+::: {.notes}
+The ordered Markov model is a natural extension of both the static ordered model (add lagged category dummies) and the dynamic binary model (extend from $J=2$ to $J>2$ categories). The key parameter is $\gamma_k$, which captures how being in state $k$ yesterday affects today's cumulative probability distribution.
 
-Stata estimates two panel data count model classes -- the Poisson and the Negative Binomial.  In most cases, the fact that the Poisson is a single-parameter distribution leads to a default preference for the negative binomial (of which the Poisson is a special case).
+Note that when $J = 2$ (binary case), $\gamma_1 = \gamma$ and the model reduces to the standard dynamic probit/logit. When all $\gamma_k$ are equal to some common $\gamma$, the model reduces to the ordered probit/logit with a single lag treated as a continuous score.
 
-- $\texttt{xtpoisson}$ estimates fixed effects, random effects, and population averaged versions of the Poisson model for TSCS/CSTS.  The population averaged version is simply a GEE with a correlation option.
-- $\texttt{xtnbreg}$ is similar with a negative binomial regression model.  The options are the same.
+For the initial conditions problem: $y_{i0}$ is an ordered categorical variable taking $J$ values. In the Wooldridge (2005) framework, $y_{i0}$ enters the model through $J-1$ dummy variables (or a continuous score approximation). The group means $\bar{x}_i$ are also included. The Mundlak-type specification then allows $\mu_i$ to be correlated with both $y_{i0}$ and $x_i$.
+:::
 
+## Application: Democracy, Repression, and Path Dependence
 
+**Walker (2006, working paper):** ["Democracy and Human Rights Abuses: Insights from First-Order Markov Models"](https://people.willamette.edu/~rwalker/pdf/hr-dem-markov.pdf)
 
-## Binary Models
+**Data:** 1976–2003, country-year panel; six measures of human rights abuses including the Political Terror Scale (PTS, 1–5) and CIRI physical integrity index.
 
-Stata estimates three panel data binary estimators -- the logit, probit, and cloglog.  Fixed, random, and population averaged versions exist for logit and cloglog; the probit has no fixed effects version.  The PA is, again, a GEE estimator.
+. . .
 
+**Key finding:** The effect of political democracy on human rights abuses **depends critically on the past level of repression.** The $\gamma_k$ parameters reveal:
 
+- At **low prior repression** ($k = 1, 2$): democracy significantly limits future abuses
+- At **high prior repression** ($k = 4, 5$): democracy has no discernible constraining effect
 
-## Ordered Models
+. . .
 
-Stata estimates two classes of panel data ordinal regressions -- the logit and probit.  Both are random effects estimators, though population averaged versions exist.  The PA is, again, a GEE estimator.
+**Methodological contribution:** A static ordered probit cannot recover this history-contingent relationship. The Markov structure is essential for the substantive finding.
 
+::: {.notes}
+Walker's (2006) paper is a clean illustration of why ordered Markov models are needed in comparative politics and IR research. The PTS runs from 1 (secure rule of law, rare political murder) to 5 (terror extended to the whole population). Repression scores are highly persistent (autocorrelation typically above 0.8 in the raw data).
 
+The finding that democracy helps at low repression levels but not at high ones has important policy implications: democracy promotion may be sufficient to prevent deterioration of human rights in moderately repressive states but insufficient to reduce repression in highly repressive states. This is a nuanced conclusion that requires distinguishing the effect at different points in the state space — exactly what the $\gamma_k$ parameters capture.
 
-## Mixed Effects Models
+Walker's approach specifies a Bayesian or ML ordered probit where the lagged PTS category enters through $J-1 = 4$ dummy variables. The estimation is essentially an augmented `xtoprobit` with lagged category dummies and group-mean controls.
 
-$\texttt{xtmelogit}$ (logit) and $\texttt{xtmepoisson}$ (Poisson) estimate mixed effects regression models for TSCS/CSTS data.  The ideas and implementation are similar to the related command \texttt{xtmixed} that we have discussed.
+Related applications: Schnakenberg & Fariss (2014) develop a dynamic ordinal IRT model for human rights measurement that handles temporal dependence through a different mechanism (latent state space). Hill & Jones (2014) use dynamic ordered probit specifications for the PTS in their APSR study of state repression.
+:::
 
+## RE Dynamic Ordered Probit in Practice
 
+**Contoyannis, Jones & Rice (2004)** apply the Wooldridge device to ordered outcomes — the canonical implementation.
 
-## $\texttt{xtgee}$ syntax
+**Step-by-step:**
 
-$\texttt{xtgee}$ operates off of the GLM family and link function ideas.  For example, probits and logits are family (binomial) with a probit or logit link. The key issue becomes specifying a working correlation matrix (within-groups/units) from among the options of exchangeable, independent, unstructured, fixed (must be user specified), ar (of order), stationary (of order), and nonstationary (of order).
+1. Define $y_{i0}$ dummy variables: $\mathbf{1}[y_{i0} = 2], \ldots, \mathbf{1}[y_{i0} = J-1]$
+2. Compute group means $\bar{x}_i$
+3. Run `xtoprobit` with lagged category dummies $+ y_{i0}$ dummies $+ \bar{x}_i$
 
+. . .
 
+```stata
+* Wooldridge device for RE dynamic ordered probit
+xtoprobit y L1.y_cat2 L1.y_cat3 L1.y_cat4 x1 x2  ///
+          y0_cat2 y0_cat3 y0_cat4                   ///
+          xbar1 xbar2, intpoints(24)
+```
 
-## Binary Dynamics
+. . .
 
-There are four classes of discrete time series models that we might use for incorporating dynamics for binary observations varying across both time and space.  These get some treatment in the paper by Beck, et. al.
+**Post-estimation:** Predict the full transition matrix:
 
-- Latent dependence (Dynamic Linear Models)
-- State dependence (Markov Processes)
-- Autoregressive disturbances
-- Duration (survival models and isomorphisms)
+```stata
+margins, predict(pr outcome(1)) predict(pr outcome(2)) ///
+         predict(pr outcome(3)) at(y_lag=(1 2 3))
+```
 
+::: {.notes}
+Contoyannis, Jones and Rice (2004) apply this approach to self-assessed health (5 categories: very bad to very good) using the British Household Panel Survey (BHPS). They find strong positive state dependence — good health yesterday significantly increases the probability of good health today, even after controlling for observed and unobserved individual characteristics.
 
+For the PTS application (Walker 2006), the implementation in Stata would be:
+- L1.pts_cat2 through L1.pts_cat4: lagged PTS category dummies (with PTS=1 as the reference)
+- y0_cat2 through y0_cat4: 1976 PTS category dummies (initial conditions)
+- xbar1, xbar2: group means of democracy index, GDP per capita, etc.
 
-## Latent Dependence
+In R, `ordinal::clmm()` with a formula like `y ~ lag_y_cat2 + lag_y_cat3 + lag_y_cat4 + x1 + x2 + y0_cat2 + y0_cat3 + y0_cat4 + xbar1 + xbar2 + (1|id)` implements the same model.
+:::
 
-Carry on the setup from yesterday.
+## FE Dynamic Ordered Logit and Practical Guidance
 
-$$u_{i,t}^{*} = X\beta + \rho u^{*}_{i,t-1} + \epsilon_{it}$$
+**Müller, Raposo & Vandoros (2021):** For $T = 3$, observations satisfying $x'_{i2} = x'_{i3}$ yield a conditional likelihood that eliminates $\mu_i$ from the dynamic ordered logit. No standard software implementation yet.
 
-This is the analog of a lagged dependent variable regression fit in the latent space rather than the observed data.  Such models are probably easiest to fit using Bayesian data augmentation.
+. . .
 
+**Testing state dependence:**
+LR test: compare `xtoprobit` with vs. without lagged category dummies — $\chi^2_{J-1}$ under $H_0: \gamma_1 = \cdots = \gamma_{J-1} = 0$
 
+**Testing asymmetric persistence:**
+Wald test: $H_0: \gamma_1 = \gamma_2 = \cdots = \gamma_{J-1}$
 
-## Autoregressive Errors and Serial Correlation
+. . .
 
-$$u_{i,t}^{*}  =  X\beta + \epsilon_{it}$$
-$$\epsilon_{i,t}  =  \rho \epsilon_{i,t-1} + \nu_{t}$$ 
+**Computing the transition matrix in R:**
 
-where $\nu$ are i.i.d.  The model is odd in the sense that a shock to $X$ dies immediately but a shock to an omitted thing has dynamic impacts.  There are some suggested tests for serial correlation.  We will implement one of them that employs the generalized residual.  The idea is similar to what we have seen before.  Here, we have two outcome values and two possible generalized residuals.  We either have the density over the CDF or the negative of the density over one minus the CDF.  Then we want the covariance in time of the generalized residuals and need to calculate a variance given as
-$$V(s) = \sum_{t=2}^{T} \frac{\phi_{t}^{2} \phi^{2}_{t-1}}{\Phi_{t}(1-\Phi_{t})\Phi_{t-1}(1-\Phi_{t-1})}$$  We could apply this individually or collectively to the whole set with $N$ summations added to the mix.  One can show that the covariance over the square root of $V(s)$ has an asymptotic normal distribution.
+```r
+library(marginaleffects)
+predictions(mod, newdata = datagrid(y_lag = 1:J), 
+            type = "probs") |>
+  pivot_wider(names_from = group, values_from = estimate)
+```
 
+::: {.notes}
+Müller, Raposo and Vandoros (2021) extend the Honoré-Kyriazidou (2000) approach to ordered outcomes. The key difference from the binary case is that the sufficient statistic for $\mu_i$ in the ordered logit depends on the entire ordered sequence, not just the sum. For $T = 3$ and a 3-category ordered logit, the conditional likelihood conditions on $\sum_t y_{it}$ restricted to a specific transition path — the conditioning set is more complex but the principle is the same.
 
+For researchers who need FE dynamic ordered models, the most practical approach currently is:
+1. Use RE dynamic ordered probit with Mundlak device (Contoyannis et al. style)
+2. Check robustness using the BUC estimator  with lagged category dummies included
+3. Report both as a robustness check
 
-## BKT 1998
+The transition matrix is the most interpretable summary of a dynamic ordered model. Entry $(k, j)$ gives the predicted probability that a unit currently in state $k$ will be in state $j$ next period, evaluated at covariate means and integrated over (or conditioned on) $\mu_i$.
+:::
 
-Beck, Katz, and Tucker (1998) point out that BTSCS are grouped duration data.  Indeed, a cloglog discrete choice model is a Cox proportional hazards model.  They are not similar, like each other, whatever.  They are isomorphic.  One can leverage this to do something about the temporal evolution of binary processes.   Let's get to the details.
 
+# Dynamic Count Panel Models {background-color="#1a2a4a"}
 
+## INGARCH and Score-Driven Models for Counts
 
-## Markov Processes
+**Davis, Dunsmuir & Streett (2003)** / **Harvey & Fernandes (1989):** The observation-driven INGARCH(1,1):
 
-Markov processes extend to a general class of discrete events observed through time and across units.  While the reading discusses the binary case, extensions for ordered and multinomial events are straightforward.  I will show two examples.
+$$y_{it} \mid \mathcal{F}_{i,t-1} \sim \text{Poisson}(\lambda_{it}), \quad \lambda_{it} = \omega_i + \alpha y_{i,t-1} + \beta \lambda_{i,t-1}$$
 
-$$\mathbf{P}  =  \left(\begin{array}{cccc}\pi_{11} & \pi_{12} &\ldots & \pi_{1J} \\
-\pi_{21} & \ddots & \hdots  & \vdots \\ 
-\vdots & \ddots & \hdots  & \vdots \\ 
-\pi_{J1} & \pi_{J2} & \hdots & \pi_{JJ}\end{array}\right)$$
+Closed-form likelihood as a product of Poisson densities. **Persistence:** $\alpha + \beta$; stationary if $\alpha + \beta < 1$.
 
+. . .
 
-- Rows represent $s^{t}$: the state up to time $t$
-- Columns represent $y^{t}$
-- Rows sum to unity
+**Creal, Koopman & Lucas (2013) GAS framework:** Update $\lambda_{it}$ via the scaled score:
 
-The idea is that the current outcome depends on covariates and the prior state.  We can do a lot with that.
+$$\lambda_{it} = \omega + A \cdot s_{i,t-1} + B \cdot \lambda_{i,t-1}, \quad s_{it} = \nabla_{it} \cdot \mathcal{I}_{it}^{-1}$$
 
+| Distribution | Score $s_{it}$ | Model |
+|---|---|---|
+| Poisson | $y_{it}/\lambda_{it} - 1$ | INGARCH(1,1) |
+| Negative Binomial | $(y_{it} - \lambda_{it})/(\lambda_{it}(1 + \alpha^{-1}\lambda_{it}))$ | NB-GAS |
 
+::: {.notes}
+The INGARCH(1,1) model is the count data analogue of the GARCH(1,1) model for volatility. Just as GARCH models the conditional variance as a function of past squared returns and past variances, INGARCH models the conditional mean count as a function of past counts and past conditional means. The closed-form likelihood is a key computational advantage.
 
+Harvey and Fernandes (1989) introduced a related model using the gamma-Poisson conjugate structure. Davis, Dunsmuir and Streett (2003) provide a more general treatment with rigorous asymptotic theory.
 
-## Some General Comments on Panel GLM
+The GAS framework provides a principled way to construct observation-driven models for any distributional family. The key insight is to use the scaled score of the predictive likelihood as the "innovation" that updates the time-varying parameter. This ensures that the update is in the direction of steepest ascent of the log-likelihood — intuitively, the parameter update responds to how surprising the current observation is relative to the previous period's prediction.
 
-- One has to be careful with these extensions of standard linear models. Ex. Random effects probit and fixed effects logit.
-- The orthogonality of the random effects and the regressors is maintained.
-- In most cases, the real trouble is incidental parameters.  That may not be as harsh as it initially seems.  William Greene has an interesting argument about this in his paper, *Estimating Econometric Models with Fixed Effects*.
+For the Negative Binomial case: the score-based update naturally down-weights extreme counts, providing robustness to outliers. This is analogous to how the Beta-t-EGARCH model is more robust than standard GARCH for financial returns.
+:::
 
+## Dynamic FE Poisson: Blundell, Griffith & Windmeijer (2002)
 
+**The pre-sample mean approach** for dynamic count panel models:
 
-## To My Examples
+$$\log \lambda_{it} = x'_{it}\beta + \gamma \log y_{i,t-1} + \log \bar{y}_{i,\text{pre}} + v_{it}$$
 
-Questions that arise:
+where $\bar{y}_{i,\text{pre}}$ is the pre-sample mean count — a proxy for $\exp(\mu_i)$.
 
-- What do the state dependent parameters represent?  Interpreting interaction terms.
-- Do the effects of a given variable depend on the prior state?
-- Is the effect given a prior state differentiable from zero?
-- How do we calculate these things?
+. . .
 
+**Implementation in Stata:**
 
+```stata
+gen log_pre = log(pre_sample_mean + 0.5)
+xtpoisson y x1 x2 l.y log_pre, fe
+```
+
+**In R with `fixest`:**
+
+```r
+fepois(y ~ x1 + x2 + log(lag_y) + offset(log_pre_mean) | id, data = df)
+```
+
+. . .
+
+**Arellano-Bond GMM alternative** (Windmeijer 2000): Instrument $y_{i,t-1}$ with $y_{i,t-2}, y_{i,t-3}, \ldots$ in first-differenced equations. Consistent under serial uncorrelation of $v_{it}$.
+
+::: {.notes}
+Blundell, Griffith and Windmeijer (2002) proposed the pre-sample mean approach as a practical way to handle individual effects in dynamic count panel models. The key assumption is that $\bar{y}_{i,\text{pre}}$ is a sufficient statistic for $\exp(\mu_i)$ given the in-sample regressors. This is an approximation — the true sufficient statistic for $\mu_i$ in the static Poisson model is $\sum_t y_{it}$, but in the dynamic model, $\sum_t y_{it}$ is itself correlated with $\gamma y_{i,t-1}$, making the conditioning argument more complex.
+
+In the HHG (1984) patents application, Blundell et al. use 5 years of pre-sample patent counts as the proxy for $\mu_i$. They find that the pre-sample mean approach gives results very similar to the conditional Poisson estimator, with somewhat higher efficiency because it uses the between-firm variation that is discarded by conditioning.
+:::
+
+## Overdispersion, NB Dynamics, and Testing
+
+**NB-INGARCH:** Replace Poisson with NB in the INGARCH framework:
+
+$$y_{it} \mid \mathcal{F}_{i,t-1} \sim \text{NB}(\lambda_{it}, \phi), \quad \lambda_{it} = \omega + \alpha y_{i,t-1} + \beta \lambda_{i,t-1}$$
+
+Available via `tscount::tsglm(distr = "nbinom")` in R.
+
+. . .
+
+**Dynamic hurdle models:** For excess zeros with dynamics:
+
+1. **Participation equation:** $\Pr[y_{it} > 0]$ — dynamic binary logit
+2. **Count equation:** $y_{it} \mid y_{it} > 0$ — dynamic Poisson/NB (truncated)
+
+. . .
+
+**Testing dynamics:**
+
+- LR test comparing static vs dynamic Poisson
+- Check residual ACF after `xtpoisson, fe` for remaining serial correlation
+- Test $H_0: \gamma = 0$ (no lagged count effect) via Wald test
+
+::: {.notes}
+The NB-INGARCH model extends the Poisson INGARCH to handle overdispersion. The overdispersion parameter $\phi$ is time-invariant but the conditional mean $\lambda_{it}$ varies dynamically. The likelihood is available in closed form as a product of NB densities, making estimation straightforward.
+
+For the hurdle model with panel data, the participation equation (binary logit/probit with FE or RE) determines whether any event occurs, and the count equation (truncated Poisson or NB with FE or RE) models the number of events conditional on participation. The dynamic extension allows past participation and past counts to affect both components. This is relevant for conflict event data where countries may be "in conflict" in some periods and not others, and the intensity of conflict (number of events) conditional on being in conflict may also exhibit dynamics.
+
+In R, the `tscount` package implements INGARCH models for individual time series but does not directly handle panel data. For panel applications, one can loop over individuals and pool estimates, or use `fixest` with lagged outcome regressors and the QMLE Poisson.
+:::
+
+# Simulation Estimators {background-color="#1a2a4a"}
+
+## Why Simulation? The Multinomial Panel Probit
+
+For a multinomial probit panel model with $M$ alternatives and $T$ periods, the choice probability involves a $T(M-1)$-dimensional integral:
+
+$$\Pr[\mathbf{y}_i = \mathbf{j}] = \int_{\mathcal{A}_j} f(\boldsymbol{\varepsilon}_i)\, d\boldsymbol{\varepsilon}_i$$
+
+where $\mathcal{A}_j$ is a high-dimensional region and $\boldsymbol{\varepsilon}_i \in \mathbb{R}^{T(M-1)}$.
+
+. . .
+
+- For $M = 4$, $T = 8$: **24-dimensional** integral — infeasible by quadrature
+- **GHK simulator** (Geweke-Hajivassiliou-Keane): factors the joint probability into a product of univariate conditionals — each integral is one-dimensional
+- MSM sidesteps the high-dimensional integral by **simulating** choice sequences from the model
+
+::: {.notes}
+Keane (1994) identifies three key advantages of the Method of Simulated Moments (MSM) over quadrature-based MLE for panel limited dependent variable models:
+1. MSM is asymptotically as efficient as MLE in simulation size
+2. MSM handles serial correlation patterns that quadrature MLE cannot
+3. MSM extends to nonlinear systems of equations that are intractable with MLE
+
+The GHK simulator factored the T(M-1)-dimensional integral into a product of univariate conditional probabilities using the Cholesky decomposition of the error covariance matrix. This makes each integral a standard normal CDF evaluation, which is fast and accurate. The GHK simulator was independently developed by Geweke (1991), Hajivassiliou and McFadden (1998), and Keane (1990), and is the most widely used simulator for discrete choice models.
+:::
+
+## The GHK Simulator
+
+**Step 1:** Decompose the error covariance $\Sigma = LL'$ (Cholesky decomposition).
+
+**Step 2:** Express choice probabilities as a product of univariate conditional probabilities using the triangular structure of $L$.
+
+**Step 3:** Draw antithetic samples $\eta^{(r)} \sim \text{Normal}(0, I)$, $r = 1, \ldots, R$.
+
+**Step 4:** Compute simulated probability:
+
+$$\hat{P}_{ij} = \frac{1}{R}\sum_{r=1}^R \prod_{t=1}^T \Phi\!\left(\frac{u_{it}^{(r)} - \ell'_{it}\eta^{(r)}_{<t}}{\ell_{tt}}\right)$$
+
+. . .
+
+**Simulated MLE:** $\max_\theta \sum_i \log \hat{P}_{iy_i}(\theta)$ — consistent as $R, N \to \infty$; bias $O(1/R)$.
+
+**Practical rule of thumb:** $R \geq 10\sqrt{N}$ draws (Hajivassiliou & Ruud 1994). For $N = 1000$, $R \geq 316$ draws — feasible on modern hardware.
+
+::: {.notes}
+The GHK simulator works by sequential conditioning. For the multivariate normal case with correlation structure $\Sigma$, the joint probability is factored as:
+
+$\Pr[y_1 \leq b_1, y_2 \leq b_2, \ldots] = \Pr[y_1 \leq b_1] \cdot \Pr[y_2 \leq b_2 | y_1 \leq b_1] \cdots$
+
+Each conditional probability is a univariate normal CDF, which can be computed exactly. The draws from the truncated normal conditional distributions are obtained using the inverse CDF method, and the Cholesky decomposition $L$ propagates the correlation structure through the sequential conditioning.
+
+Keane (1994) shows that for "moderately large" $T$ (say $T = 10$) and $M = 4$ alternatives, $R = 20$–$40$ draws are sufficient for the simulated MLE to have negligible bias. For larger $T$ or $M$, more draws are needed. The antithetic sampling (using $\eta$ and $-\eta$ as pairs) substantially reduces simulation variance.
+:::
+
+## MSM vs Simulated MLE: Practical Guidance
+
+**When to prefer MSM (Keane 1994):**
+
+- MLE computationally infeasible (large $T$, large $M$)
+- Complex or unknown serial correlation patterns
+- Objective is to match moments rather than maximise likelihood
+
+. . .
+
+**When to prefer simulated MLE:**
+
+- Moderate $T$ and $M$, large $R$ feasible
+- Distributional assumption credible
+- Efficiency paramount (SML $\sim$ MLE in simulation size)
+
+. . .
+
+**Software:** Stata `asmprobit` and `asroprobit`; R `mlogit::mlogit()` with `probit = TRUE`; custom GHK implementation for complex models.
+
+::: {.notes}
+The practical choice between MSM and simulated MLE often depends on computational resources and the severity of the distributional assumption. In modern practice, simulated MLE with the GHK simulator is the default for dynamic multinomial probit models, since software implementations (Stata's `asmprobit`, R's `mlogit` package with simulation) have made it accessible.
+
+Zhang and Lee (2004) propose the Accelerated Importance Sampling (AIS) procedure for SML estimation of dynamic discrete choice models with long panels, which outperforms the standard GHK sampler when $T$ is large (above 50). They illustrate with firm dividend decisions using quarterly data over 54 quarters.
+
+For the static multinomial probit, the GHK simulator with $R = 50$–$100$ draws is typically sufficient. For dynamic models with $T = 8$–$16$, $R = 100$–$200$ draws are recommended. Performance is strongly dataset-dependent.
+:::
+
+
+# Censored and Truncated Panel Data Models {background-color="#1a2a4a"}
+
+## The Panel Tobit Model
+
+**Standard Tobit:** $y^*_{it} = x'_{it}\beta + \mu_i + v_{it}$, $v_{it} \sim \text{IIN}(0, \sigma_v^2)$
+
+Observed: $y_{it} = \max(0, y^*_{it})$ — hours worked, expenditure, donations.
+
+. . .
+
+**Heckman & MaCurdy (1980):** Fixed effects Tobit with life-cycle motivation. FE Tobit MLE maximises $\sum_i \ln L_i(\beta, \mu_i, \sigma_v)$ simultaneously — suffers from the incidental parameters problem.
+
+. . .
+
+**Random effects Tobit:** Assume $\mu_i \sim \text{IIN}(0, \sigma_\mu^2)$; Butler-Moffitt quadrature applies:
+
+$$L_i = \int \prod_t \left[\Phi\!\left(\frac{x'_{it}\beta + \mu_i}{\sigma_v}\right)^{1-y_{it}}\phi\!\left(\frac{y_{it} - x'_{it}\beta - \mu_i}{\sigma_v}\right)^{y_{it}/\sigma_v}\right] \phi\!\left(\frac{\mu_i}{\sigma_\mu}\right) \frac{d\mu_i}{\sigma_\mu}$$
+
+**Stata:** `xttobit y x1 x2` (RE only; no built-in FE Tobit)
+
+::: {.notes}
+Heckman and MaCurdy (1980) motivate the FE Tobit in the context of married women's labor supply: they argue that the life-cycle model implies correlation between $\mu_i$ (permanent income and productivity) and $x_{it}$ (wages, children), making the RE assumption untenable. The FE Tobit MLE simultaneously estimates $\beta$ and $\{\mu_i\}$, but this suffers from the incidental parameters problem — a point Heckman and MaCurdy acknowledge and try to address by using a large $T$ ($T = 25$ years of annual data from the PSID).
+
+For the RE Tobit, the likelihood involves a single integral over $\mu_i$ (analogous to RE probit), which is approximated by Gauss-Hermite quadrature. The Butler-Moffitt approach from applies directly.
+
+Note that `xttobit` in Stata only estimates RE Tobit. For FE Tobit, the researcher must use the brute-force approach (including individual dummies, which is only feasible for small $N$) or use one of the semiparametric estimators discussed next.
+:::
+
+## FE Tobit MLE Bias and Honoré (1992) Trimmed LAD
+
+**Greene (2004a,b):** The FE Tobit bias is approximately equal to the **censoring fraction**:
+
+| Censoring | FE Tobit MLE | Honoré LAD |
+|---|---|---|
+| $< 20\%$ | Acceptable bias | May be overkill |
+| $20\%$–$40\%$ | Noticeable bias | Recommended |
+| $> 40\%$ | Severe bias | Essential |
+
+. . .
+
+**Honoré (1992) Trimmed LAD:** Exploit symmetry of $y^*_{it}$ around $x'_{it}\beta + \mu_i$ to construct moment conditions free of $\mu_i$.
+
+$$\beta_{LAD} = \argmin_\beta \sum_{i}\sum_{t>s} \left[|y_{it} - y_{is} - (x_{it}-x_{is})'\beta| - \text{trim}(\cdot)\right]$$
+
+- Consistent and asymptotically normal as $N \to \infty$ for fixed $T$
+- No distributional assumption on $v_{it}$ or $\mu_i$
+- **Stata:** `ssc install honor`; then `honor y x1 x2, model(tobit) ll(0) group(id)`
+
+::: {.notes}
+Greene (2004a,b) provides the most systematic Monte Carlo evidence on the FE Tobit MLE bias. The key findings:
+1. The bias in $\hat{\beta}$ is approximately equal to the censoring fraction — so 40% censoring gives approximately 40% bias
+2. The bias is always toward zero (attenuation bias), unlike the binary choice case where bias is away from zero
+3. The bias does not improve as $N$ increases (for fixed $T$), confirming the theoretical result
+4. Even for $T = 20$, the bias is non-negligible when censoring is heavy
+
+Honoré (1992) exploits a key symmetry property: for uncensored observations, the residuals $y_{it} - x'_{it}\beta - \mu_i$ are symmetric around zero. For censored observations, the censoring destroys this symmetry, but the trimming restores it by artificially censoring the other observation in the pair at the same point. This "symmetry restoration" generates orthogonality conditions that are free of $\mu_i$.
+
+The main limitation is efficiency loss relative to the correctly-specified Tobit MLE (since it is semiparametric), and the requirement that $v_{it}$ be IID across $t$ (which rules out autocorrelated errors).
+:::
+
+## Dynamic Tobit and Kyriazidou Sample Selection
+
+**Honoré (1993) Dynamic Tobit:** Adds $y_{i,t-1}$ to the Tobit model:
+
+$$y^*_{it} = x'_{it}\beta + \lambda y_{i,t-1} + \mu_i + v_{it}, \quad y_{it} = \max(0, y^*_{it})$$
+
+Exploits symmetry conditions on $v_{it}$ to construct GMM estimators free of $\mu_i$.
+
+. . .
+
+**Kyriazidou (1997) Type 2 Tobit (sample selection model):**
+
+$$y^*_{1it} = x'_{1it}\beta_1 + \mu_{1i} + v_{1it} \quad \text{(selection)}$$
+$$y^*_{2it} = x'_{2it}\beta_2 + \mu_{2i} + v_{2it} \quad \text{(outcome, observed when } y_{1it}=1)$$
+
+First-differencing eliminates $\mu_{2i}$; kernel weights handle selection. → Applied to nurses data.
+
+::: {.notes}
+The Kyriazidou (1997) sample selection model is the panel generalisation of the Heckman (1979) two-step estimator. The key idea is that first-differencing the outcome equation eliminates $\mu_{2i}$, but only for observations where the individual selects in both periods. Since the selection rule changes over time, we need to weight observations by how similar the selection index is across periods — this is the kernel weighting. The bandwidth $h_N \to 0$ as $N \to \infty$, which gives consistency at a rate slower than $\sqrt{N}$.
+
+The application to the nurses' labor supply uses this approach: participation (whether a nurse works) is modeled as the selection equation, and hours worked is the outcome equation. Both equations contain individual effects, which are eliminated by first-differencing and kernel weighting.
+:::
+
+# Selection Bias and Attrition {background-color="#1a2a4a"}
+
+## Panel-Specific Attrition: The Problem
+
+**Panel surveys are repeated cross-sections** — individuals who drop out are permanently lost.
+
+. . .
+
+Two types of missing data:
+
+- **Ignorable (MAR):** Dropout is unrelated to $y_{it}$ conditional on observables — standard panel methods remain valid
+- **Nonignorable (MNAR):** Dropout depends on $y_{it}$ (even conditional on observables) — standard methods are biased
+
+. . .
+
+**Panel-specific sources of nonignorable attrition:** health deterioration, geographic mobility, survey fatigue, institution-level attrition (firm closure, country exit).
+
+. . .
+
+**Testing ignorability:** Verbeek & Nijman (1992a): include attrition-related variables ($s_{it-1}$, $\prod_t s_{it}$, $T_i$) as regressors — significant coefficients suggest nonignorable selection.
+
+::: {.notes}
+Verbeek and Nijman (1992a) survey the literature on nonresponse in panel surveys and propose a practical set of tests for the ignorability of the selection rule. Their key insight is that if attrition is ignorable, then the probability of being observed in the panel should not predict the value of $y_{it}$ conditional on the regressors. By including variables related to attrition (such as the indicator for being in the sample in the previous period, the total number of waves observed, and whether the individual is in the balanced subpanel) as additional regressors in the main equation, one can test whether the selection process is related to the outcome.
+
+These tests have the advantage of being computationally simple — they require only an OLS or GLS regression with additional regressors. The disadvantage is that they have low power if the attrition-related variables are poor proxies for the selection mechanism.
+:::
+
+## Panel Extension of Heckman's Two-Step
+
+**Cross-section Heckman (1979):** One selectivity correction term (inverse Mills ratio $\lambda(\cdot)$).
+
+. . .
+
+**Panel extension** (Verbeek & Nijman 1992b): Following Hausman & Wise (1979):
+
+$$E[y_{it} \mid x_{it}, \mu_i, r_{it}=1] = x'_{it}\beta + \mu_i + \sigma_{\mu\varepsilon}\lambda_{\mu}(\cdot) + \sigma_{\eta v}\lambda_{\eta}(\cdot)$$
+
+**Two** selectivity correction terms:
+
+1. Correlation between individual effects $\mu_i$ and the selection disturbance
+2. Correlation between time-varying errors $v_{it}$ and the selection disturbance
+
+. . .
+
+Both require **numerical integration** — a significant computational burden vs. the cross-section case.
+
+::: {.notes}
+Hausman and Wise (1979) showed that the panel extension of Heckman's selectivity bias correction involves two correction terms because the panel model has two sources of disturbance: the individual effect $\mu_i$ and the time-varying error $v_{it}$. The correlation between each of these and the selection disturbance generates a separate correction term. 
+
+Verbeek and Nijman (1992b) showed that the correction terms can be expressed as:
+- $\sigma_{\mu\varepsilon}\lambda_{\mu}(\cdot)$: correction for correlation between $\mu_i$ and the selection process
+- $\sigma_{\eta v}\lambda_{\eta}(\cdot)$: correction for correlation between $v_{it}$ and the selection process
+
+Both correction terms involve the inverse Mills ratio evaluated at individual- and time-specific arguments that depend on the selection equation. Computing these requires numerical integration over the joint distribution of $(\mu_i, v_{it})$, which is a one-dimensional integral for the one-way error component model.
+
+In practice, many researchers use the much simpler Wooldridge (1995) variable addition tests as a first diagnostic, and only proceed to the full Verbeek-Nijman correction if the simpler tests suggest nonignorable selection.
+:::
+
+## Wooldridge (1995) Variable Addition Test and Hausman Tests
+
+**Wooldridge (1995) variable addition test:**
+
+1. For each $t$, run Tobit (or probit) for the selection rule; compute residuals $\hat{\varepsilon}_{it}$
+2. Demean: $\tilde{\varepsilon}_{it} = \hat{\varepsilon}_{it} - \bar{\hat{\varepsilon}}_{i}$
+3. Run FE regression of $y_{it}$ on $x_{it}$ and $\tilde{\varepsilon}_{it}$
+4. Test $H_0: \gamma = 0$ — rejection suggests nonignorable selection
+
+. . .
+
+**Verbeek & Nijman (1992a) four-estimator Hausman tests:**
+
+Let $\hat{\delta} = (\tilde{\beta}_W(B),\; \tilde{\beta}_W(U),\; \tilde{\beta}_{GLS}(B),\; \tilde{\beta}_{GLS}(U))$ where $B$ = balanced subpanel, $U$ = full panel.
+
+Test contrasts ($R_1$–$R_4$) compare Within vs GLS estimators across balanced and unbalanced subpanels — all should agree under ignorable selection.
+
+::: {.notes}
+Wooldridge (1995) proposes computationally simple variable addition tests for selection bias that avoid the need for numerical integration. The tests use either Tobit residuals or inverse Mills ratios as additional regressors in the FE equation, and test whether these variables are significant. If they are, it suggests that the selection process is related to the outcome beyond what the observables can explain.
+
+The test is a $t$-test on the coefficient of the added variable in the FE regression. Wooldridge (1995) shows that under the null hypothesis of ignorable selection, the test statistic is asymptotically $N(0,1)$ if $E[v_{it}v'_{it}/\mu_i, x'_i, s_i] = \sigma^2 I_T$ (no serial correlation or heteroskedasticity in the idiosyncratic errors). If this assumption is violated, cluster-robust standard errors should be used.
+
+The advantage of this approach over the Verbeek-Nijman correction is that it is much easier to implement: it requires only standard FE regression with one additional regressor. The disadvantage is that it does not provide consistent estimates of the selection-corrected $\beta$ if selection bias is present — it only tests for its presence.
+
+Verbeek and Nijman (1992a) propose the four-estimator framework for testing ignorable selection in unbalanced panels. The key insight is that if selection is ignorable, all four estimators should give similar results (up to sampling variance). Systematic differences suggest that the selection process is related to the outcome.
+:::
+
+
+
+# Empirical Application — Nurses' Labour Supply {background-color="#1a2a4a"}
+
+## Data and Research Design
+
+**Askildsen, Baltagi & Holmås (2003):** Do wages raise female labour supply among nurses?
+
+**Data:** 19,638 Norwegian female nurses, 1993–98; six-year matched panel; 69,122 observations.
+
+. . .
+
+**Three simultaneous challenges:**
+
+- *Individual heterogeneity:* Nurses differ in unobserved productivity, preferences, family responsibilities
+- *Sample selection:* Hours observed only for participating nurses
+- *Endogeneity:* High-productivity nurses earn more AND work more
+
+. . .
+
+**Estimation strategy (Kyriazidou 1997):**
+
+1. **Step 1:** Conditional logit (FE) participation equation; kernel weights constructed
+2. **Step 2:** Kyriazidou IV hours equation using lagged municipality financial surplus and auxiliary nurse wage as instruments
+
+::: {.notes}
+The Askildsen, Baltagi and Holmås (2003) study is an exemplary application of the methods in this chapter: it combines fixed effects binary choice (participation), sample selection correction (Kyriazidou 1997), and instrumental variables in a single coherent framework. The panel structure with six years of data is long enough to apply conditional logit and the Kyriazidou estimator.
+
+The key exclusion restrictions are: (i) the lagged net financial surplus of the municipality (which affects wages through the budget constraint but not directly the nurse's hours conditional on participation), and (ii) the average wage of auxiliary nurses in the same municipality (which provides wage variation not driven by the individual nurse's productivity). These instruments pass the Hausman overidentification test.
+
+The study is reproduced in Baltagi (2008) as the empirical illustration for Chapter 11.
+:::
+
+## Step 1 — Participation Equation (Selected Results)
+
+**Conditional logit estimates** (Table 11.1 — selected coefficients):
+
+| Variable | Estimate | Std. Error |
+|---|---|---|
+| Educated nursing specialist | 0.616\*\* | (0.069) |
+| Age | 0.113\*\* | (0.034) |
+| Age$^2$ | −0.004\*\* | (0.000) |
+| Number of children | −0.264\*\* | (0.046) |
+| Children $< 3$ years | −0.142\*\* | (0.042) |
+| Disable | −1.268\*\* | (0.224) |
+| Hospital in municipality | 0.646\*\* | (0.062) |
+| Participation rate (local) | 0.035\*\* | (0.007) |
+
+\*\* Significant at 1%; \* at 5%. Log-likelihood $= -22{,}287.46$; $N = 61{,}464$.
+
+::: {.notes}
+The participation equation uses the conditional logit to eliminate individual fixed effects. The exclusion restrictions that identify wages in the participation equation are: (i) hospital availability in the municipality (affects employment opportunities but not productivity), (ii) availability of kindergarten (affects the cost of work but is assumed not to directly affect wages), and (iii) the local participation rate (a proxy for labour market tightness).
+
+The negative coefficient on "children < 3 years" confirms the expected finding that young children significantly reduce the probability of participation — consistent with the literature on maternal labour supply. The positive coefficient on "hospital in municipality" reflects the availability of nearby nursing jobs.
+
+The Hausman test comparing weighted and unweighted (kernel bandwidth $h = 1$) conditional logit estimates yields $\chi^2_{23} = 821.27$, clearly rejecting the null hypothesis of no sample selection. This justifies the Kyriazidou two-step approach.
+:::
+
+## Step 2 — Hours Equation and Lessons
+
+**Kyriazidou (1997) IV estimates** (Table 11.2 — selected coefficients):
+
+| Variable | Estimate | Std. Error |
+|---|---|---|
+| Ln wage | 0.208\* | (0.094) |
+| Shift work | −0.011\*\* | (0.001) |
+| Hour 35.5 contract | −0.040\*\* | (0.005) |
+| Disabled | −0.258\*\* | (0.026) |
+| Single | 0.021\*\* | (0.004) |
+| Children $< 3$ years | −0.050\*\* | (0.003) |
+
+\*\* Significant at 1%; \* at 5%. $N = 121{,}622$. **Wage elasticity $= 0.21$** after corrections.
+
+. . .
+
+**Methodological lesson:** The panel structure is essential — simultaneous FE, selection correction, and IV are only feasible with repeated observations of the same individuals.
+
+::: {.notes}
+The wage elasticity of 0.21 means that a 10% increase in the offered wage increases hours worked by approximately 2.1%, holding other factors constant and correcting for both sample selection and endogeneity. This is a relatively modest but precisely estimated elasticity.
+
+Comparison: OLS without correction gives a lower elasticity, suggesting that the selection and endogeneity corrections increase the estimated wage effect. Nurses who work are positively selected on productivity (they have higher wages AND work more hours), and ignoring this would give an upward-biased OLS estimate. The IV correction for endogeneity also changes the estimate.
+
+The significant negative coefficient on "shift work" indicates that nurses working irregular shifts supply fewer hours (conditional on the wage), possibly reflecting non-wage compensation differentials.
+
+This application illustrates the full complexity of panel GLM estimation in practice. Each of the three corrections (heterogeneity, selection, endogeneity) requires a different econometric tool, and all three must be applied simultaneously to get consistent estimates. The finding that the wage elasticity is 0.21 after all corrections suggests a meaningful labour supply response among Norwegian nurses.
+:::
+
+
+# Computing Panel GLMs in Stata and R {background-color="#1a2a4a"}
+
+## Architecture: Command Reference Table
+
+| Model | FE Estimator | RE Estimator |
+|---|---|---|
+| **Binary logit** | `xtlogit, fe` / `clogit` | `xtlogit, re` |
+| **Binary probit** | — (no FE probit) | `xtprobit, re` |
+| **Ordered logit/probit** | `buc` (SSC) | `xtoprobit` |
+| **Poisson count** | `xtpoisson, fe` | `xtpoisson, re` |
+| **Negative binomial** | `xtnbreg, fe`\* | `xtnbreg, re` |
+| **Tobit (censored)** | — (use Honoré) | `xttobit` |
+| **Sample selection** | Kyriazidou `honor` | Heckman + panel |
+
+\**Use with caution — as explained in Panel Count Models*
+
+**R:** `fixest::feglm()`, `pglm::pglm()`, `lme4::glmer()`, `ordinal::clmm()`, `fixest::fepois()`
+
+::: {.notes}
+This table provides a quick reference for the main panel GLM estimators in Stata and R. Note that several FE entries are blank or marked with caveats: (1) there is no standard FE probit because the normal distribution does not have a sufficient statistic for $\mu_i$; (2) the FE Tobit requires the Honoré (1992) trimmed estimator rather than MLE; (3) the FE negative binomial in Stata (`xtnbreg, fe`) does not fully control for individual effects in the usual sense (see Allison & Waterman 2002).
+
+For practitioners: the default should be FE Poisson for count data (with robust SEs), correlated RE probit with Mundlak device for binary data, and RE ordered probit with Mundlak device for ordered data. The FE estimators (conditional logit, BUC) are used when the assumption of independence between $\mu_i$ and $x_{it}$ is untenable and one is willing to pay the cost of discarding non-switchers.
+:::
+
+## Binary Outcomes — Stata
+
+**Fixed effects (conditional logit):**
+
+```stata
+xtlogit y x1 x2 i.year, fe vce(cluster id)
+clogit y x1 x2 i.year, group(id) vce(cluster id)
+```
+
+**Random effects probit with Mundlak device:**
+
+```stata
+bysort id: egen xbar1 = mean(x1)
+bysort id: egen xbar2 = mean(x2)
+xtprobit y x1 x2 i.year xbar1 xbar2, re intpoints(24)
+
+* Test H0: corr(mu_i, x_it) = 0
+test xbar1 xbar2
+```
+
+**Post-estimation average partial effects:**
+
+```stata
+margins, dydx(*) predict(pu0)
+```
+
+::: {.notes}
+The `vce(cluster id)` option is essential in all panel GLM estimations — it accounts for within-individual correlation of errors across time periods that is not fully modeled by the individual effects. Standard errors without clustering understate the true uncertainty.
+
+The `intpoints(24)` option in `xtprobit` increases the number of Gauss-Hermite quadrature points from the default 12 to 24, which improves accuracy when $\sigma_\mu$ is large. For most applications, 24 points are sufficient; if `xttest0` (the test for $\sigma_\mu^2 = 0$) is rejected strongly, increase to 32 or higher.
+
+The `predict(pu0)` option computes probabilities setting individual effects to zero — useful for population average marginal effects. For conditional marginal effects (conditional on the individual's $\mu_i$), use `predict(xb)` and then compute $\Phi(\hat{x}_{it}'\hat{\beta})$ manually.
+
+For the Mundlak test: rejection of $H_0: \delta = 0$ suggests that the RE assumption is violated and correlated RE or FE is needed.
+:::
+
+## Binary Outcomes — R
+
+**Fixed effects conditional logit:**
+
+```r
+library(survival)
+clogit(y ~ x1 + x2 + factor(year) + strata(id), data = df)
+
+# Or with fixest (faster for large datasets)
+library(fixest)
+feglm(y ~ x1 + x2 | id + year, family = binomial, data = df)
+```
+
+**Random effects probit with Mundlak device:**
+
+```r
+library(lme4)
+df$xbar1 <- ave(df$x1, df$id)
+df$xbar2 <- ave(df$x2, df$id)
+
+glmer(y ~ x1 + x2 + xbar1 + xbar2 + (1|id),
+      family = binomial(link = "probit"),
+      data = df, nAGQ = 24)
+```
+
+**Average partial effects:**
+
+```r
+library(marginaleffects)
+avg_slopes(model, variables = c("x1", "x2"))
+```
+
+::: {.notes}
+For large datasets, `fixest::feglm()` is substantially faster than `survival::clogit()` and provides cluster-robust standard errors through the `vcov = ~ id` argument. It also handles multiple high-dimensional fixed effects (e.g., `| id + year + region`) efficiently.
+
+For `lme4::glmer()`, the `nAGQ` argument controls the number of adaptive Gauss-Hermite quadrature points. The default `nAGQ = 1` uses Laplace approximation, which is fast but may be inaccurate. `nAGQ = 24` provides good accuracy at the cost of some computation time. Convergence warnings from `glmer()` should be taken seriously — they often indicate numerical problems that can be addressed by scaling variables or increasing the number of optimizer iterations.
+
+The `marginaleffects` package (Arel-Bundock et al. 2024) provides a unified interface for computing marginal effects from virtually any R model object. `avg_slopes()` computes average marginal effects (AME), averaging over the empirical distribution of all other covariates. For probit models, these are the standard "average partial effects" reported in most applied papers.
+:::
+
+## Ordinal Outcomes — Stata and R
+
+**Stata — RE ordered probit:**
+
+```stata
+xtoprobit y x1 x2 i.year xbar1 xbar2, intpoints(24)
+margins, predict(pr outcome(1)) predict(pr outcome(2)) ///
+         predict(pr outcome(3)) dydx(x1)
+```
+
+**Stata — FE ordered logit (BUC):**
+
+```stata
+ssc install buc
+buc y x1 x2, group(id) vce(cluster id)
+```
+
+. . .
+
+**R — RE ordered probit:**
+
+```r
+library(ordinal)
+mod <- clmm(ordered(y) ~ x1 + x2 + xbar1 + xbar2 + (1|id),
+            link = "probit", nAGQ = 24, data = df)
+avg_slopes(mod, type = "cum.prob")
+```
+
+**R — Generalised ordered logit:**
+
+```r
+VGAM::vglm(y ~ x1 + x2, family = cumulative(parallel = FALSE))
+```
+
+::: {.notes}
+The `buc` command in Stata implements the Baetschmann-Staub-Winkelmann (2015) estimator. It automatically creates the $J-1$ binary datasets, estimates conditional logit on each, stacks them, and computes cluster-robust standard errors. The `group(id)` option specifies the panel identifier.
+
+In R, `ordinal::clmm()` fits cumulative link mixed models, which include RE ordered probit/logit as special cases. The formula `ordered(y) ~ x1 + x2 + (1|id)` specifies a random intercept model. The `link = "probit"` argument selects the probit link; `link = "logistic"` gives ordered logit.
+
+For the Mundlak device: add `xbar1 + xbar2` to the formula before `(1|id)`. For the dynamic extension: add `lag_y_cat2 + lag_y_cat3 + lag_y_cat4 + y0_cat2 + y0_cat3 + y0_cat4` as additional regressors.
+:::
+
+## Count Outcomes — Stata and R
+
+**Stata — FE Poisson (recommended default):**
+
+```stata
+xtpoisson y x1 x2 i.year, fe vce(cluster id)
+xttest0  // Test H0: sigma_mu = 0
+```
+
+**Stata — RE Poisson with overdispersion test:**
+
+```stata
+xtpoisson y x1 x2, re
+estimates store poisson_re
+xtnbreg y x1 x2, re
+lrtest poisson_re .  // One-sided test at boundary
+```
+
+. . .
+
+**R — FE Poisson with `fixest` (fastest):**
+
+```r
+library(fixest)
+mod_fe <- fepois(y ~ x1 + x2 | id + year,
+                 vcov = ~ id, data = df)
+```
+
+**R — Dynamic count with INGARCH:**
+
+```r
+library(tscount)
+tsglm(y_i, model = list(past_obs = 1, past_mean = 1),
+      distr = "nbinom")
+```
+
+::: {.notes}
+The key message for practitioners: `xtpoisson, fe` with `vce(cluster id)` is the recommended default for panel count data. It is consistent under mild assumptions (correct conditional mean specification), robust to overdispersion (Wooldridge 1999), and computationally efficient.
+
+The `xtnbreg, fe` command in Stata should be used with caution due to the Allison-Waterman (2002) critique. If FE NB is needed, the researcher should verify that the fixed effects are being absorbed through the mean (not the overdispersion parameter). One way to check: compare results from `xtnbreg, fe` with those from `xtpoisson, fe` — if they are substantially different, investigate whether the NB FE is identifying what you think it is.
+
+`fixest::fepois()` is the fastest available implementation of FE Poisson for large datasets. It handles multiple fixed effects (e.g., `| id + year + region`) through the alternating projections algorithm, making it feasible even for millions of observations.
+:::
+
+## Censored, Truncated, and Sample Selection — Stata and R
+
+**RE Tobit (Stata):**
+
+```stata
+xttobit y x1 x2 i.year, ll(0) vce(cluster id)
+margins, dydx(*) predict(e(0,.))
+```
+
+**Honoré (1992) FE Tobit (Stata):**
+
+```stata
+ssc install honor
+honor y x1 x2, model(tobit) ll(0) group(id)
+```
+
+**RE Tobit (R):**
+
+```r
+library(censReg)
+censReg(y ~ x1 + x2, left = 0, data = df)
+```
+
+. . .
+
+**Wooldridge (1995) selection test (Stata):**
+
+```stata
+probit s z1 z2 x1 x2 if year == t
+predict lambda_t, hazard
+xtreg y x1 x2 lambda_t_demeaned, fe vce(cluster id)
+test lambda_t_demeaned
+```
+
+::: {.notes}
+The `censReg` package in R provides a maximum likelihood estimator for the random effects Tobit model via the `censReg()` function. The `left = 0` argument specifies left-censoring at zero (the standard Tobit specification). The package also supports right-censoring and double-censoring.
+
+The Honoré (1992) estimator requires the `honor` command in Stata (community-contributed, available from SSC). It implements the trimmed LAD estimator for the FE Tobit model. The `ll(0)` argument specifies the lower limit of censoring.
+
+For the Wooldridge (1995) variable addition test: the demeaned inverse Mills ratio $\tilde{\lambda}_{it} = \hat{\lambda}_{it} - \bar{\hat{\lambda}}_i$ is the key test variable. If the coefficient of $\tilde{\lambda}_{it}$ is significantly different from zero in the FE regression, it suggests nonignorable selection bias.
+:::
+
+## Workflow, Diagnostics, and Common Pitfalls
+
+**Step 1 — Test for individual effects:**
+
+```stata
+xttest0     // LM test H0: sigma_mu = 0
+hausman fe re, sigmamore  // FE vs RE Hausman
+```
+
+**Step 2 — Test for serial correlation:**
+
+```stata
+xtserial y x1 x2  // Wooldridge test (install via SSC)
+```
+
+**Step 3 — Test for selection (if unbalanced):**
+
+```stata
+* Wooldridge (1995) variable addition test
+* or compare Within and GLS on balanced vs unbalanced
+```
+
+. . .
+
+**Common pitfalls:**
+
+- Not clustering SEs at the individual level
+- Using `xtnbreg, fe` without understanding the Allison-Waterman caveat
+- Ignoring non-switchers in FE logit (check: how many?)
+- Running `xttobit` when censoring fraction is high ($> 30\%$)
+- Reporting raw $\hat{\beta}$ coefficients without average partial effects
+
+::: {.notes}
+The workflow described here is a practical guide for applied researchers. The key diagnostic tests are:
+
+1. `xttest0` (after `xtreg` or `xtprobit/xtpoisson, re`): Tests $H_0: \sigma_\mu^2 = 0$. If not rejected, pooled estimation is consistent.
+2. Hausman test: Tests $H_0: E[\mu_i | x_{it}] = 0$. If rejected, FE (or correlated RE) is needed.
+3. `xtserial` (Stata, install via SSC): Wooldridge (2010) test for serial correlation in the idiosyncratic errors. If rejected, the standard RE/FE assumptions about $v_{it}$ may be violated.
+4. Variable addition test (Wooldridge 1995): Tests for nonignorable selection bias in unbalanced panels.
+
+The "non-switchers" issue with `xtlogit, fe`: Stata will print "obs dropped due to no variation" — if this is a large fraction of the sample, the FE logit estimates may be unrepresentative.
+
+For cluster-robust standard errors in R: the `clubSandwich` package provides `vcovCR(model, cluster = df$id, type = "CR1S")` for cluster-robust variance estimation compatible with most model classes.
+:::
+
+
+
+# Synthesis and Open Frontiers {background-color="#1a2a4a"}
+
+## Decision Flowchart
+
+**Step 1 — What type of outcome?**
+
+Binary → Blocks 2/3/6A | Ordered → Blocks 4/6B | Count → Blocks 5/6C | Censored → Block 8 | Selection → Block 9
+
+. . .
+
+**Step 2 — FE or RE?**
+
+Run Mundlak test (`test xbar1 xbar2 ...`).
+Reject $H_0$ → Use FE (or correlated RE) | Fail to reject → RE sufficient
+
+. . .
+
+**Step 3 — Is there temporal dependence?**
+
+Run serial correlation test (`xtserial` / `pbgtest`).
+Reject $H_0$ → Add lagged outcome; address initial conditions (Wooldridge 2005 device)
+
+. . .
+
+**Step 4 — Is the panel balanced?**
+
+Unbalanced → Test ignorability of attrition (Wooldridge 1995 variable addition test).
+Reject → Full selection correction (Block 9)
+
+. . .
+
+**Step 5 — Report average partial effects**, not raw coefficients. Use `margins` / `marginaleffects`.
+
+::: {.notes}
+This flowchart provides a practical decision guide for researchers. The key principle is to start with the simplest defensible specification and add complexity only when diagnostics demand it.
+
+A common mistake is to jump directly to complex estimation procedures (dynamic FE ordered logit, Kyriazidou sample selection) without first verifying that the simpler models fail. If tests for individual effects, serial correlation, and selection bias all pass, the pooled estimator with cluster-robust standard errors may be sufficient.
+
+The instruction to report average partial effects (APEs) rather than coefficients is especially important for nonlinear models: the coefficient $\hat{\beta}$ in a probit or Poisson model does not have a direct causal or policy interpretation without transformation. The APE, averaged over the empirical distribution of covariates, provides the natural analogue of the OLS coefficient in a linear model.
+:::
+
+## Open Frontiers and Current Developments
+
+**Partial identification in FE models:**
+Honoré & Tamer (2006) provide informative bounds on $\beta$ when point identification fails in FE binary choice. Extension to ordered and dynamic cases (Müller et al. 2021) is active research.
+
+. . .
+
+**Machine learning and high-dimensional fixed effects:**
+`fixest` handles millions of observations and thousands of fixed effects. Current research explores regularisation (LASSO, ridge) for selecting controls while maintaining consistent $\hat{\beta}$ in panel GLMs.
+
+. . .
+
+**Bayesian panel GLMs:**
+Hasegawa (2009) — Bayesian dynamic ordered probit via MCMC. Schnakenberg & Fariss (2014) — dynamic ordinal IRT. Particularly valuable for short panels ($T \leq 4$) where frequentist FE methods discard too much information.
+
+. . .
+
+**Non-rectangular panels and multiple imputation:**
+Multiple imputation for missing panel data (Rubin 1987 extended to panel settings); pattern mixture models for MNAR data.
+
+::: {.notes}
+These open frontiers point to active research directions that students at the advanced PhD level may wish to pursue.
+
+The partial identification approach (Honoré & Tamer 2006) is particularly promising for social science applications where identifying assumptions for point identification are implausible. Partial identification provides honest bounds on parameters rather than forcing point estimates that rest on questionable assumptions.
+
+Machine learning methods for panel GLMs are developing rapidly. The `fixest` package already implements some of these, and the `DoubleML` package in R provides double/debiased ML estimators for panel data models with high-dimensional covariates.
+
+For Bayesian methods: Hasegawa (2009) implements a Bayesian dynamic ordered probit model via MCMC that handles the initial conditions problem naturally through the prior on $\mu_i | y_{i0}$. This approach is particularly appealing for very short panels where the Wooldridge device may be imprecise.
+:::
+
+## References: 
+
+**Textbook foundations:**
+
+- Baltagi, B.H. (2008). *Econometric Analysis of Panel Data*, 4th ed. Wiley. [ISBN 978-0-470-51886-1](https://www.wiley.com/en-us/9780470518861)
+- Maddala, G.S. (1983). *Limited Dependent and Qualitative Variables in Econometrics*. Cambridge. [doi:10.1017/CBO9780511810176](https://doi.org/10.1017/CBO9780511810176)
+- Cameron, A.C. & Trivedi, P.K. (2005). *Microeconometrics: Methods and Applications*. Cambridge. [doi:10.1017/CBO9780511811241](https://doi.org/10.1017/CBO9780511811241)
+- Wooldridge, J.M. (2010). *Econometric Analysis of Cross Section and Panel Data*, 2nd ed. MIT Press. [mitpress.mit.edu](https://mitpress.mit.edu/9780262232586/)
+- Greene, W.H. & Hensher, D.A. (2010). *Modeling Ordered Choices*. Cambridge. [doi:10.1017/CBO9780511845062](https://doi.org/10.1017/CBO9780511845062)
+
+---
+
+**Incidental parameters: theory and Monte Carlo:**
+
+- Neyman, J. & Scott, E.L. (1948). Consistent estimates based on partially consistent observations. *Econometrica*, 16(1), 1–32. [doi:10.2307/1914288](https://doi.org/10.2307/1914288)
+- Lancaster, T. (2000). The incidental parameter problem since 1948. *Journal of Econometrics*, 95(2), 391–413. [doi:10.1016/S0304-4076(99)00044-5](https://doi.org/10.1016/S0304-4076(99)00044-5)
+- Chamberlain, G. (1980). Analysis of covariance with qualitative data. *Review of Economic Studies*, 47(1), 225–238. [doi:10.2307/2297110](https://doi.org/10.2307/2297110)
+- Hsiao, C. (2003). *Analysis of Panel Data*, 2nd ed. Cambridge. [doi:10.1017/CBO9780511754203](https://doi.org/10.1017/CBO9780511754203)
+- Greene, W.H. (2004a). The behaviour of the maximum likelihood estimator of limited dependent variable models. *Econometrics Journal*, 7(1), 98–119. [doi:10.1111/j.1368-423X.2004.00123.x](https://doi.org/10.1111/j.1368-423X.2004.00123.x)
+- Hahn, J. & Newey, W. (2004). Jackknife and analytical bias reduction for nonlinear panel models. *Econometrica*, 72(4), 1295–1319. [doi:10.1111/j.1468-0262.2004.00533.x](https://doi.org/10.1111/j.1468-0262.2004.00533.x)
+- Heckman, J.J. (1981b). The incidental parameters problem and the problem of initial conditions. In Manski & McFadden (eds.), *Structural Analysis of Discrete Data*. MIT Press.
+
+---
+
+**Fixed effects binary choice:**
+
+- Chamberlain, G. (1980). Analysis of covariance with qualitative data. *Review of Economic Studies*, 47(1), 225–238. [doi:10.2307/2297110](https://doi.org/10.2307/2297110)
+- Chamberlain, G. (1985). Heterogeneity, omitted variable bias, and duration dependence. In Heckman & Singer (eds.), *Longitudinal Analysis of Labor Market Data*. Cambridge. [doi:10.1017/CBO9780511599712](https://doi.org/10.1017/CBO9780511599712)
+- Manski, C.F. (1987). Semiparametric analysis of random effects linear models from binary panel data. *Econometrica*, 55(2), 357–362. [doi:10.2307/1913239](https://doi.org/10.2307/1913239)
+- Honoré, B.E. & Lewbel, A. (2002). Semiparametric binary choice panel data models without strictly exogenous regressors. *Econometrica*, 70(5), 2053–2063. [doi:10.1111/1468-0262.00358](https://doi.org/10.1111/1468-0262.00358)
+- Magnac, T. (2004). Panel binary variables and sufficiency: Generalizing conditional logit. *Econometrica*, 72(6), 1859–1876. [doi:10.1111/j.1468-0262.2004.00548.x](https://doi.org/10.1111/j.1468-0262.2004.00548.x)
+- Honoré, B.E. & Tamer, E. (2006). Bounds on parameters in panel dynamic discrete choice models. *Econometrica*, 74(3), 611–629. [doi:10.1111/j.1468-0262.2006.00687.x](https://doi.org/10.1111/j.1468-0262.2006.00687.x)
+- Greene, W.H. (2004a). The behaviour of the MLE of limited dependent variable models. *Econometrics Journal*, 7(1), 98–119. [doi:10.1111/j.1368-423X.2004.00123.x](https://doi.org/10.1111/j.1368-423X.2004.00123.x)
+
+---
+
+**Random effects binary choice:**
+
+- Butler, J.S. & Moffitt, R. (1982). A computationally efficient quadrature procedure for the one-factor multinomial probit model. *Econometrica*, 50(3), 761–764. [doi:10.2307/1912613](https://doi.org/10.2307/1912613)
+- Mundlak, Y. (1978). On the pooling of time series and cross section data. *Econometrica*, 46(1), 69–85. [doi:10.2307/1913646](https://doi.org/10.2307/1913646)
+- Chamberlain, G. (1984). Panel data. In Griliches & Intriligator (eds.), *Handbook of Econometrics*, Vol. 2, pp. 1247–1318. North-Holland.
+- Avery, R.B., Hansen, L.P. & Hotz, V.J. (1983). Multiperiod probit models and orthogonality condition estimation. *International Economic Review*, 24(1), 21–35. [doi:10.2307/2526216](https://doi.org/10.2307/2526216)
+- Guilkey, D.K. & Murphy, J.L. (1993). Estimation and testing in the random effects probit model. *Journal of Econometrics*, 59(3), 301–317. [doi:10.1016/0304-4076(93)90028-B](https://doi.org/10.1016/0304-4076(93)90028-B)
+- Wooldridge, J.M. (2010). *Econometric Analysis of Cross Section and Panel Data*, 2nd ed. Chapters 15–16. MIT Press. [mitpress.mit.edu](https://mitpress.mit.edu/9780262232586/)
+
+---
+
+**Ordered outcomes in panel data:**
+
+- Baetschmann, G., Staub, K.E. & Winkelmann, R. (2015). Consistent estimation of the fixed effects ordered logit model. *Journal of the Royal Statistical Society, Series A*, 178(3), 685–703. [doi:10.1111/rssa.12090](https://doi.org/10.1111/rssa.12090)
+- Das, M. & van Soest, A. (1999). A panel data model for subjective information on household income growth. *Journal of Economic Behavior & Organization*, 40(4), 409–426. [doi:10.1016/S0167-2681(99)00062-4](https://doi.org/10.1016/S0167-2681(99)00062-4)
+- Williams, R. (2006). Generalized ordered logit/partial proportional odds models for ordinal dependent variables. *Stata Journal*, 6(1), 58–82. [doi:10.1177/1536867X0600600104](https://doi.org/10.1177/1536867X0600600104)
+- Ferrer-i-Carbonell, A. & Frijters, P. (2004). How important is methodology for the estimates of the determinants of happiness? *Economic Journal*, 114(497), 641–659. [doi:10.1111/j.1468-0297.2004.00235.x](https://doi.org/10.1111/j.1468-0297.2004.00235.x)
+- Carro, J.M. & Traferri, A. (2014). State dependence and heterogeneity in health using a bias-corrected fixed-effects estimator. *Journal of Applied Econometrics*, 29(2), 181–207. [doi:10.1002/jae.2306](https://doi.org/10.1002/jae.2306)
+- Muris, C., Raposo, P. & Vandoros, S. (2020). Ordered outcomes in a dynamic setting. *Econometrics Journal*, 23(1), 186–213. [doi:10.1093/ectj/utaa003](https://doi.org/10.1093/ectj/utaa003)
+
+---
+
+**Panel count models:**
+
+- Hausman, J., Hall, B.H. & Griliches, Z. (1984). Econometric models for count data with an application to the patents-R&D relationship. *Econometrica*, 52(4), 909–938. [doi:10.2307/1911191](https://doi.org/10.2307/1911191)
+- Wooldridge, J.M. (1999). Distribution-free estimation of some nonlinear panel data models. *Journal of Econometrics*, 90(1), 77–97. [doi:10.1016/S0304-4076(98)00033-5](https://doi.org/10.1016/S0304-4076(98)00033-5)
+- Blundell, R., Griffith, R. & Windmeijer, F. (2002). Individual effects and dynamics in count data models. *Journal of Econometrics*, 108(1), 113–131. [doi:10.1016/S0304-4076(01)00108-7](https://doi.org/10.1016/S0304-4076(01)00108-7)
+- Allison, P.D. & Waterman, R.P. (2002). Fixed-effects negative binomial regression models. *Sociological Methodology*, 32(1), 247–265. [doi:10.1111/1467-9531.00117](https://doi.org/10.1111/1467-9531.00117)
+- Cameron, A.C. & Trivedi, P.K. (1998). *Regression Analysis of Count Data*. Cambridge. [doi:10.1017/CBO9780511814365](https://doi.org/10.1017/CBO9780511814365)
+- Windmeijer, F. (2000). Moment conditions for fixed effects count data models with endogenous regressors. *Economics Letters*, 68(1), 21–24. [doi:10.1016/S0165-1765(00)00228-0](https://doi.org/10.1016/S0165-1765(00)00228-0)
+- Winkelmann, R. (2000). *Econometric Analysis of Count Data*, 3rd ed. Springer. [doi:10.1007/978-3-540-78389-3](https://doi.org/10.1007/978-3-540-78389-3)
+
+---
+
+**Dynamics — foundational papers:**
+
+- Cox, D.R. (1981). Statistical analysis of time series: Some recent developments. *Scandinavian Journal of Statistics*, 8(2), 93–115. [JSTOR:4615819](https://www.jstor.org/stable/4615819)
+- Heckman, J.J. (1981a). Heterogeneity and state dependence. In S. Rosen (ed.), *Studies in Labor Markets*. NBER/University of Chicago Press.
+- Heckman, J.J. (1981b). The incidental parameters problem and the problem of initial conditions. In Manski & McFadden (eds.), *Structural Analysis of Discrete Data*. MIT Press.
+- Heckman, J.J. (1981c). Statistical models for discrete panel data. In Manski & McFadden (eds.), *Structural Analysis of Discrete Data*. MIT Press.
+- Wooldridge, J.M. (2005). Simple solutions to the initial conditions problem in dynamic, nonlinear panel data models with unobserved heterogeneity. *Journal of Applied Econometrics*, 20(1), 39–54. [doi:10.1002/jae.770](https://doi.org/10.1002/jae.770)
+- Harvey, A.C. (2013). *Dynamic Models for Volatility and Heavy Tails*. Cambridge. [doi:10.1017/CBO9781139540933](https://doi.org/10.1017/CBO9781139540933)
+- Creal, D., Koopman, S.J. & Lucas, A. (2013). Generalized autoregressive score models with applications. *Journal of Applied Econometrics*, 28(5), 777–795. [doi:10.1002/jae.1279](https://doi.org/10.1002/jae.1279)
+
+---
+
+**Dynamic binary panel models:**
+
+- Heckman, J.J. (1981b, c). See above.
+- Wooldridge, J.M. (2005). Simple solutions to the initial conditions problem. *Journal of Applied Econometrics*, 20(1), 39–54. [doi:10.1002/jae.770](https://doi.org/10.1002/jae.770)
+- Honoré, B.E. & Kyriazidou, E. (2000). Panel data discrete choice models with lagged dependent variables. *Econometrica*, 68(4), 839–874. [doi:10.1111/1468-0262.00139](https://doi.org/10.1111/1468-0262.00139)
+- Carro, J.M. (2007). Estimating dynamic panel data discrete choice models with fixed effects. *Journal of Econometrics*, 140(2), 503–528. [doi:10.1016/j.jeconom.2006.07.023](https://doi.org/10.1016/j.jeconom.2006.07.023)
+- Vella, F. & Verbeek, M. (1998). Whose wages do unions raise? *Journal of Applied Econometrics*, 13(2), 163–183. [doi:10.1002/(SICI)1099-1255(199803/04)13:2<163::AID-JAE460>3.0.CO;2-Y](https://doi.org/10.1002/(SICI)1099-1255(199803/04)13:2<163::AID-JAE460>3.0.CO;2-Y)
+- Chamberlain, G. (1993). Feedback in panel data models. Unpublished manuscript, Harvard University.
+- Stewart, M.B. (2007). The interrelated dynamics of unemployment and low-wage employment. *Journal of Applied Econometrics*, 22(3), 511–531. [doi:10.1002/jae.922](https://doi.org/10.1002/jae.922)
+
+---
+
+**Dynamic ordered panel models and human rights applications:**
+
+- Walker, R.W. (2006). Democracy and human rights abuses: Insights from first-order Markov models. Working paper, Willamette University. [PDF](https://people.willamette.edu/~rwalker/pdf/hr-dem-markov.pdf)
+- Contoyannis, P., Jones, A.M. & Rice, N. (2004). The dynamics of health in the British Household Panel Survey. *Journal of Applied Econometrics*, 19(4), 473–503. [doi:10.1002/jae.755](https://doi.org/10.1002/jae.755)
+- Müller, C., Raposo, P. & Vandoros, S. (2021). Dynamic ordered panel logit models. arXiv:2107.03253. [arXiv](https://arxiv.org/abs/2107.03253)
+- Albarran, P., Carrasco, R. & Carro, J.M. (2019). Estimation of dynamic nonlinear random effects models with unbalanced panels. *Journal of Econometrics*, 212(1), 271–296. [doi:10.1016/j.jeconom.2019.04.028](https://doi.org/10.1016/j.jeconom.2019.04.028)
+- Hill, D.W. & Jones, Z.M. (2014). An empirical evaluation of explanations for state repression. *American Political Science Review*, 108(3), 661–687. [doi:10.1017/S0003055414000306](https://doi.org/10.1017/S0003055414000306)
+- Schnakenberg, K.E. & Fariss, C.J. (2014). Dynamic patterns of human rights practices. *Political Science Research and Methods*, 2(1), 1–31. [doi:10.1017/psrm.2013.15](https://doi.org/10.1017/psrm.2013.15)
+- Carro, J.M. & Traferri, A. (2014). State dependence and heterogeneity in health using a bias-corrected fixed-effects estimator. *Journal of Applied Econometrics*, 29(2), 181–207. [doi:10.1002/jae.2306](https://doi.org/10.1002/jae.2306)
+
+---
+
+**Dynamic count models:**
+
+- Harvey, A.C. & Fernandes, C. (1989). Time series models for count data. *Journal of Time Series Analysis*, 10(3), 211–220. [doi:10.1111/j.1467-9892.1989.tb00024.x](https://doi.org/10.1111/j.1467-9892.1989.tb00024.x)
+- Davis, R.A., Dunsmuir, W.T.M. & Streett, S.B. (2003). Observation-driven models for Poisson counts. *Biometrika*, 90(4), 777–790. [doi:10.1093/biomet/90.4.777](https://doi.org/10.1093/biomet/90.4.777)
+- Creal, D., Koopman, S.J. & Lucas, A. (2013). Generalized autoregressive score models with applications. *Journal of Applied Econometrics*, 28(5), 777–795. [doi:10.1002/jae.1279](https://doi.org/10.1002/jae.1279)
+- Blundell, R., Griffith, R. & Windmeijer, F. (2002). Individual effects and dynamics in count data models. *Journal of Econometrics*, 108(1), 113–131. [doi:10.1016/S0304-4076(01)00108-7](https://doi.org/10.1016/S0304-4076(01)00108-7)
+- Windmeijer, F. (2000). Moment conditions for fixed effects count data models with endogenous regressors. *Economics Letters*, 68(1), 21–24. [doi:10.1016/S0165-1765(00)00228-0](https://doi.org/10.1016/S0165-1765(00)00228-0)
+- Ahn, J.Y., Jeong, H., Lu, Y. & Wüthrich, M.V. (2023). A classification of observation-driven state-space count models for panel data. arXiv:2308.16058. [arXiv](https://arxiv.org/abs/2308.16058)
+- `tscount` R package: [CRAN](https://cran.r-project.org/package=tscount)
+
+---
+
+**Simulation estimation methods:**
+
+- Keane, M.P. (1994). A computationally practical simulation estimator for panel data. *Econometrica*, 62(1), 95–116. [doi:10.2307/2951567](https://doi.org/10.2307/2951567)
+- Hajivassiliou, V.A. & Ruud, P.A. (1994). Classical estimation methods for LDV models using simulation. In R.F. Engle & D.L. McFadden (eds.), *Handbook of Econometrics*, Vol. 4, pp. 2383–2441. North-Holland.
+- Geweke, J. (1991). Efficient simulation from the multivariate normal and Student-t distributions subject to linear constraints. *Computing Science and Statistics*, 571–578.
+- Gourieroux, C. & Monfort, A. (1994). Simulation-based inference: A survey with special reference to panel data. *Journal of Econometrics*, 59(1–2), 5–33. [doi:10.1016/0304-4076(94)90037-X](https://doi.org/10.1016/0304-4076(94)90037-X)
+- McFadden, D. & Train, K. (2000). Mixed MNL models for discrete response. *Journal of Applied Econometrics*, 15(5), 447–470. [doi:10.1002/1099-1255(200009/10)15:5<447::AID-JAE570>3.0.CO;2-1](https://doi.org/10.1002/1099-1255(200009/10)15:5<447::AID-JAE570>3.0.CO;2-1)
+
+---
+
+**Censored and truncated panel data:**
+
+- Heckman, J.J. & MaCurdy, T. (1980). A life-cycle model of female labour supply. *Review of Economic Studies*, 47(1), 47–74. [doi:10.2307/2297103](https://doi.org/10.2307/2297103)
+- Honoré, B.E. (1992). Trimmed LAD and least squares estimation of truncated and censored regression models with fixed effects. *Econometrica*, 60(3), 533–565. [doi:10.2307/2951583](https://doi.org/10.2307/2951583)
+- Honoré, B.E. (1993). Orthogonality conditions for Tobit models with fixed effects and lagged dependent variables. *Journal of Econometrics*, 59(1–2), 35–61. [doi:10.1016/0304-4076(93)90042-K](https://doi.org/10.1016/0304-4076(93)90042-K)
+- Kyriazidou, E. (1997). Estimation of a panel data sample selection model. *Econometrica*, 65(6), 1335–1364. [doi:10.2307/2171739](https://doi.org/10.2307/2171739)
+- Greene, W.H. (2004b). Fixed effects and bias due to the incidental parameters problem in the Tobit model. *Econometric Reviews*, 23(2), 125–147. [doi:10.1081/ETC-120039606](https://doi.org/10.1081/ETC-120039606)
+- Honoré, B.E. & Kyriazidou, E. (2000a). Estimation of Tobit-type models with individual specific effects. *Econometric Reviews*, 19(3), 341–366. [doi:10.1080/07474930008800475](https://doi.org/10.1080/07474930008800475)
+
+---
+
+**Selection bias and attrition in panels:**
+
+- Hausman, J.A. & Wise, D.A. (1979). Attrition bias in experimental and panel data. *Econometrica*, 47(2), 455–473. [doi:10.2307/1914193](https://doi.org/10.2307/1914193)
+- Verbeek, M. & Nijman, T. (1992a). Testing for selectivity bias in panel data models. *International Economic Review*, 33(3), 681–703. [doi:10.2307/2527139](https://doi.org/10.2307/2527139)
+- Verbeek, M. & Nijman, T. (1996). Incomplete panels and selection bias. In L. Mátyás & P. Sevestre (eds.), *The Econometrics of Panel Data*, 2nd ed. Kluwer.
+- Wooldridge, J.M. (1995). Selection corrections for panel data models under conditional mean independence assumptions. *Journal of Econometrics*, 68(1), 115–132. [doi:10.1016/0304-4076(94)01645-G](https://doi.org/10.1016/0304-4076(94)01645-G)
+- Heckman, J.J. (1979). Sample selection bias as a specification error. *Econometrica*, 47(1), 153–161. [doi:10.2307/1912352](https://doi.org/10.2307/1912352)
+- Nijman, T. & Verbeek, M. (1992). Nonresponse in panel data: The impact on estimates of a life-cycle consumption function. *Journal of Applied Econometrics*, 7(3), 243–257. [doi:10.1002/jae.3950070303](https://doi.org/10.1002/jae.3950070303)
+- Ridder, G. (1990). Attrition in multi-wave panel data. In J. Hartog, G. Ridder & J. Theeuwes (eds.), *Panel Data and Labour Market Studies*. North-Holland.
+
+---
+
+**Nurses' labour supply and related applications:**
+
+- Askildsen, J.E., Baltagi, B.H. & Holmås, T.H. (2003). Wage policy in the health care sector: A panel data analysis of nurses' labour supply. *Health Economics*, 12(9), 705–719. [doi:10.1002/hec.770](https://doi.org/10.1002/hec.770)
+- Kyriazidou, E. (1997). Estimation of a panel data sample selection model. *Econometrica*, 65(6), 1335–1364. [doi:10.2307/2171739](https://doi.org/10.2307/2171739)
+- Vella, F. & Verbeek, M. (1998). Whose wages do unions raise? *Journal of Applied Econometrics*, 13(2), 163–183. [doi:10.1002/(SICI)1099-1255(199803/04)13:2<163::AID-JAE460>3.0.CO;2-Y](https://doi.org/10.1002/(SICI)1099-1255(199803/04)13:2<163::AID-JAE460>3.0.CO;2-Y)
+- Sickles, R. & Taubman, P. (1986). An analysis of the health and retirement status of the elderly. *Econometrica*, 54(6), 1339–1356. [doi:10.2307/1914302](https://doi.org/10.2307/1914302)
+- Bjørklund, A. (1985). Unemployment and mental health: Some evidence from panel data. *Journal of Human Resources*, 20(4), 469–483. [doi:10.2307/145878](https://doi.org/10.2307/145878)
+
+
+---
+
+**Software documentation and packages:**
+
+- **Stata:** `xtlogit`, `xtprobit`, `xtpoisson`, `xtnbreg`, `xttobit`, `xtoprobit` — *Stata 18 Longitudinal/Panel Data Reference Manual*. [stata.com](https://www.stata.com/manuals/xt.pdf)
+- **R `fixest`:** Bergé, L. (2018). Efficient estimation of maximum likelihood models with multiple fixed-effects. *Econometrics Journal*, 21(3), 388–408. [doi:10.1111/ectj.12101](https://doi.org/10.1111/ectj.12101) | [Package](https://lrberge.github.io/fixest/)
+- **R `lme4`:** Bates et al. (2015). Fitting linear mixed-effects models using lme4. *Journal of Statistical Software*, 67(1). [doi:10.18637/jss.v067.i01](https://doi.org/10.18637/jss.v067.i01) | [Package](https://cran.r-project.org/package=lme4)
+- **R `ordinal`:** Christensen, R.H.B. (2019). ordinal — Regression models for ordinal data. [Package](https://cran.r-project.org/package=ordinal)
+- **R `pglm`:** Croissant, Y. (2020). pglm: Panel generalised linear models. [Package](https://cran.r-project.org/package=pglm)
+- **R `marginaleffects`:** Arel-Bundock et al. (2024). *Journal of Statistical Software*, 111(9). [doi:10.18637/jss.v111.i09](https://doi.org/10.18637/jss.v111.i09) | [Website](https://marginaleffects.com)
+- **R `tscount`:** Liboschik et al. (2017). tscount: An R package for analysis of count time series following generalized linear models. *Journal of Statistical Software*, 82(5). [doi:10.18637/jss.v082.i05](https://doi.org/10.18637/jss.v082.i05) | [Package](https://cran.r-project.org/package=tscount)
+- **R `censReg`:** Henningsen, A. (2010). Estimating censored regression models in R using the censReg package. [Package](https://cran.r-project.org/package=censReg)
+- **R `clubSandwich`:** Pustejovsky, J.E. (2015). Cluster-robust variance estimation. [Package](https://cran.r-project.org/package=clubSandwich)
+- **BUC estimator:** `ssc install buc` in Stata; code accompanying Baetschmann et al. (2015)
+- **Honoré estimator:** `ssc install honor` in Stata; [author's page](https://www.princeton.edu/~honore/)
+
+
+---
+
+**Frontiers and synthesis:**
+
+- Honoré, B.E. & Tamer, E. (2006). Bounds on parameters in panel dynamic discrete choice models. *Econometrica*, 74(3), 611–629. [doi:10.1111/j.1468-0262.2006.00687.x](https://doi.org/10.1111/j.1468-0262.2006.00687.x)
+- Müller, C., Raposo, P. & Vandoros, S. (2021). Dynamic ordered panel logit models. arXiv:2107.03253. [arXiv](https://arxiv.org/abs/2107.03253)
+- Hasegawa, H. (2009). Bayesian dynamic panel-ordered probit model and its application to subjective well-being. *Communications in Statistics: Simulation and Computation*, 38(6), 1321–1347. [doi:10.1080/03610910902939530](https://doi.org/10.1080/03610910902939530)
+- Schnakenberg, K.E. & Fariss, C.J. (2014). Dynamic patterns of human rights practices. *Political Science Research and Methods*, 2(1), 1–31. [doi:10.1017/psrm.2013.15](https://doi.org/10.1017/psrm.2013.15)
+- Wooldridge, J.M. (2019). Correlated random effects models with unbalanced panels. *Journal of Econometrics*, 211(1), 137–150. [doi:10.1016/j.jeconom.2018.12.010](https://doi.org/10.1016/j.jeconom.2018.12.010)
+- Arel-Bundock, V., Greifer, N. & Heiss, A. (2024). How to interpret statistical models using marginaleffects for R and Python. *Journal of Statistical Software*, 111(9). [doi:10.18637/jss.v111.i09](https://doi.org/10.18637/jss.v111.i09)
+- Bergé, L. (2018). Efficient estimation of maximum likelihood models with multiple fixed-effects. *Econometrics Journal*, 21(3), 388–408. [doi:10.1111/ectj.12101](https://doi.org/10.1111/ectj.12101) | [fixest](https://lrberge.github.io/fixest/)
+- Walker, R.W. (2016). Generalising the cumulative ordered regression model. *Journal of Modern Applied Statistical Methods*, 15(1). [doi:10.22237/jmasm/1462076280](https://doi.org/10.22237/jmasm/1462076280)
