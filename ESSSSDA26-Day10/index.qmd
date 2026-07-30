@@ -28,13 +28,12 @@ library(kableExtra)
 # Outline for Day 10:
 
 1. Implementation of DPD/GMM
-1. Conclusions of Panel GLM
 1. TWFE
 1. Causal Inference in Panel Data
 
 ## On Diff in Diff
 
-A very useful paper I just ran across on Andrew Baker's website.  The Box note cites a post but he took his netlify site down.  [This paper](https://andrew-charles-baker.github.io/research/working_papers/jel/) is a really nice practical introduction.
+A very useful paper I just ran across on Andrew Baker's website.  The Box note cites a post but he took his netlify site down.  [This paper](https://ideas.repec.org/a/aea/jeclit/v64y2026i2p498-557.html) is a really nice practical introduction.
 
 ## The Data for Implementation of GMM
 
