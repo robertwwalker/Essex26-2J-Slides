@@ -2,7 +2,7 @@
 title: "Day 9: GMM and DPD"
 author: "Robert W. Walker"
 date: "July 30, 2026"
-format: 
+format:
    revealjs:
      theme: [custom.scss]
      scrollable: true
@@ -19,403 +19,1319 @@ format:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=TRUE, comment=NA, prompt=FALSE, fig.height=6, fig.width=6.5, fig.retina = 3, dev = 'svg', dev.args = list(bg = "white"), eval=TRUE)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=TRUE, comment=NA, prompt=FALSE,
+                      fig.height=6, fig.width=6.5, fig.retina = 3,
+                      dev = 'svg', dev.args = list(bg = "white"), eval=TRUE)
 library(tidyverse)
 library(kableExtra)
-```
+library(plm)
 
-# Outline for Day 9:
-
-1. Hurwicz/Nickell bias
-1. GMM
-1. Panels and GMM
-1. Systems and single equations
-1. Implementation
-
-
-
-
-## Brief Comment on Hurwicz/Nickell Bias
-
-- Bias is of stochastic order $\frac{1}{T}$.
-- Less bad as more $T$
-
-
-
-
-## GMM
-
-Generalized method of moments estimators are a class of estimators created by analogs of the population moment conditions for sample moments.  For example, linear regression is a GMM estimator and the moment restriction that must hold for OLS is that $\mathbb{E}[\mathbf{X^{\prime}}\epsilon] = 0$.  With endogenous $x \in \mathbf{X}$, we instrument using $z$.  If there is one $z$ for each endogenous $x$, we have a standard IV.  Without exact identification, we need iteration and GMM estimators will typically involve testing these overidentifying restrictions using a Sargan test, as we will see.
-
-
-
-## GMM for Panels
-
-The trick here is that the panel structure gives us numerous instruments for **free**.  Comes in two forms.  Single-equation and systems estimators.  With systems estimators, assumptions give us leverage on moment conditions in both level and difference forms, we use these jointly to estimate the parameters of interest.
-
-
-
-## Introducing DPD
-
-- We are interested in estimating the parameters of models of the form 
-$$y_{it} = y_{i,t-1}\gamma + X_{it}\beta + \alpha_{i} + \epsilon_{it}$$ 
-for $i = \{1,\ldots,N\}$ and $t = \{1,\ldots, T \}$ using datasets with large $N$ and fixed $T$ 
-- By construction, $y_{i,t-1}$ is correlated with the unobserved 
-individual-level effect $\alpha_{i}$. 
-- Removing $\alpha_{i}$ by the within transform produces an inconsistent estimator with $T$ fixed. 
-- First difference both sides and look for instrumental-variables (IV) 
-and generalized method-of-moments (GMM) estimators
-
-
-
-
-## Arrelano-Bond
-
-- First differencing the model equation yields 
-$$\Delta y_{it} = \Delta y_{i,t-1}\gamma + \Delta x_{it}\beta + \Delta \epsilon_{it}$$
-- The $\alpha_{i}$ are gone, but the $y_{i,t-1}$ in $\Delta y_{i,t-1}$ is a function of the $\epsilon_{i,t-1}$ which is also in $\Delta \epsilon_{it}$. 
-- $\Delta y_{i,t-1}$ is correlated with $\Delta \epsilon_{it}$ by construction 
-- Anderson and Hsiao (1981) give a 2SLS estimator based on (further) lags of $\Delta y_{it}$ as instruments for $\Delta y_{i,t-1}$.  E.g. if $\epsilon_{it}$ is IID over $i$ and $t$, $\Delta y_{i,t-2}$ is valid for $\Delta y_{i,t-1}$. 
-- Anderson and Hsiao (1981) also suggest a 2SLS estimator based on lagged levels of $y_{it}$ as instruments for $\Delta y_{i,t-1}$.  E.g. if $\epsilon_{it}$ is IID over $i$ and $t$, $y_{i,t-2}$ can instrument for $\Delta y_{i,t-1}$.
-- Holtz-Eakin, and co-authors (1988) and Arellano and Bond (1991) showed how to construct estimators based 
-on moment equations constructed from further lagged levels of $y_{it}$ and the first-differenced errors.
-- We are creating moment conditions using lagged levels of the 
-dependent variable with first differences, $\Delta \epsilon_{it}$.  First-differences of strictly exogenous covariates also create 
-moment conditions.
-- Assume that $\epsilon_{it}$ are IID over $i$ and $t$ (no serial correlation)
-- GMM is needed because there are more instruments than parameters. 
-
-
-
-## Strict Exogeneity vs. Predetermined
-
-- If regressors are strictly exogenous: $\mathbb{E}[x_{it}\epsilon_{is}]=0\; \forall s,t$.
-- If predetermined, $\mathbb{E}[x_{it}\epsilon_{is}]\neq0\; \textrm{if} s < t$ but $\mathbb{E}[x_{it}\epsilon_{is}]=0\; \forall s \geq t$
-- Dynamic panel data models allow predetermined regressors.  [backward feedback, no forward feedback]
-
-
-
-
-## A bit more on this and GMM
-
-- The moment conditions formed by assuming that particular lagged 
-levels of the dependent variable are orthogonal to the differenced 
-disturbances are known as GMM-type moment conditions 
-- Sometimes they are called sequential moment conditions 
-- The moment conditions formed using the strictly exogenous 
-covariates are just standard IV moment conditions, so they are called 
-standard moment conditions 
-- The dynamic panel-data estimators in Stata report which transforms 
-of which variables were used as instruments 
-- In GMM estimators, we weight the vector of sample-average moment 
-conditions by the inverse of a positive definite matrix 
-- When that matrix is the covariance matrix of the moment conditions, 
-we have an efficient GMM estimator 
-- In the case of nonidentically distributed disturbances, we can use a 
-two-step GMM estimator that estimates the covariance matrix of the 
-moment conditions using the first-step residuals 
-- Although the large-sample robust variance-covariance matrix of the 
-two-step estimator does not depend on the fact that estimated 
-residuals were used, simulation studies have found that that 
-Windmejier's bias-corrected estimator performs much better
-- Specifying vce(robust) produces an estimated VCE that is robust to 
-heteroskedasticity 
-
-
-
-## cont'd
-
-- There is a result in the large-sample theory for GMM which states 
-that the VCE of the two-step estimator does not depend on the fact 
-that it uses the residuals from the first step.  Windmeijer 2005 bias-corrects the VCE of the two-step GMM.
-- No robust Sargan test but Arrelano-Bond test exists.
-- When the variables are predetermined, it means that we cannot 
-include the whole vector of differences of observed xit into the 
-instrument matrix 
-- We just include the levels of $x_{it}$ for those time periods that are 
-assumed to be unrelated to $\Delta \epsilon_{it}$. 
-- The Arellano-Bond estimator formed moment conditions using 
-lagged-levels of the dependent variable and the predetermined 
-variables with first-differences of the disturbances 
-- Arellano and Bover(1995) and Blundell and Bond (1998) found 
-that if the autoregressive process is too persistent, then the 
-lagged-levels are weak instruments 
-- These authors proposed using additional moment conditions in which 
-lagged differences of the dependent variable are orthogonal to levels 
-of the disturbances 
-- To get these additional moment conditions, they assumed that 
-panel-level effect is unrelated to the first observable first-difference of 
-the dependent variable 
-- $\texttt{xtdpdsys}$ is syntactically similar to $\texttt{xtabond}$
-
-
-
-## Wawro
-
-- The range of panel data models employed by political scientists is a small subset of those available.
-- Anderson-Hsiao: (IV) Difference regression $$\Delta y_{i,t} = \gamma \Delta y_{i,t-1} + \beta \Delta x_{i,t-1} + \Delta u_{i,t}$$ and instrument for terms with lagged difference or lagged levels.  NB: Beck says the estimator is bad.  Econometricians tend to agree.
-- Arrelano and Bond:  Recast A-H as GMM estimator facilitating more instruments.
-- Systems GMM estimators that combine a levels and a difference equation.
-
-
-
-## Previous Student Question
-
-Wawro takes the $T=3$ case and defines the true model to be:
-$$y_{i,t}  = \gamma y_{i,t-1} + \alpha_{i} + u_{i,t}$$
-
-What does this allow us to write?
-
-$$\Delta_{3,2}  y_{i}  =  \underbrace{\gamma [ \overbrace{\gamma y_{i,1} + \alpha_{i} + u_{i,2}}^{y_{i,2}} ] + \alpha_{i} + u_{i,3}}_{y_{i,3}} - \underbrace{\gamma y_{i,1} + \alpha_{i} + u_{i,2}}_{y_{i,2}}$$
-$$(\gamma^{2} - \gamma)y_{i,1} + \underbrace{\gamma \alpha_{i}}_{\delta_{i}} + \underbrace{u_{i,3} + (\gamma - 1) u_{i,2}}_{u_{\Delta(3,2)}^{*}}$$
-
-In other words, this is an estimating equation without regressors.  
-
-
-
-So how does he get $\Delta y_{i,2}  =  (\gamma - 1) y_{i,1} + \alpha_{i} + u_{i,2}$?  It relies on how we treat the initial condition.
-
-$$\Delta_{2,1}  y_{i}  =  \overbrace{\gamma y_{i,1} + \alpha_{i} + u_{i,2}}^{y_{i,2}} - y_{i,1}$$ where the last term is $\gamma y_{i,0} + \alpha_{i} + u_{i,1}$.  If, as is commonly the case, we treat the initial condition as fixed, we get what he gets.  If we treat $y_{i,1}$ as the fixed effect plus random noise, then we would get, after some manipulation, $$\Delta_{2,1}  y_{i}  =  (\gamma - 1)y_{i,1} + (u_{i,2} - u_{i,1})$$  Because of the assumption of no serial correlation, the latter, under normality, is also normal (as a difference in independent normals) because the unit effects cancel under differencing.
-
-
-
-## The Data for Implementation
-
-```
-Contains data from abdata.dta
-  obs:         1,031                          Layard & Nickell, Unemployment
-                                                in Britain, Economica 53, 1986
- ---------------------------------------------------------------------------
-              storage  display     value
-variable name   type   format      label      variable label
--------------------------------------------------------------------------------
-ind             int    %8.0g                  industry
-year            int    %8.0g
-emp             float  %9.0g                  employment
-wage            float  %9.0g                  real wage
-cap             float  %9.0g                  gross capital stock
-indoutpt        float  %9.0g                  industry output
-n               float  %9.0g                  log(employment)
-w               float  %9.0g                  log(real wage)
-k               float  %9.0g                  log(gross capital stock)
-ys              float  %9.0g                  log(industry output)
-yr1980          float  %9.0g
-yr1981          float  %9.0g
-yr1982          float  %9.0g
-yr1983          float  %9.0g
-yr1984          float  %9.0g
-id              float  %9.0g                  firm ID
--------------------------------------------------------------------------------
-Sorted by:  id  year
-```
-
-
-
-## Implementation
-
-- $\texttt{xtregar}$: , $\texttt{re}$ and $\texttt{fe}$ options
-
-  - Fit a first order autoregressive structure to TSCS data.
-  - Defaults to an iterative estimator but $\texttt{twostep}$ is available.
-  - $\texttt{lbi}$ gives a test of the hypothesis that $\rho$ is zero. (not a default)
-
-- $\texttt{xtabond}$
-  - $\texttt{estat abond}$ gives a test for autocorrelation
-  - $\texttt{estat sargan}$ gives the overidentifying restrictions test
-
-- $\texttt{xtlsdvc y x, initial(ah or ab or bb) vcov(1000 bs iter)}$ will handle unbalanced \\ 
-Bias-corrected least-squares dummy variable (LSDV) estimators for the standard autoregressive panel-data model using the bias approximations in Bruno (2005a) for unbalanced panels
-- $\texttt{xtivreg}$
-- $\texttt{xtdpd}$ fits Arellano-Bond and Arellano-Bover/Blundell-Bond
-
-  - $\texttt{estat abond}$ gives a test for autocorrelation
-  - $\texttt{estat sargan}$ gives the overidentifying restrictions test  (Rejection implies failure of assumptions)
-
-
-
-## More on DPD
-
-- David Roodman's excellent and well documented \texttt{xtabond2} extends the Stata command and incorporates orthogonal deviations transformation that assist in gapped panels.  I personally think it is the best software for this.
-- Systems DPD is complicated but perhaps very useful.
-- As an aside, I laughed pretty hard at a post on econ job rumours where someone claimed that no one actually understands these models!  [Not true, I am positive that Hansen does.....]
-
-
-##
-
-```{r, echo=FALSE}
-library(foreign)
-library(xtable)
-# Trying this out with some NLS data (this matches stata's xtsum for the between)  You should find the data by google.
-# nls.data <- read.dta("~/Downloads/nlswork.dta")
+# Panel summary utility
 panel.summary <- function(mydata, idim) {
-# Summarize the grand mean and unit means
-# Example invocation: panel.summary(nls.data, nls.data$idcode)
-mydata <- mydata # Need a macro for the dataset
-idim <- as.vector(idim) # Pull the vector of the unit dimension
-identifier <- table(idim) # Tabulate the unique identifiers
-pan.btw <- matrix(data=NA, nrow=length(identifier), ncol=dim(mydata)[[2]]) # Basic matrix to fill in
-pan.within <- matrix(data=NA, nrow=length(idim), ncol=dim(mydata)[[2]]) # A second storage for the within
-for (i in 1:length(identifier)) {  # Loop over unique IDs to get Between things
-  btw.vec <- NULL
-  btw.mat <- NULL
-  id.val <- as.numeric(names(identifier)[[i]]) # Create vector of values of ID
-  for (j in 1:dim(mydata)[[2]]) { # Loop over columns in data.
-  btw.vec <- mean(mydata[idim==id.val,j], na.rm=TRUE) # Unit means
-  btw.mat <- c(btw.mat,btw.vec) # Append to existing
+  mydata <- mydata
+  idim   <- as.vector(idim)
+  identifier <- table(idim)
+  pan.btw    <- matrix(NA, nrow = length(identifier), ncol = ncol(mydata))
+  for (i in seq_along(identifier)) {
+    id.val  <- as.numeric(names(identifier)[[i]])
+    pan.btw[i, ] <- sapply(1:ncol(mydata),
+      function(j) mean(mydata[idim == id.val, j], na.rm = TRUE))
+  }
+  pan.mean <- matrix(NA, nrow = nrow(mydata), ncol = ncol(mydata))
+  for (i in seq_len(nrow(mydata))) {
+    id.val <- idim[[i]]
+    pan.mean[i, ] <- sapply(1:ncol(mydata),
+      function(j) mean(mydata[idim == id.val, j], na.rm = TRUE))
+  }
+  res.with    <- mydata - pan.mean
+  grand.mean  <- colMeans(mydata, na.rm = TRUE)
+  gmmat       <- matrix(grand.mean, nrow = nrow(mydata), ncol = ncol(mydata), byrow = TRUE)
+  tab <- matrix(NA, 8, ncol(mydata))
+  colnames(tab) <- colnames(mydata)
+  rownames(tab) <- c("Grand mean","S.D.","TSS","Between S.D.","BSS","Within S.D.","WSS","% Within")
+  tab[1, ] <- grand.mean
+  tab[2, ] <- apply(mydata, 2, sd, na.rm = TRUE)
+  tab[3, ] <- colSums((mydata - gmmat)^2, na.rm = TRUE)
+  tab[4, ] <- apply(pan.btw, 2, sd, na.rm = TRUE)
+  tab[5, ] <- colSums((pan.mean - gmmat)^2, na.rm = TRUE)
+  tab[6, ] <- apply(res.with, 2, sd, na.rm = TRUE)
+  tab[7, ] <- colSums(res.with^2, na.rm = TRUE)
+  tab[8, ] <- tab[7, ] / tab[3, ]
+  list(sum.tab = round(tab, 4))
 }
-pan.btw[i,] <- btw.mat
-}
-# Now do the within.  This is the really slow and inefficient part.
-pan.mean <- matrix(nrow=dim(mydata)[[1]], ncol=dim(mydata)[[2]])
-for (i in 1:dim(mydata)[[1]]) { # loop over all rows in data
-with.vec <- NULL
-with.mat <- NULL
-id.val <- idim[[i]]
- for (j in 1:dim(mydata)[[2]]) {
- with.vec <- mean(mydata[idim==id.val,j], na.rm=TRUE)
- with.mat <- c(with.mat,with.vec)
- }
-pan.mean[i,] <- with.mat
-}
-# Generate within transformed data
-res.mat.with <- mydata - pan.mean
-# Summarize the within-centered
-ret.sum.with <- apply(res.mat.with, 2, sd, na.rm=TRUE)
-# Same thing to the between
-ret.sum.btw <- apply(pan.btw, 2, sd, na.rm=TRUE)
-names(ret.sum.btw) <- colnames(mydata)
-mean.mat.btw <- pan.btw # Could collapse
-colnames(mean.mat.btw) <- colnames(mydata)
-colnames(res.mat.with) <- names(ret.sum.with) <- colnames(mydata)
-# Create rows for summary statistics
-# and store all of this in sum.out.both
-sum.out.both <- matrix(data=NA,nrow=8, ncol=dim(mydata)[[2]])
-colnames(sum.out.both) <- colnames(mydata)
-grand.mean <- apply(mydata, 2, mean, na.rm=TRUE)
-gmmat <- matrix(data=grand.mean, nrow=length(idim), ncol=dim(mydata)[[2]], byrow=TRUE)
-mat2 <- (mydata-gmmat)^2
-mat4 <- (pan.mean-gmmat)^2
-mat6 <- res.mat.with^2
-sum.out.both[1,] <- grand.mean
-sum.out.both[2,] <- apply(mydata, 2, sd, na.rm=TRUE)
-sum.out.both[3,] <- apply(mat2, 2, sum, na.rm=TRUE)
-sum.out.both[4,] <- ret.sum.btw
-sum.out.both[5,] <- apply(mat4, 2, sum, na.rm=TRUE)
-sum.out.both[6,] <- ret.sum.with
-sum.out.both[7,] <- apply(mat6, 2, sum, na.rm=TRUE)
-sum.out.both[8,] <- sum.out.both[7,]/sum.out.both[3,]
-rownames(sum.out.both) <- c("Grand mean","S.D.","TSS","Between S.D.","BSS", "Within S.D.","WSS","% Within")
-# Return everything
-pan.sum <- list(summary.btw=ret.sum.btw, mean.mat.btw=mean.mat.btw,summary.with=ret.sum.with, mean.mat.with=res.mat.with, sum.tab=round(sum.out.both, digits=4), grand.mean=grand.mean, mat2=mat2, mat4=mat4, mat6=mat6)
-return(pan.sum)
-}
+```
+
+
+## Outline for Day 9
+
+::: {.nonincremental}
+1. **Motivation** — Why dynamic panel models?
+2. **GMM Foundations** — Moments, weighting, and overidentification
+3. **Anderson-Hsiao** — The baseline IV approach
+4. **Arellano-Bond** — Difference GMM
+5. **System GMM** — Arellano-Bover / Blundell-Bond
+6. **Specification Testing** — Sargan, Hansen, AR tests, and diagnostics
+7. **Bias-Corrected LSDV** — Kiviet and Bruno corrections
+8. **Extensions** — Unbalanced panels, Panel VAR, and software
+9. **Applied Example** — UK manufacturing employment
+10. **Practical Guidance and Philosophy**
+:::
+
+## Why Dynamic Models?
+
+Many social processes are inherently **persistent** — the past directly shapes the present
+
+- **State dependence**: employment, conflict onset, regime type, trade agreements
+- **Habit formation**: consumption, party identification, welfare participation
+- **Path dependence**: institutional arrangements, development trajectories
+- **Partial adjustment**: firms, governments, and voters adjust slowly toward targets
+
+A static panel model that assumes $\text{Cov}(y_{i,t-1},\,\epsilon_{it}) = 0$ is **misspecified** for these processes
+
+The autoregressive parameter $\gamma$ quantifies the degree of persistence and the speed of adjustment:
+
+$$\text{Speed of adjustment} = 1 - \gamma; \quad \text{Long-run multiplier} = \frac{\beta}{1-\gamma}$$
+
+Models that ignore dynamics misattribute persistence to contemporaneous covariates — a **serious source of omitted variable bias**
+
+## The DPD Model
+
+$$y_{it} = \gamma\, y_{i,t-1} + \mathbf{X}_{it}\boldsymbol{\beta} + \alpha_i + \epsilon_{it}$$
+
+- $i = 1,\ldots,N$ units (large); $t = 1,\ldots,T$ periods (fixed and small)
+- $\gamma$ — autoregressive parameter; $|\gamma| < 1$ required for stationarity
+- $\mathbf{X}_{it}$ — time-varying covariates; may be strictly exogenous, predetermined, or endogenous
+- $\alpha_i$ — unobserved **unit-specific effect**, constant over time; correlated with $y_{i,t-1}$ by construction
+- $\epsilon_{it}$ — idiosyncratic error; assumed IID$(0,\sigma^2_\epsilon)$ across $i$ and $t$
+
+**The core problem**: since $y_{i,t-1} = f(\alpha_i, \epsilon_{i,t-1}, \ldots)$, the lagged dependent variable is **correlated with both $\alpha_i$ and past errors**. Every standard panel estimator fails for a different reason.
+
+The dataset is characterized by large $N$ and fixed (small) $T$ — the short panel setting
+
+## Within and Between Variation
+
+For any variable $x_{it}$, total variance decomposes as:
+
+$$\underbrace{\text{Var}(x_{it})}_{\text{Total}} = \underbrace{\text{Var}(\bar{x}_i)}_{\text{Between}} + \underbrace{\text{Var}(x_{it}-\bar{x}_i)}_{\text{Within}}$$
+
+This decomposition matters enormously for identification:
+
+- **Between variation** — variation *across* units (exploited by pooled OLS, RE)
+- **Within variation** — variation *within* units over time (exploited by FE/within estimator)
+
+For the DPD model with large $N$ and fixed $T$:
+
+- Even within variation is **contaminated**: $y_{i,t-1} - \bar{y}_i$ is correlated with $\epsilon_{it} - \bar{\epsilon}_i$
+- The share of within vs. between variation in the covariates determines identification strength
+
+```{r panel-var-decomp, echo=FALSE}
+data(EmplUK)
+EmplUK$n  <- log(EmplUK$emp);    EmplUK$w  <- log(EmplUK$wage)
+EmplUK$k  <- log(EmplUK$capital);EmplUK$ys <- log(EmplUK$output)
+ps <- panel.summary(EmplUK[, c("n","w","k","ys")], EmplUK$firm)
+ps$sum.tab |>
+  kbl(caption = "EmplUK: Variance decomposition of log-transformed variables") |>
+  kable_styling(font_size = 14)
+```
+
+## Naïve Approaches and Why They Fail
+
+**Pooled OLS**: regress $y_{it}$ on $y_{i,t-1}$ and $\mathbf{X}_{it}$
+
+- $\alpha_i$ enters the composite error; $\text{Cov}(y_{i,t-1},\alpha_i) > 0 \Rightarrow$ **upward bias** in $\hat{\gamma}$
+
+**Fixed Effects (Within estimator)**: subtract unit means to remove $\alpha_i$
+
+- $\widetilde{y}_{i,t-1} = y_{i,t-1} - \bar{y}_i$ is correlated with $\widetilde{\epsilon}_{it} = \epsilon_{it} - \bar{\epsilon}_i$ because $\bar{\epsilon}_i$ contains $\epsilon_{i,t-1}$
+- **Downward (Nickell) bias** — opposite direction from pooled OLS
+
+**Random Effects**: assumes $\text{Cov}(\alpha_i, y_{i,t-1}) = 0$
+
+- Violated by construction whenever the unit effect drives the autoregressive process
+
+**First-differencing alone**: removes $\alpha_i$ but creates a new endogeneity problem (treated next)
+
+A useful diagnostic: the FE and pooled OLS estimates **bracket** the true $\gamma$
+
+## Nickell / Hurwicz Bias
+
+The within-group estimator is **inconsistent** with fixed $T$, even as $N \to \infty$
+
+**Nickell (1981)** derives the approximate bias:
+
+$$\text{Bias}(\hat{\gamma}_{FE}) \approx -\frac{1+\gamma}{T-1}\cdot\left[1 + \frac{2\gamma(1-\gamma^T)}{T(1-\gamma)}\right]^{-1}$$
+
+Key implications:
+
+- Bias is of order $O(1/T)$ — negligible only for large $T$ (e.g. $T > 30$)
+- **Negative sign**: FE under-estimates persistence — the opposite direction from OLS
+- Magnitude grows as $\gamma \to 1$: near-unit-root processes suffer worst
+- With $\gamma = 0.8$ and $T = 5$: the formula gives $-0.45 / 2.076 \approx -0.22$; FE reports $\approx 0.58$
+
+**Practical upshot**: for the short panels typical in cross-national or firm-level data ($T = 5$–$15$), FE estimates of dynamic models are substantially distorted. GMM is needed.
+
+# GMM Foundations
+
+## The Method of Moments
+
+**Classical method of moments**: set population moments equal to their sample analogs and solve
+
+For OLS the identifying condition is $\mathbb{E}[\mathbf{X}'\boldsymbol{\epsilon}] = 0$:
+
+$$\frac{1}{N}\mathbf{X}'\hat{\boldsymbol{\epsilon}} = \mathbf{0} \quad \Rightarrow \quad \hat{\boldsymbol{\beta}}_{OLS} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}$$
+
+With $K$ regressors and $K$ conditions this is **exactly identified** — one unique solution
+
+**Instrumental variables** replace $\mathbf{X}$ with instruments $\mathbf{Z}$ satisfying:
+
+$$\underbrace{\mathbb{E}[\mathbf{Z}'\boldsymbol{\epsilon}] = \mathbf{0}}_{\text{orthogonality/exclusion}} \qquad \underbrace{\text{Cov}(\mathbf{Z},\mathbf{X}) \neq \mathbf{0}}_{\text{relevance/first stage}}$$
+
+With $L = K$ instruments: **2SLS** solves $\frac{1}{N}\mathbf{Z}'\hat{\boldsymbol{\epsilon}} = \mathbf{0}$ exactly
+
+With $L > K$ instruments: **overidentified** — cannot satisfy all $L$ conditions simultaneously $\Rightarrow$ need GMM
+
+In the dynamic panel context, the panel structure generates **many** valid moment conditions for free — far more than parameters to estimate
+
+## From MM to GMM: Overidentification and the $J$-Test
+
+With $L > K$ valid moment conditions, define the sample moment vector:
+
+$$g_N(\boldsymbol{\theta}) = \frac{1}{N}\sum_{i=1}^{N}\mathbf{Z}_i'\boldsymbol{\epsilon}_i(\boldsymbol{\theta})$$
+
+**GMM** finds $\hat{\boldsymbol{\theta}}$ that brings $g_N(\boldsymbol{\theta})$ as close to zero as possible:
+
+$$\hat{\boldsymbol{\theta}}_{GMM} = \arg\min_{\boldsymbol{\theta}}\; g_N(\boldsymbol{\theta})'\,\mathbf{W}_N\, g_N(\boldsymbol{\theta})$$
+
+where $\mathbf{W}_N$ is a positive-definite **weighting matrix** — choice of $\mathbf{W}_N$ determines efficiency
+
+The $L - K$ overidentifying restrictions are **testable** via the **Sargan/Hansen $J$-statistic**:
+
+$$J = N\cdot g_N(\hat{\boldsymbol{\theta}})'\hat{\mathbf{W}}_N\, g_N(\hat{\boldsymbol{\theta}}) \xrightarrow{d} \chi^2(L-K)$$
+
+::: {.callout-warning}
+With many instruments, the Hansen test has very low power and will often fail to reject even when instruments are invalid. A $p$-value $> 0.95$ signals **too many instruments**, not good identification.
+:::
+
+## One-Step, Two-Step, and Windmeijer (2005)
+
+**One-step GMM**: use a fixed, non-data-dependent weighting matrix
+
+- Common choice: $\mathbf{W}_N = (\mathbf{Z}'\mathbf{H}\mathbf{Z})^{-1}$ under homoskedasticity
+- Robust under weaker assumptions; but not asymptotically efficient
+
+**Two-step GMM**: estimate the optimal weight matrix from first-step residuals
+
+$$\hat{\mathbf{W}}_N^{(2)} = \left(\frac{1}{N}\sum_i \mathbf{Z}_i'\hat{\boldsymbol{\epsilon}}_i^{(1)}\hat{\boldsymbol{\epsilon}}_i^{(1)'}\mathbf{Z}_i\right)^{-1}$$
+
+Asymptotically efficient — but finite-sample standard errors are **severely downward biased**, especially with many instruments
+
+**Windmeijer (2005)** derives an analytic bias correction to the two-step VCE accounting for the fact that $\hat{\mathbf{W}}^{(2)}$ is itself estimated
+
+::: {.nonincremental}
+| Step | R (`pgmm`) | Stata |
+|------|-----------|-------|
+| One-step | `model = "onestep"` | default |
+| Two-step + Windmeijer | `model = "twosteps"`, `summary(..., robust=TRUE)` | `twostep vce(robust)` |
+:::
+
+**Always use Windmeijer-corrected SEs with two-step GMM.** The Sargan test is unavailable after `robust`; use the Hansen $J$-test instead.
+
+## GMM-Type Instruments and Sequential Moment Conditions
+
+The DPD instrument set combines two types of moment conditions:
+
+**Standard (IV-type)**: from strictly exogenous variables $x_{it}$
+
+$$\mathbb{E}[x_{is}\,\Delta\epsilon_{it}] = 0 \;\; \forall\, s,t \quad \Rightarrow \quad \text{instrument using } \Delta x_{it}$$
+
+**GMM-type (sequential)**: from the lagged dependent variable (and predetermined regressors)
+
+$$\mathbb{E}[y_{i,t-s}\,\Delta\epsilon_{it}] = 0 \;\; \text{for } s \geq 2 \quad \Rightarrow \quad \text{instrument using } y_{i,t-2}, y_{i,t-3},\ldots$$
+
+These accumulate: at period $t$, all levels $y_{i1}, \ldots, y_{i,t-2}$ are valid instruments
+
+In `pgmm` syntax:
+
+- **Left of `|`**: covariates entering the model (with desired lag structure)
+- **Right of `|`**: instruments; wrap GMM-type ones in `lag(var, from:to)`
+
+The distinction between strictly exogenous, predetermined, and endogenous regressors controls how deep into the lag structure instruments are drawn — will reemerge shortly.
+
+# The Anderson-Hsiao Estimator
+
+## First Differencing: Removing $\alpha_i$ and the New Problem
+
+Take first differences of the DPD model to eliminate the unit effect:
+
+$$\Delta y_{it} = \gamma\,\Delta y_{i,t-1} + \Delta\mathbf{X}_{it}\boldsymbol{\beta} + \Delta\epsilon_{it}$$
+
+where $\Delta y_{it} = y_{it} - y_{i,t-1}$ and $\Delta\alpha_i = 0$ — **the fixed effect is gone**
+
+However a **new endogeneity problem** arises immediately:
+
+$$\Delta y_{i,t-1} = y_{i,t-1} - y_{i,t-2}$$
+
+Since $y_{i,t-1}$ is a function of $\epsilon_{i,t-1}$, and $\epsilon_{i,t-1}$ appears in $\Delta\epsilon_{it} = \epsilon_{it} - \epsilon_{i,t-1}$:
+
+$$\text{Cov}\!\left(\Delta y_{i,t-1},\,\Delta\epsilon_{it}\right) = -\text{Var}(\epsilon_{i,t-1}) \neq 0$$
+
+We need instruments for $\Delta y_{i,t-1}$ that satisfy: (1) **relevance** — correlated with $\Delta y_{i,t-1}$; (2) **exogeneity** — uncorrelated with $\Delta\epsilon_{it}$
+
+Under IID $\epsilon_{it}$: $y_{i,t-2}$ and $\Delta y_{i,t-2}$ are both valid — they are correlated with $\Delta y_{i,t-1}$ but predetermined relative to $\Delta\epsilon_{it}$
+
+## Anderson and Hsiao (1981)
+
+**Two 2SLS strategies** using observations at $t \geq 3$:
+
+**Strategy 1** — Instrument with $\Delta y_{i,t-2}$ (lagged differences):
+
+$$\text{Cov}(\Delta y_{i,t-2},\,\Delta\epsilon_{it}) = \text{Cov}(y_{i,t-2} - y_{i,t-3},\;\epsilon_{it} - \epsilon_{i,t-1}) = 0 \;\; \checkmark$$
+
+**Strategy 2** — Instrument with $y_{i,t-2}$ (lagged levels):
+
+$$\text{Cov}(y_{i,t-2},\,\Delta\epsilon_{it}) = 0 \;\; \checkmark \quad \text{and typically stronger first stage}$$
+
+**Wawro (2002) and Beck**: The AH estimator performs poorly in finite samples. Econometricians agree.
+
+**Fundamental inefficiency**: AH uses exactly **one instrument per time period**, leaving all deeper lags on the table. There are $\frac{(T-2)(T-1)}{2}$ valid lagged-level instruments — AH uses only $T-2$ of them.
+
+Arellano and Bond (1991) recast AH as a GMM problem, using **all valid** lagged levels simultaneously and weighting them optimally.
+
+# Arellano-Bond: Difference GMM
+
+## The Arellano-Bond Idea
+
+**Holtz-Eakin, Newey, and Rosen (1988)** and **Arellano and Bond (1991)** recognized:
+
+At each time period $t$, every level $y_{i,s}$ with $s \leq t-2$ is a valid instrument for $\Delta y_{i,t-1}$
+
+The instrument set grows with $t$:
+
+::: {.nonincremental}
+| Period $t$ | Equation | Valid level instruments for $\Delta y_{i,t-1}$ |
+|:---:|:---:|:---:|
+| 3 | $\Delta y_{i3}$ | $y_{i1}$ |
+| 4 | $\Delta y_{i4}$ | $y_{i1},\; y_{i2}$ |
+| 5 | $\Delta y_{i5}$ | $y_{i1},\; y_{i2},\; y_{i3}$ |
+| $T$ | $\Delta y_{iT}$ | $y_{i1},\ldots,\; y_{i,T-2}$ |
+:::
+
+Total GMM instruments from the DV — for a **1-lag** AR($p=1$) model:
+
+$$\sum_{t=3}^{T}(t-2) = 1 + 2 + \cdots + (T-2) = \frac{(T-2)(T-1)}{2}$$
+
+This grows **quadratically** in $T$; with $p$ lags the first valid instrument shifts to $t=p+2$, giving $\frac{(T-p-1)(T-p)}{2}$ (see the Proliferation slide)
+
+All are used simultaneously via GMM; the weighting matrix handles the fact that they are not all equally informative
+
+For strictly exogenous covariates, $\Delta X_{it}$ contributes additional standard instruments at each period
+
+## Building the Instrument Matrix
+
+The instrument matrix $\mathbf{Z}_i^{AB}$ for unit $i$ has a **block-diagonal triangular** structure:
+
+$$\mathbf{Z}_i^{AB} = \begin{pmatrix}
+y_{i1} & & & \\
+ & y_{i1} & y_{i2} & \\
+ & & y_{i1} & y_{i2} & y_{i3} \\
+ & & & & \ddots
+\end{pmatrix}$$
+
+Each row corresponds to one first-differenced observation ($t = 3, 4, \ldots, T$)
+
+The complete orthogonality condition:
+
+$$\mathbb{E}\!\left[\mathbf{Z}_i^{AB\prime}\,\Delta\boldsymbol{\epsilon}_i\right] = \mathbf{0}$$
+
+This is a system of $\frac{(T-2)(T-1)}{2}$ moment conditions (for a 1-lag model) for one parameter $\gamma$ — **heavily overidentified**, and GMM is needed to optimally combine them
+
+**Crucial**: the moment conditions are derived from lagged levels, not from outside the panel. The panel structure itself provides identification for free.
+
+## The $T=3$ Case: Wawro's Worked Example
+
+True model: $y_{it} = \gamma y_{i,t-1} + \alpha_i + u_{it}$. Substituting $y_{i2}$ into the $t=3$ equation:
+
+$$\Delta_{3,2}y_i = \underbrace{\gamma[\overbrace{\gamma y_{i1}+\alpha_i+u_{i2}}^{y_{i2}}]+\alpha_i+u_{i3}}_{y_{i3}} - \underbrace{\gamma y_{i1}+\alpha_i+u_{i2}}_{y_{i2}}$$
+
+$$= (\gamma^2-\gamma)y_{i1} + \underbrace{\gamma\alpha_i}_{\delta_i} + \underbrace{u_{i3}+(\gamma-1)u_{i2}}_{u^*_{\Delta(3,2)}}$$
+
+This is an estimating equation without an observable regressor — we need both differences
+
+For $\Delta_{2,1}y_i$, treating the **initial condition as fixed**:
+
+$$\Delta_{2,1}y_i = (\gamma-1)y_{i1} + \alpha_i + u_{i2}$$
+
+Because $u_{i1}$ and $u_{i2}$ are independent under IID errors, $y_{i1}$ is a valid instrument for $\Delta_{2,1}y_i$. Under normality the differenced errors are normal and independent — the AH and AB conditions hold.
+
+## Strict Exogeneity, Predetermined, and Endogenous Regressors
+
+The treatment of $\mathbf{X}_{it}$ in the instrument matrix depends on the assumed feedback:
+
+**Strictly exogenous**: $\mathbb{E}[x_{it}\,\epsilon_{is}] = 0\;\;\forall\, s,t$
+
+- No feedback in any direction; all periods valid as instruments
+- Enter the instrument matrix as differences: $\Delta x_{it}$
+
+**Predetermined** (weakly exogenous): $\mathbb{E}[x_{it}\,\epsilon_{is}] \neq 0$ if $s < t$; $= 0$ if $s \geq t$
+
+- Backward feedback allowed (past outcome affects $x$), no contemporaneous/future feedback
+- Instrument with $x_{i,t-1},\; x_{i,t-2},\ldots$ — levels at $t-1$ and before
+
+**Endogenous**: $\mathbb{E}[x_{it}\,\epsilon_{is}] \neq 0$ for $s \leq t$
+
+- Contemporaneous correlation; instrument with $x_{i,t-2},\; x_{i,t-3},\ldots$
+
+Misclassifying a predetermined regressor as strictly exogenous will **use invalid instruments** and produce inconsistent estimates. The Sargan/Hansen test may or may not catch this.
+
+## Instrument Proliferation and Collapsing
+
+For a model with $p$ lags of $y$, the first valid GMM instrument appears at $t = p+2$ (period $t$ must pre-date both endogenous terms). Total instruments from the DV:
+
+$$\frac{(T-p-1)(T-p)}{2}$$
+
+This is a **quadratic** function of $T$ — for $p=1$: $(T-2)(T-1)/2$; for $p=2$: $(T-3)(T-2)/2$
+
+::: {.nonincremental}
+| $T$ | $p=1$ lag: $(T-2)(T-1)/2$ | $p=2$ lags: $(T-3)(T-2)/2$ |
+|:---:|:---:|:---:|
+| 5 | 6 | 3 |
+| 7 | 15 | 10 |
+| 10 | 36 | 28 |
+| 15 | 91 | 78 |
+:::
+
+The AB Table 4(a1) replication uses $p=2$, so the instrument counts in the right column apply. Note: additional predetermined covariates each contribute further columns with the same triangular structure — instrument count escalates rapidly.
+
+**Consequences** (Roodman 2009): overfits the first stage; Hansen $p$-values cluster near 1.0; estimates biased toward FE. Rule of thumb: **instruments $\leq$ groups**.
+
+**Remedy 1 — Limit lag depth**: `lag(log(emp), 2:4)` instead of `lag(log(emp), 2:99)`
+
+**Remedy 2 — Collapse the instrument matrix** (Roodman): one column per lag depth rather than one column per lag-period combination; reduces instruments from $O(T^2)$ to $O(T)$
+
+```stata
+* In xtabond2 (Stata)
+xtabond2 n L.n L(0/1).w, gmm(L.n, lag(2 4) collapse) iv(L(0/1).w) twostep robust
+```
+
+Report both collapsed and uncollapsed results as a sensitivity check
+
+## The Arellano-Bond Serial Correlation Tests
+
+In the differenced model, $\Delta\epsilon_{it} = \epsilon_{it} - \epsilon_{i,t-1}$
+
+**AR(1) test** — $H_0: \text{Cov}(\Delta\epsilon_{it},\;\Delta\epsilon_{i,t-1}) = 0$
+
+- Even under IID levels errors, $\text{Cov}(\Delta\epsilon_{it},\;\Delta\epsilon_{i,t-1}) = -\sigma^2_\epsilon \neq 0$
+- **Should reject** — mechanical from the differencing transformation; failure to reject is the surprise
+
+**AR(2) test** — $H_0: \text{Cov}(\Delta\epsilon_{it},\;\Delta\epsilon_{i,t-2}) = 0$
+
+- Under IID levels errors: $\text{Cov}(\Delta\epsilon_{it},\;\Delta\epsilon_{i,t-2}) = 0$ — **should NOT reject**
+- Rejection implies $\text{Cov}(\epsilon_{it},\;\epsilon_{i,t-2}) \neq 0$ in levels — this invalidates $y_{i,t-2}$ as an instrument
+
+**If AR(2) rejects**:
+
+- Use $y_{i,t-3}$ and deeper lags as instruments (sacrifice some efficiency)
+- Add further lags of $y$ to the RHS to absorb the serial correlation
+- Check AR(3) — how deep does the serial dependence extend?
+
+In R: `mtest(model, order=2)` from `plm`; in Stata: `estat abond`
+
+## One-Step Arellano-Bond: Code and Results
+
+Replicating Arellano and Bond (1991), Table 4(a1):
+
+::: {.panel-tabset}
+
+### R
+
+```{r ab-one-code, eval=FALSE}
 library(plm)
 data(EmplUK)
-ps <- panel.summary(EmplUK, EmplUK$firm)
-ps$sum.tab
+
+Table4.a1 <- pgmm(
+  log(emp) ~ lag(log(emp), 1:2) +
+             lag(log(wage), 0:1) +
+             lag(log(capital), 0:2) +
+             lag(log(output), 0:2) |
+             lag(log(emp), 2:99),
+  data   = EmplUK,
+  effect = "twoways",
+  model  = "onestep"
+)
+summary(Table4.a1)
 ```
 
-##
+### Stata
 
-```{r}
-# To make it match the Stata data.
-EmplUK$n <- log(EmplUK$emp)
-EmplUK$w <- log(EmplUK$wage)
-EmplUK$k <- log(EmplUK$capital)
+```stata
+use abdata, clear
+
+* One-step difference GMM — Table 4(a1)
+xtabond n L(0/1).w L(0/2).(k ys) yr1980-yr1984, ///
+    lags(2) vce(robust)
+
+estat abond   /* Arellano-Bond AR tests */
+estat sargan  /* Sargan overidentification test */
+```
+
+:::
+
+```{r ab-one-run, echo=FALSE}
+Table4.a1 <- pgmm(
+  log(emp) ~ lag(log(emp), 1:2) + lag(log(wage), 0:1) +
+             lag(log(capital), 0:2) + lag(log(output), 0:2) |
+             lag(log(emp), 2:99),
+  data = EmplUK, effect = "twoways", model = "onestep")
+summary(Table4.a1)
+```
+
+## Two-Step AB with Windmeijer Correction: Code and Results
+
+Replicating Arellano and Bond (1991), Table 4(b):
+
+::: {.panel-tabset}
+
+### R
+
+```{r ab-two-code, eval=FALSE}
+Table4.b <- pgmm(
+  log(emp) ~ lag(log(emp), 1:2) +
+             lag(log(wage), 0:1) +
+             log(capital) +
+             lag(log(output), 0:1) |
+             lag(log(emp), 2:99),
+  data   = EmplUK,
+  effect = "twoways",
+  model  = "twosteps"
+)
+
+summary(Table4.b, robust = FALSE)  # Without Windmeijer (matches Stata non-robust)
+summary(Table4.b, robust = TRUE)   # With Windmeijer correction — always prefer this
+```
+
+### Stata
+
+```stata
+* Two-step difference GMM — Table 4(b)
+xtabond n L(0/1).w k L(0/1).ys yr1980-yr1984, ///
+    lags(2) twostep vce(robust)
+
+estat abond
+estat sargan
+```
+
+:::
+
+```{r ab-two-run, echo=FALSE}
+Table4.b <- pgmm(
+  log(emp) ~ lag(log(emp), 1:2) + lag(log(wage), 0:1) +
+             log(capital) + lag(log(output), 0:1) |
+             lag(log(emp), 2:99),
+  data = EmplUK, effect = "twoways", model = "twosteps")
+summary(Table4.b, robust = TRUE)
+```
+
+# System GMM: Arellano-Bover / Blundell-Bond
+
+## The Weak Instruments Problem
+
+Difference GMM works well when $\gamma$ is moderate. Near the unit root, it breaks down.
+
+When $\gamma \approx 1$:
+
+- $y_{it}$ is near-nonstationary; $\Delta y_{i,t-1}$ is nearly white noise
+- Lagged levels $y_{i,t-2}$ are very weakly correlated with $\Delta y_{i,t-1}$ — **weak first stage**
+- GMM estimates have large bias and unreliable SEs
+
+**Simulation evidence** (Blundell and Bond 1998):
+
+- With $\gamma = 0.9$ and large $\text{Var}(\alpha_i)/\text{Var}(\epsilon_{it})$, the AB estimator is severely biased
+- The bias can approach that of the (inconsistent) OLS estimator in magnitude
+- The FE/pooled OLS bracket may be very wide, giving little information
+
+**Intuition**: when the process is very persistent, there is little variation in $y_{i,t-1}$ conditional on its own lags — the instrument is weak in exactly the same sense as a weak first stage in 2SLS.
+
+This motivates **System GMM**: augment the difference equation with a levels equation, using lagged differences as additional instruments
+
+## System GMM: Arellano-Bover / Blundell-Bond
+
+**Arellano and Bover (1995)** proposed additional moment conditions from the **levels equation**:
+
+$$y_{it} = \gamma\, y_{i,t-1} + \mathbf{X}_{it}\boldsymbol{\beta} + \alpha_i + \epsilon_{it}$$
+
+Valid instruments for the levels equation: **lagged first differences** $\Delta y_{i,t-1}$
+
+$$\mathbb{E}[\Delta y_{i,t-1}\cdot(\alpha_i + \epsilon_{it})] = 0$$
+
+This holds under **mean stationarity**: $\mathbb{E}[\Delta y_{i2}\cdot\alpha_i] = 0$
+
+i.e., the initial first-difference of $y$ is uncorrelated with the permanent unit effect
+
+**Blundell and Bond (1998)** show this assumption is plausible when $y_{it}$ is stationary and $y_{i0}$ is drawn from the stationary distribution — reasonable for many economic/social processes
+
+System GMM **stacks** the differenced and levels equations, exploiting both sets of conditions jointly:
+
+::: {.nonincremental}
+| Equation | Instruments |
+|----------|-------------|
+| Difference | Lagged levels $y_{i,t-2}, y_{i,t-3},\ldots$ |
+| Levels | Lagged differences $\Delta y_{i,t-1}, \Delta y_{i,t-2},\ldots$ |
+:::
+
+## Difference GMM vs. System GMM
+
+::: {.nonincremental}
+| Feature | Difference GMM (AB) | System GMM (ABB/BB) |
+|---------|--------------------|--------------------|
+| Equations | Differences only | Differences + Levels |
+| DV instruments | Lagged levels | Lagged levels + Lagged diffs |
+| Key assumption | IID $\epsilon$; no serial correlation | + Mean stationarity of $y_{i0}$ |
+| Best suited for | $\gamma$ small/moderate | $\gamma$ near 1; large $\text{Var}(\alpha_i)$ |
+| Risk | Weak instruments if $\gamma \approx 1$ | Invalid if stationarity fails |
+| Diagnostic test | AR(2); Sargan/Hansen | AR(2); Sargan/Hansen; diff-in-Hansen |
+:::
+
+**The difference-in-Hansen test** (available in `xtabond2`) separately tests the validity of the levels equation instruments — i.e., it tests the mean stationarity assumption
+
+A statistically sensible strategy: estimate both; if estimates are close, prefer System GMM for efficiency. If they differ substantially, investigate why.
+
+## System GMM: Code and Results
+
+Replicating Blundell and Bond (1998), Table 4:
+
+::: {.panel-tabset}
+
+### R
+
+```{r bb-code, eval=FALSE}
+Table4.BB <- pgmm(
+  log(emp) ~ lag(log(emp), 1) +
+             lag(log(wage), 0:1) +
+             lag(log(capital), 0:1) |
+             lag(log(emp), 2:99) +
+             lag(log(wage), 2:99) +
+             lag(log(capital), 2:99),
+  data           = EmplUK,
+  effect         = "twoways",
+  model          = "onestep",
+  transformation = "ld"   # levels + differences
+)
+summary(Table4.BB, robust = TRUE)
+```
+
+### Stata
+
+```stata
+* System GMM via xtdpdsys
+xtdpdsys n L(0/1).w L(0/1).k yr1980-yr1984, ///
+    lags(1) twostep vce(robust)
+
+estat abond
+estat sargan
+
+* Preferred: xtabond2 (Roodman) — adds diff-in-Hansen, collapse, etc.
+xtabond2 n L.n L(0/1).w L(0/1).k yr1980-yr1984, ///
+    gmm(L.n, lag(2 .) collapse)                  ///
+    iv(L(0/1).w L(0/1).k yr1980-yr1984)           ///
+    twostep robust small
+```
+
+:::
+
+```{r bb-run, echo=FALSE}
+Table4.BB <- pgmm(
+  log(emp) ~ lag(log(emp), 1) + lag(log(wage), 0:1) +
+             lag(log(capital), 0:1) |
+             lag(log(emp), 2:99) + lag(log(wage), 2:99) + lag(log(capital), 2:99),
+  data = EmplUK, effect = "twoways", model = "onestep", transformation = "ld")
+summary(Table4.BB, robust = TRUE)
+```
+
+# Specification Testing
+
+## Sargan/Hansen and the Difference-in-Hansen Test
+
+**Sargan test** (one-step, non-robust): $S = N\cdot g_N'\hat{\mathbf{W}}_N g_N \sim \chi^2(L-K)$
+
+**Hansen $J$-test** (two-step, robust): same formula using optimal weighting matrix
+
+::: {.nonincremental}
+| $p$-value | Interpretation |
+|-----------|----------------|
+| $p < 0.05$ | Reject $H_0$ — some instruments likely invalid |
+| $0.05$–$0.25$ | Comfortable zone |
+| $0.25$–$0.95$ | Acceptable |
+| $p > 0.95$ | Too many instruments — test has no power |
+:::
+
+**Difference-in-Hansen test**: $\Delta J = J_{system} - J_{difference} \sim \chi^2(L_{extra})$
+
+- Tests the **additional moment conditions** introduced by the levels equation in System GMM
+- Rejection suggests the mean stationarity assumption underlying System GMM is violated
+- Available in `xtabond2` (Stata); not yet in `plm::pgmm`
+
+Key limitation of all these tests: they are **joint tests** of all included instruments. A rejection does not identify *which* moments fail; a non-rejection does not guarantee all moments are valid.
+
+## The AB AR Tests in Practice
+
+Recall: $\Delta\epsilon_{it} = \epsilon_{it} - \epsilon_{i,t-1}$
+
+**AR(1) in differences is expected**: should reject $H_0$ of no AR(1)
+
+- Under correct specification, adjacent differenced residuals share $-\epsilon_{i,t-1}$
+- Failure to reject is the warning sign — check model specification
+
+**AR(2) is the identification-relevant test**: should **not** reject $H_0$
+
+- Rejection implies $\text{Cov}(\epsilon_{it},\epsilon_{i,t-2}) \neq 0$ — violates the identifying assumption that $y_{i,t-2}$ is a valid instrument
+- If AR(2) rejects: exclude $t-2$ and instrument from $t-3$ onward
+
+**Also check AR(3)** in long panels to confirm the serial correlation structure
+
+::: {.panel-tabset}
+
+### R
+
+```{r ar-tests, eval=FALSE}
+library(plm)
+mtest(Table4.b, order = 1)  # AR(1) test
+mtest(Table4.b, order = 2)  # AR(2) test — key test
+```
+
+### Stata
+
+```stata
+* After xtabond / xtdpd / xtabond2
+estat abond          /* reports AR(1) and AR(2) by default */
+estat abond, lags(3) /* also request AR(3)                 */
+```
+
+:::
+
+## A Diagnostic Checklist
+
+::: {.nonincremental}
+**Step 1 — Check AR(2)**
+
+If $p < 0.05$: serial correlation in levels. Use instruments dated $t-3$ or later, or extend lag depth.
+
+**Step 2 — Check Sargan/Hansen $J$-test**
+
+If $p < 0.05$: investigate which instrument blocks may be invalid.
+If $p > 0.95$: too many instruments — collapse or limit lag depth and retest.
+
+**Step 3 — System GMM only: difference-in-Hansen**
+
+If $p < 0.05$: stationarity assumption suspect — prefer Difference GMM.
+
+**Step 4 — Count instruments vs. groups**
+
+Report $L$ and $N$; confirm $L \leq N$ (Roodman's rule of thumb).
+
+**Step 5 — Plausibility and brackets**
+
+Is $\hat{\gamma} \in (0,1)$? Does FE $< \hat{\gamma}_{AB} <$ OLS? Are signs of $\hat{\boldsymbol{\beta}}$ consistent with theory? Does the long-run effect $\hat{\beta}/(1-\hat{\gamma})$ make substantive sense?
+:::
+
+# Bias-Corrected LSDV
+
+## LSDV, Nickell Bias, and the Kiviet/Bruno Correction
+
+**LSDV** (Least Squares Dummy Variables) = within estimator = FE
+
+Nickell's (1981) bias approximation as $N\to\infty$ with $T$ fixed:
+
+$$\text{Bias}(\hat{\gamma}_{LSDV}) \approx -\frac{1+\gamma}{T-1} + O(T^{-2})$$
+
+**Kiviet (1995)** derived higher-order analytic approximations to the **exact finite-sample** bias of LSDV, enabling a bias correction:
+
+$$\hat{\gamma}_{LSDVC} = \hat{\gamma}_{LSDV} - \hat{B}(\hat{\gamma}_{initial})$$
+
+where $\hat{B}$ is estimated using a consistent initial estimate of $\gamma$ from AH, AB, or BB
+
+**Bruno (2005)** extended this to **unbalanced panels**
+
+Bootstrap standard errors are used since analytic SEs for the corrected estimator are complex
+
+**Preferred when**: $N$ is small relative to $T$ (e.g. $N < 50$), where GMM instrument proliferation is especially damaging; or as a robustness check alongside GMM results
+
+## LSDVC in R and Stata
+
+::: {.panel-tabset}
+
+### R
+
+```{r lsdvc-code, eval=FALSE}
+# Bias-corrected LSDV is primarily available in Stata
+# In R, 'pdynmc' provides related dynamic panel estimators
+# install.packages("pdynmc")
+library(pdynmc)
+
+# pdynmc estimates linear DPD models with various GMM configurations
+# See vignette("pdynmc") for LSDVC-style bias correction options
+
+# As a practical alternative — compare FE to GMM to bracket the true gamma
+fe_mod <- plm(
+  log(emp) ~ lag(log(emp), 1) + log(wage) + log(capital) + log(output),
+  data = EmplUK, model = "within", effect = "twoways"
+)
+summary(fe_mod)
+```
+
+### Stata
+
+```stata
+* Bias-corrected LSDV — Bruno (2005)
+* initial() options: ah, ab, or bb
+* vcov(B) requests B bootstrap replications for SE
+
+xtlsdvc n L.n L(0/1).w L(0/1).k yr1980-yr1984, ///
+    initial(ab) vcov(500) lags(1)
+
+* Compare initializations
+foreach init in ah ab bb {
+    xtlsdvc n L.n L(0/1).w L(0/1).k yr1980-yr1984, ///
+        initial(`init') vcov(200) lags(1)
+}
+```
+
+:::
+
+Estimates are typically between the FE (downward biased) and GMM (larger variance) results — a useful triangulation when $N$ is small.
+
+# Extensions
+
+## Unbalanced Panels and Orthogonal Deviations
+
+**First differences and gaps**: if $y_{i,t-1}$ is missing, $\Delta y_{it}$ is unavailable. Gaps propagate — one missing period can eliminate adjacent observations.
+
+**Orthogonal deviations** (Arellano and Bover 1995): express each observation as a deviation from the mean of all **future available** observations
+
+$$y_{it}^* = c_{it}\left(y_{it} - \frac{1}{T_{it}}\sum_{s>t}y_{is}\right), \quad c_{it} = \sqrt{\frac{T_{it}}{T_{it}+1}}$$
+
+where $T_{it}$ = number of future observations for unit $i$ at time $t$
+
+- Removes $\alpha_i$ (just as differencing does)
+- **Does not propagate missing values**: each transformed observation requires only $y_{it}$ and future periods
+- Lagged levels remain valid instruments — same logic as for differences
+- Typically produces more efficient estimates when the panel has gaps
+
+**Implementation**: `xtabond2, orthogonal` in Stata; orthogonal deviations not available in `plm::pgmm` (use `xtabond2` via `RStata` or `panelvar` for R)
+
+## Panel VAR and Software Notes
+
+**Panel VAR** extends DPD to multivariate systems — all variables treated as jointly endogenous:
+
+$$\mathbf{Y}_{it} = \mathbf{A}_1\mathbf{Y}_{i,t-1} + \cdots + \alpha_i + \boldsymbol{\epsilon}_{it}$$
+
+Applications: macro interdependencies, fiscal–monetary interactions, conflict dynamics
+
+::: {.panel-tabset}
+
+### R
+
+```{r pvar-code, eval=FALSE}
+library(panelvar)  # install.packages("panelvar")
+
+pvar_mod <- pvargmm(
+  dependent_vars     = c("log_emp", "log_wage"),
+  lags               = 1,
+  transformation     = "fd",         # first differences
+  data               = EmplUK,
+  panel_identifier   = c("firm", "year"),
+  steps              = "twosteps",
+  system_instruments = FALSE,
+  max_instr_dependent_vars = 4
+)
+summary(pvar_mod)
+girf(pvar_mod, n.ahead = 10, ma_approx_steps = 10) |> plot()
+```
+
+### Stata
+
+```stata
+* Panel VAR — Abrigo and Love (2016)
+* ssc install pvar
+
+pvar log_emp log_wage, lags(1) fod twostep
+pvarirf, oirf mc(500) step(10)
+```
+
+:::
+
+::: {.nonincremental}
+| R package | Stata command | Coverage |
+|-----------|--------------|---------|
+| `plm::pgmm` | `xtabond`, `xtdpd` | AB, BB |
+| `panelvar` | `xtabond2` | AB, BB, collapse, orthog, diff-in-Hansen |
+| `pdynmc` | `xtlsdvc` | LSDVC, extended GMM |
+:::
+
+## Slope Heterogeneity: Testing Before You Pool
+
+All AB/BB estimators assume **homogeneous slope vectors** $\boldsymbol{\beta}$ — the same $\gamma$, same wage elasticity, same capital elasticity for every unit. **Pesaran and Smith (1995)** proved that pooling with heterogeneous slopes yields **inconsistent estimates even with no endogeneity**, as $N, T \to \infty$.
+
+**Pesaran-Yamagata (2008) $\tilde{\Delta}$ test** — run $H_0: \boldsymbol{\beta}_i = \boldsymbol{\beta}\;\forall i$ before deciding to pool:
+
+$$\tilde{\Delta} = \sqrt{N}\left(\frac{N^{-1}\hat{S} - K}{\sqrt{2K}}\right) \xrightarrow{d} \mathcal{N}(0,1)$$
+
+where $\hat{S} = \sum_i(\hat{\boldsymbol{\beta}}_i - \hat{\boldsymbol{\beta}}_{FGLS})'\hat{\Sigma}_i^{-1}(\hat{\boldsymbol{\beta}}_i - \hat{\boldsymbol{\beta}}_{FGLS})$
+
+If $H_0$ is rejected, choose an estimator that respects heterogeneity:
+
+::: {.nonincremental}
+| Estimator | Description | Use when |
+|---|---|---|
+| **Mean Group (MG)** (Pesaran-Smith 1995) | Average of $N$ unit regressions | $T$ large; slopes heterogeneous |
+| **Pooled Mean Group (PMG)** (Pesaran-Shin-Smith 1999) | LR slopes homogeneous; SR heterogeneous | Cointegrated panel; theory restricts LR |
+| **CCE-MG** (Pesaran 2006) | MG + cross-sectional means as common-factor proxies | Cross-sectional dependence present |
+| **Dynamic CCE** (`xtdcce2`, Ditzen 2021) | CCE with lagged DV | DPD + cross-sectional dependence |
+:::
+
+::: {.panel-tabset}
+
+### R
+
+```{r slope-het, eval=FALSE}
+library(plm)
+
+# Pesaran CD test for cross-sectional dependence (prerequisite)
+ab_fe <- plm(n ~ lag(n,1) + w + k + ys, data=EmplUK,
+             model="within", effect="twoways")
+pcdtest(ab_fe)             # Pesaran (2015) CD test
+
+# Mean Group estimator (requires sufficient T per unit)
+# pmg() in plm
+mg_mod  <- pmg(n ~ lag(n,1) + w + k + ys, data=EmplUK,
+               model="mg")   # mean group
+pmg_mod <- pmg(n ~ lag(n,1) + w + k + ys, data=EmplUK,
+               model="pmg")  # pooled mean group
+
+# Hausman-type test: MG vs PMG (tests LR homogeneity)
+phtest(mg_mod, pmg_mod)
+```
+
+### Stata
+
+```stata
+* Pesaran (2004) CD test
+xtcd n             /* cross-sectional dependence test */
+
+* Pesaran-Yamagata slope homogeneity test
+xtslope n L.n w k ys   /* ssc install xtslope */
+
+* Mean Group and Pooled Mean Group
+xtpmg d.n d.w d.k d.ys, lr(L.n w k ys) ec(ec) full mg
+xtpmg d.n d.w d.k d.ys, lr(L.n w k ys) ec(ec) full pmg
+
+* Hausman test: PMG vs MG (tests LR slope homogeneity)
+hausman mg_est pmg_est
+
+* Dynamic CCE (handles cross-sectional dependence + lagged DV)
+* ssc install xtdcce2
+xtdcce2 n L.n w k ys, dcce lr(L.n w k ys)
+```
+
+:::
+
+## Extensions to Binary and Count Outcomes
+
+The entire DPD framework so far assumes a **continuous** outcome. But many social science DVs are discrete:
+
+- **Binary**: conflict onset, democratic breakdown, legislation passage, protest occurrence
+- **Count**: number of protests, trade deals, policy adoptions, fatalities
+- **Ordinal**: Polity/V-Dem democracy scores, treaty compliance levels
+
+**Why linear DPD fails here**:
+
+- Predicted probabilities escape $[0,1]$ (linear probability model)
+- The incidental parameters problem (Neyman and Scott 1948): in nonlinear FE models, $\hat{\alpha}_i$ is estimated from $T$ observations and is inconsistent as $T$ fixed, contaminating $\hat{\boldsymbol{\beta}}$
+- The **Heckman (1981) initial conditions problem**: the distribution of $y_{i1}$ depends on $\alpha_i$, so we cannot simply condition on $y_{i1}$ as observed
+
+**Wooldridge (2005, JAE)** provides the cleanest solution — **correlated random effects (CRE) conditioning**:
+
+Model $\alpha_i \mid y_{i1},\bar{\mathbf{x}}_i \sim \mathcal{N}(\psi_0 + \psi_1 y_{i1} + \bar{\mathbf{x}}_i\boldsymbol{\psi}_2,\; \sigma^2_a)$, then integrate out $\alpha_i$. This yields a standard **random-effects probit / Poisson** augmented with $y_{i1}$ and unit-means $\bar{\mathbf{x}}_i$ as additional regressors:
+
+$$P(y_{it}=1 \mid y_{i,t-1}, \mathbf{x}_{it}, y_{i1}, \bar{\mathbf{x}}_i) = \Phi\!\left(\gamma y_{i,t-1} + \mathbf{x}_{it}\boldsymbol{\beta} + \psi_1 y_{i1} + \bar{\mathbf{x}}_i\boldsymbol{\psi}_2\right)$$
+
+The initial value $y_{i1}$ proxies the distribution of $\alpha_i$ — no numerical integration beyond what RE probit already does.
+
+::: {.panel-tabset}
+
+### R
+
+```{r dynamic-probit, eval=FALSE}
+library(lme4)
+
+# Construct Mundlak/Wooldridge terms
+panel_df <- EmplUK |>
+  group_by(firm) |>
+  mutate(
+    n_bin  = as.integer(n > median(n)),  # example binary DV
+    n_init = first(n_bin),               # initial value y_{i1}
+    w_bar  = mean(w, na.rm = TRUE),      # unit mean of wage
+    k_bar  = mean(k, na.rm = TRUE)       # unit mean of capital
+  ) |> ungroup()
+
+# Wooldridge (2005) CRE dynamic probit via glmer
+mod_cre_probit <- glmer(
+  n_bin ~ lag(n_bin) + w + k + n_init + w_bar + k_bar + (1 | firm),
+  data = panel_df, family = binomial(link = "probit")
+)
+summary(mod_cre_probit)
+
+# For counts: CRE Poisson (Blundell-Griffith-Windmeijer 2002)
+mod_cre_pois <- glmer(
+  emp ~ lag(emp) + w + k + n_init + w_bar + k_bar + (1 | firm),
+  data = panel_df, family = poisson
+)
+```
+
+### Stata
+
+```stata
+* Construct Mundlak/Wooldridge terms
+bysort id: gen y_init = y_binary[1]
+bysort id: egen w_bar  = mean(w)
+bysort id: egen k_bar  = mean(k)
+
+* Wooldridge (2005) CRE dynamic probit
+xtprobit y_binary L.y_binary w k y_init w_bar k_bar, re
+
+* Average partial effects (critical for interpretation)
+margins, dydx(*) predict(pu0)
+
+* For count outcomes: CRE Poisson
+xtpoisson emp L.emp w k y_init w_bar k_bar, re
+margins, dydx(*) predict(nu0)
+
+* Test: is the initial condition coefficient significant?
+* (psi1 != 0 confirms the initial conditions problem is real)
+test y_init
+```
+
+:::
+
+**Key interpretation note**: coefficients from CRE probit/Poisson are not average partial effects (APEs). Always compute APEs via `margins` (Stata) or the `marginaleffects` package (R) and interpret those — not the latent-index coefficients.
+
+# Applied Example: UK Manufacturing Employment
+
+## The Data: EmplUK / abdata
+
+Based on **Layard and Nickell (1986)**, *Unemployment in Britain*, Economica 53
+
+```
+Obs: 1,031     140 UK manufacturing firms, 1976–1984 (unbalanced)
+
+Variable   Description
+--------   -----------------------------------------------
+id / firm  Firm identifier
+year       Year (1976–1984)
+emp / n    Employment count / log(employment)
+wage / w   Real wage / log(real wage)
+capital/k  Gross capital stock / log(capital)
+output/ys  Industry output / log(industry output)
+yr1980–yr1984   Year dummy indicators
+```
+
+::: {.panel-tabset}
+
+### R
+
+```{r data-setup, eval=FALSE}
+library(plm)
+data(EmplUK)
+EmplUK$n  <- log(EmplUK$emp)
+EmplUK$w  <- log(EmplUK$wage)
+EmplUK$k  <- log(EmplUK$capital)
 EmplUK$ys <- log(EmplUK$output)
 ```
 
-##
+### Stata
 
-```{r, eval=FALSE}
-# Can just use log syntax to solve it.
-# Arellano and Bond (1991), table 4(a1) 
-Table4.a1 <- pgmm(log(emp) ~ lag(log(emp), 1:2) + lag(log(wage), 0:1) + lag(log(capital), 0:2) + lag(log(output), 0:2) | lag(log(emp), 2:99), data = EmplUK, effect = "twoways", model = "onestep")
-summary(Table4.a1)
+```stata
+use abdata, clear
+* Variables n, w, k, ys already in log form in abdata
+xtset id year
+xtdescribe       /* inspect panel structure */
+xtsum n w k ys   /* within/between/overall variance */
 ```
 
-##
+:::
 
-```{r, echo=FALSE}
-# Can just use log syntax to solve it.
-# Arellano and Bond (1991), table 4(a1) 
-Table4.a1 <- pgmm(log(emp) ~ lag(log(emp), 1:2) + lag(log(wage), 0:1) + lag(log(capital), 0:2) + lag(log(output), 0:2) | lag(log(emp), 2:99), data = EmplUK, effect = "twoways", model = "onestep")
-summary(Table4.a1)
+**Research question**: How do wages, capital, and industry output shape firm employment? What is the degree of employment persistence, and how quickly does adjustment occur?
+
+## Panel Summary Statistics
+
+```{r panel-summ-show, echo=FALSE}
+data(EmplUK)
+EmplUK$n  <- log(EmplUK$emp);  EmplUK$w  <- log(EmplUK$wage)
+EmplUK$k  <- log(EmplUK$capital); EmplUK$ys <- log(EmplUK$output)
+ps2 <- panel.summary(EmplUK[, c("n","w","k","ys")], EmplUK$firm)
+ps2$sum.tab |>
+  kbl(caption = "Variance decomposition: log employment, wage, capital, output") |>
+  kable_styling(font_size = 14)
 ```
 
+Key observations:
 
-##
+- **Employment** ($n$): roughly 30–40% within — meaningful time-series variation across firms
+- **Wage** ($w$) and **Capital** ($k$): dominated by between variation — identification concerns for GMM instruments
+- **Output** ($ys$): industry-level variable; nearly all variation is between firms — appropriate as a strictly exogenous regressor
 
-```{r, eval=FALSE}
-## Arellano and Bond (1991), table 4b 
-Table4.b <- pgmm(log(emp) ~ lag(log(emp), 1:2) + lag(log(wage), 0:1)
-           + log(capital) + lag(log(output), 0:1) | lag(log(emp), 2:99),
-            data = EmplUK, effect = "twoways", model = "twosteps")
-# To make it match Stata
-summary(Table4.b, robust=FALSE)
+## Specification Choices
+
+**Lag depth for the DV**: AB (1991) uses two lags — test if the second is significant; confirm AR(2) is not rejected with this choice
+
+**Treatment of covariates**:
+
+- $w$ (wage): **predetermined** — firms plausibly adjust wages in response to past employment shocks; instrument with levels at $t-1$ and before
+- $k$ (capital): potentially **endogenous** — investment and employment may be jointly determined; instrument with levels at $t-2$ and before
+- $ys$ (output): **strictly exogenous** — industry output is not set by an individual firm; enter as $\Delta ys_{it}$
+
+**Time fixed effects**: `effect = "twoways"` in `pgmm`; `yr1980-yr1984` dummies in Stata — controls for macroeconomic shocks common to all firms
+
+**Instrument discipline**: begin with `lag(..., 2:99)`; monitor instrument count and Hansen $p$-value; re-estimate with `2:4` or collapsed as robustness
+
+## Results and Long-Run Interpretation
+
+```{r results-compare, echo=FALSE}
+fe <- plm(n ~ lag(n,1) + lag(n,2) + w + lag(w,1) + k + lag(k,1) + lag(k,2) +
+              ys + lag(ys,1) + lag(ys,2),
+          data = EmplUK, model = "within", effect = "twoways")
+ab1 <- Table4.a1;  ab2 <- Table4.b
+
+tab <- data.frame(
+  Estimator = c("Fixed Effects (FE)", "AB One-Step", "AB Two-Step (Windmeijer)","System GMM (BB)"),
+  `L.emp`   = c(round(coef(fe)[1],3), round(coef(ab1)[1],3), round(coef(ab2)[1],3), round(coef(Table4.BB)[1],3)),
+  `L2.emp`  = c(round(coef(fe)[2],3), round(coef(ab1)[2],3), round(coef(ab2)[2],3), "—"),
+  `wage`    = c(round(coef(fe)[3],3), round(coef(ab1)[3],3), round(coef(ab2)[3],3), round(coef(Table4.BB)[2],3))
+)
+tab |> kbl(col.names = c("Estimator","L.emp","L2.emp","Wage (contemp.)"),
+           caption = "Selected estimates across estimators") |>
+  kable_styling(font_size = 14) |>
+  row_spec(0, bold = TRUE)
 ```
 
-##
+**Key patterns**: FE under-estimates persistence (Nickell bias); System GMM yields the highest $\hat{\gamma}$; AB two-step with Windmeijer SEs is the benchmark for DPD
 
-```{r, echo=FALSE}
-## Arellano and Bond (1991), table 4b 
-Table4.b <- pgmm(log(emp) ~ lag(log(emp), 1:2) + lag(log(wage), 0:1)
-           + log(capital) + lag(log(output), 0:1) | lag(log(emp), 2:99),
-            data = EmplUK, effect = "twoways", model = "twosteps")
-# To make it match Stata
-summary(Table4.b, robust=FALSE)
+**Long-run effects from AB two-step (Table 4b)**
+
+In steady state $y^* = \gamma_1 y^* + \gamma_2 y^* + \sum_j \beta_{x,j} x^*$, so:
+
+$$\text{LR effect of } x = \frac{\sum_j \hat{\beta}_{x,j}}{1 - \hat{\gamma}_1 - \hat{\gamma}_2}$$
+
+Sum all lag coefficients on each $x$ (numerator); subtract the **sum** of AR coefficients from 1 (denominator).
+
+```{r lr-effects, echo=TRUE}
+# Extract AB two-step coefficients by name for transparency
+cf <- coef(Table4.b)
+
+g1  <- cf["lag(log(emp), 1:2)1"];   g2  <- cf["lag(log(emp), 1:2)2"]
+bw0 <- cf["lag(log(wage), 0:1)0"];  bw1 <- cf["lag(log(wage), 0:1)1"]
+bk  <- cf["log(capital)"]                          # only lag-0 in Table 4b spec
+by0 <- cf["lag(log(output), 0:1)0"]; by1 <- cf["lag(log(output), 0:1)1"]
+
+adj_speed <- 1 - g1 - g2          # denominator for all LR effects
+
+cat(sprintf("gamma1 = %6.4f   gamma2 = %6.4f\n", g1, g2))
+cat(sprintf("sum(gamma)     = %6.4f\n", g1 + g2))
+cat(sprintf("Speed of adj.  = 1 - %6.4f = %6.4f  (~%.0f%% per year)\n",
+            g1+g2, adj_speed, 100*adj_speed))
+cat(sprintf("\nLR wage  = (bw0 + bw1) / adj  = (%6.4f + %6.4f) / %6.4f = %7.4f\n",
+            bw0, bw1, adj_speed, (bw0+bw1)/adj_speed))
+cat(sprintf("LR cap   = bk / adj            = %6.4f          / %6.4f = %7.4f\n",
+            bk, adj_speed, bk/adj_speed))
+cat(sprintf("LR output= (by0 + by1) / adj   = (%6.4f + %6.4f) / %6.4f = %7.4f\n",
+            by0, by1, adj_speed, (by0+by1)/adj_speed))
 ```
 
+# Practical Guidance and A Philosophical Note
 
-##
+## Choosing an Estimator
 
-```{r, eval=FALSE}
-# Or with Robust [Notice it is default]
-summary(Table4.b)
-```
+**Start here — Is there a lagged DV or outcome-to-covariate feedback?**
 
-##
+No → standard FE/RE panel models suffice; stop here
 
-```{r, echo=FALSE}
-# Or with Robust [Notice it is default]
-summary(Table4.b)
-```
+Yes → continue below
 
-##
+**Is $T$ large ($> 20$–$30$)?**
 
-```{r, eval=FALSE}
-## Blundell and Bond (1998) table 4
-Table4.BB <- pgmm(log(emp) ~ lag(log(emp), 1)+ lag(log(wage), 0:1) +
-           lag(log(capital), 0:1) | lag(log(emp), 2:99) +
-           lag(log(wage), 2:99) + lag(log(capital), 2:99),        
-           data = EmplUK, effect = "twoways", model = "onestep", 
-           transformation = "ld") 
-summary(Table4.BB, robust = TRUE)
-```
+Yes → Nickell bias is small; FE or LSDVC may be sufficient with a robustness check
 
+No → proceed to GMM
 
-##
+**Is $N$ small ($< 50$)?**
 
-```{r, echo=FALSE}
-## Blundell and Bond (1998) table 4
-Table4.BB <- pgmm(log(emp) ~ lag(log(emp), 1)+ lag(log(wage), 0:1) +
-           lag(log(capital), 0:1) | lag(log(emp), 2:99) +
-           lag(log(wage), 2:99) + lag(log(capital), 2:99),        
-           data = EmplUK, effect = "twoways", model = "onestep", 
-           transformation = "ld") 
-summary(Table4.BB, robust = TRUE)
-```
+Yes → instrument proliferation is severe; use LSDVC, or limit instruments aggressively before applying GMM
 
+**Is $\gamma$ likely near 1 (high persistence)?**
+
+Yes → Difference GMM instruments are weak; prefer System GMM; validate with diff-in-Hansen
+
+No → Difference GMM (AB) is appropriate; report System GMM as robustness
+
+**Always report alongside any GMM result**:
+
+- Instrument count ($L$) vs. number of groups ($N$)
+- AR(1) and AR(2) $p$-values
+- Sargan/Hansen $p$-value
+- FE and pooled OLS for bracketing comparison
+
+## Common Pitfalls
+
+**1. Reporting `lag(y, 2:99)` without checking instrument count**
+
+A Hansen $p$-value of 0.99 is not good news — it signals the test has no power
+
+**2. Treating predetermined covariates as strictly exogenous**
+
+Using $\Delta x_{it}$ as an instrument when $x_{it}$ responds to past $y$ introduces invalid moments
+
+**3. Ignoring the AR(2) test**
+
+If $y_{i,t-2}$ is correlated with the error in levels, it cannot instrument for $\Delta y_{i,t-1}$
+
+**4. Two-step GMM without Windmeijer correction**
+
+Naive two-step standard errors are dramatically under-estimated in short panels; always specify `robust`
+
+**5. Forgetting time fixed effects**
+
+Without year dummies, common macro shocks enter the error and correlate with all lagged instruments
+
+**6. Conflating persistence with long-run elasticity**
+
+$\hat{\gamma}$ measures the speed of adjustment — high $\hat{\gamma}$ means *slow* adjustment, not instability (provided $\hat{\gamma} < 1$)
+
+## Poolers vs. Time-Series Scholars
+
+The core philosophical tension in panel data:
+
+**Poolers** begin with the presumption that data *can* be pooled:
+
+- The composite / population-averaged inference is the target
+- Unit effects are nuisances to control for, not the object of inquiry
+- Pooling is the default; heterogeneity is corrected, not modelled
+
+**Time-series scholars** begin with deep scepticism of pooling:
+
+- Units are heterogeneous; pooling requires evidence, not assumption
+- The unit-specific trajectory is often substantively interesting
+- Estimates from short panels with large $N$ describe a fictional average unit
+
+These are **priors and proclivities** — neither is derived from a general rule
+
+DPD/GMM sits in an uncomfortable middle:
+
+- Explicitly motivated by the cross-sectional dimension ($N$ large)
+- But identification comes entirely from the time-series dimension of each unit
+
+**The practical upshot**: theory should drive model choice. The choice of estimator is not neutral — it encodes maintained assumptions about the data-generating process. Report multiple estimators, be transparent about what each assumes, and let substantive interpretation guide, not justify, the choice.
+
+## Looking Ahead — GMM-DPD as Causal Claims: The Imai-Kim Connection
+
+GMM-DPD is a consistency-and-identification framework. The causal tradition asks sharper questions: *for whom* and *under what counterfactual* does $\hat{\gamma}$ or $\hat{\boldsymbol{\beta}}$ describe a treatment effect?
+
+**GMM moment conditions are causal claims in disguise**:
+
+- *Strict exogeneity*: $\mathbb{E}[x_{it}\epsilon_{is}]=0\;\forall s,t$ = "outcomes never feed back to $x$" — **no-feedback** in potential-outcomes language
+- *Predetermined*: forward feedback forbidden, backward allowed = **sequential ignorability** given observables
+- Instrument validity $\mathbb{E}[y_{i,t-2}\Delta\epsilon_{it}]=0$ = an **exclusion restriction**: $y_{i,t-2}$ affects $y_{it}$ only through $\Delta y_{i,t-1}$
+
+**Imai and Kim (2019, AJPS)** show TWFE identifies a causal effect only under two assumptions rarely stated:
+
+::: {.nonincremental}
+| Assumption | TWFE | DPD |
+|---|---|---|
+| **No carryover**: $D_{i,t-s}$ does not directly affect $Y_{it}$ | Maintained silently | Partially relaxed via distributed lags |
+| **No reverse feedback**: $Y_{i,t-s}$ does not affect $D_{it}$ | Maintained silently | **Explicitly modelled** — the whole point of the lagged DV |
+:::
+
+By including $y_{i,t-1}$ and instrumenting it, DPD moves Assumption 2 *from the error term into the model*. This is the DPD framework's core contribution to causal thinking about panels. Assumption 1 (no carryover of treatment) remains implicitly maintained in most applications and requires distributed lag structures to relax.
+
+## Parallel Trends vs. Sequential Moment Conditions
+
+Both the DiD tradition and the DPD tradition use panel data to recover effects of interest. They represent **two different identification strategies** for related but distinct questions.
+
+::: {.nonincremental}
+| | DPD / GMM | DiD / Parallel Trends |
+|---|---|---|
+| **Question** | How persistent is $y$? What is the effect of $x$ on $y$? | What is the causal effect of a treatment $D$? |
+| **Identifying assumption** | Sequential moment conditions: $\mathbb{E}[y_{i,t-s}\Delta\epsilon_{it}]=0$ | Parallel trends: $\mathbb{E}[Y_{it}(0)-Y_{is}(0)]$ equal across groups |
+| **Variation used** | Within-unit over time (IV from lagged values) | Across-group difference in trends |
+| **Units as** | Exchangeable observations | Treated vs. control groups |
+| **Treatment** | $x_{it}$ enters as covariate; may be endogenous | $D_{it}$ is binary or discrete; staggered adoption |
+| **Dynamics** | $\hat{\gamma}$ is the object of inference | Often assumed away (no-carryover) |
+:::
+
+**The tension**: DiD estimators that ignore $\hat{\gamma}$ are misspecified when outcomes are persistent — the untreated potential outcome $Y_{it}(0)$ itself follows an AR process, and parallel trends in levels does not hold if the pre-treatment trajectories diverge at different rates. Omitting the lagged DV from a DiD specification conflates treatment effects with autoregressive persistence.
+
+## TWFE, ATT(g,t), and the Day 10 Preview
+
+**The TWFE problem**: Goodman-Bacon (2021) shows standard TWFE with staggered adoption is a weighted average of all $2\times 2$ DiD comparisons — including ones where **already-treated units serve as controls for later-treated units**, generating **negative weights** when effects are heterogeneous over time or across cohorts.
+
+**Wooldridge's (2021) unifying result**: TWFE $\equiv$ **two-way Mundlak regression** — the Mundlak (1978) correlated-random-effects device we already know from DPD:
+
+$$y_{it} = \alpha + \tau D_{it} + \underbrace{\bar{y}_i\,\delta + \bar{y}_t\,\phi}_{\text{two-way Mundlak terms}} + u_{it} \;\;\equiv\;\; \text{TWFE}$$
+
+Extending to cohort$\times$time interactions (ETWFE) recovers **Callaway and Sant'Anna's (2021)** causal estimand:
+
+$$\text{ATT}(g,t) = \mathbb{E}\!\left[Y_{it}(g) - Y_{it}(\infty) \;\big|\; G_i = g\right]$$
+
+the average effect for cohort $g$ at time $t$ using never/not-yet-treated controls — heterogeneity-robust by construction.
+
+**The Day 9 → Day 10 handoff**: Omitting $\hat{\gamma}$ from a DiD specification is only valid if $\gamma = 0$ *or* treatment is independent of past outcomes. When the outcome is genuinely persistent, the untreated potential outcome $Y_{it}(0)$ itself follows an AR process and parallel trends in levels need not hold even when it holds in differences. Day 10 addresses when the $\gamma = 0$ restriction can be defended and when a hybrid DPD-DiD approach is required.
+
+::: {.nonincremental}
+| Estimator | Estimand | R / Stata |
+|---|---|---|
+| Callaway-Sant'Anna (2021) | ATT(g,t) | `did`; `csdid` |
+| de Chaisemartin-D'Haultfoeuille (2020) | ATT for switchers | `DIDmultiplegt`; `did_multiplegt` |
+| Sun-Abraham (2021) | CATT(g,t) | `fixest::sunab()`; `eventstudyinteract` |
+| Wooldridge (2021, 2023) | ATT aggregates (ETWFE) | `etwfe`; `jwdid` |
+:::
 
 ## References
 
-The manual for R package $\texttt{plm}$ was published in the Journal of Statistical Software.  It is nice and extensive excepting the application of dpd models; only some are available.  There is also `panelvar` for panel VAR models that estimates even more `dpd` estimators.  Kit Baum has a very nice discussion of this in Stata in a set of course slides on the web at Boston College [search google for Baum Dynamic Panel Data Estimators].
+::: {.nonincremental .smaller}
+**Core DPD and GMM**
 
+- Anderson, T.W. and Hsiao, C. (1981). Estimation of dynamic models with error components. *JASA*, 76, 598–606.
+- Arellano, M. and Bond, S. (1991). Some tests of specification for panel data. *Review of Economic Studies*, 58, 277–297.
+- Arellano, M. and Bover, O. (1995). Another look at the instrumental variable estimation of error-components models. *Journal of Econometrics*, 68, 29–51.
+- Blundell, R. and Bond, S. (1998). Initial conditions and moment restrictions in dynamic panel data models. *Journal of Econometrics*, 87, 115–143.
+- Bruno, G.S.F. (2005). Approximating the bias of the LSDV estimator for dynamic unbalanced panel data models. *Economics Letters*, 87, 361–366.
+- Holtz-Eakin, D., Newey, W. and Rosen, H.S. (1988). Estimating vector autoregressions with panel data. *Econometrica*, 56, 1371–1395.
+- Nickell, S. (1981). Biases in dynamic models with fixed effects. *Econometrica*, 49, 1417–1426.
+- Roodman, D. (2009). How to do xtabond2. *Stata Journal*, 9, 86–136.
+- Wawro, G. (2002). Estimating dynamic panel data models in political science. *Political Analysis*, 10, 25–48.
+- Windmeijer, F. (2005). A finite sample correction for the variance of linear efficient two-step GMM estimators. *Journal of Econometrics*, 126, 25–51.
 
+**Slope Heterogeneity and Cross-Sectional Dependence**
 
-## Some Summary Remarks on Philosophy
+- Ditzen, J. (2021). Estimating long-run effects and the exponent of cross-sectional dependence: an update to `xtdcce2`. *Stata Journal*, 21, 687–707.
+- Mundlak, Y. (1978). On the pooling of time series and cross section data. *Econometrica*, 46, 69–85.
+- Pesaran, M.H. (2006). Estimation and inference in large heterogeneous panels with a multifactor error structure. *Econometrica*, 74, 967–1012.
+- Pesaran, M.H., Shin, Y. and Smith, R.P. (1999). Pooled mean group estimation of dynamic heterogeneous panels. *JASA*, 94, 621–634.
+- Pesaran, M.H. and Smith, R.P. (1995). Estimating long-run relationships from dynamic heterogeneous panels. *Journal of Econometrics*, 68, 79–113.
+- Pesaran, M.H. and Yamagata, T. (2008). Testing slope homogeneity in large panels. *Journal of Econometrics*, 142, 50–93.
 
-- Poolers begin with the assumption that the data can be pooled and the composite/population averaged inference is general.
-- Time series scholars begin with the belief that things should only be pooled with evidence in support of pooling.
-- These are beliefs and proclivities more than insights from general rules.
-- Substance and theory should drive model choices; the reverse is ridiculous given that we assume the right model.
+**Nonlinear and Limited Dependent Variable DPD**
+
+- Blundell, R., Griffith, R. and Windmeijer, F. (2002). Individual effects and dynamics in count data models. *Journal of Econometrics*, 108, 113–131.
+- Heckman, J.J. (1981). The incidental parameters problem and the problem of initial conditions. In Manski and McFadden (eds.), *Structural Analysis of Discrete Data*. MIT Press.
+- Wooldridge, J.M. (2005). Simple solutions to the initial conditions problem in dynamic, nonlinear panel data models with unobserved heterogeneity. *Journal of Applied Econometrics*, 20, 39–54.
+- Wooldridge, J.M. (2023). Simple approaches to nonlinear difference-in-differences with panel data. *Econometrics Journal*, 26, C31–C66.
+
+**Causal Identification and DiD (Day 10 preview)**
+
+- Callaway, B. and Sant'Anna, P.H.C. (2021). Difference-in-differences with multiple time periods. *Journal of Econometrics*, 225, 200–230.
+- de Chaisemartin, C. and D'Haultfoeuille, X. (2020). Two-way fixed effects estimators with heterogeneous treatment effects. *American Economic Review*, 110, 2964–2996.
+- Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. *Journal of Econometrics*, 225, 254–277.
+- Imai, K. and Kim, I.S. (2019). When should we use unit fixed effects regression models for causal inference with longitudinal data? *American Journal of Political Science*, 63, 467–490.
+- Sun, L. and Abraham, S. (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. *Journal of Econometrics*, 225, 175–199.
+- Wooldridge, J.M. (2021/2025). Two-way fixed effects, the two-way Mundlak regression, and difference-in-differences estimators. *Empirical Economics*. SSRN 3906345.
+:::
