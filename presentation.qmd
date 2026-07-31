@@ -1,0 +1,3 @@
+---
+title: "The Two-Way Mundlak Estimator"
+subtitle: "The

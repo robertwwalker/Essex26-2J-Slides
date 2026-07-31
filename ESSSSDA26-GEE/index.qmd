@@ -45,8 +45,8 @@ When the dependent variable $Y_{it}$ is limited (non-continuous), standard linea
 ### The Dilemma in Non-Linear Panel Models
 
 1. **Serial Correlation**: Repeated observations across time $t = 1, \dots, T_i$ within individual/unit $i = 1, \dots, N$ violate independence assumptions.
-2. **Subject-Specific Heterogeneity**: Unobserved heterogeneity $ lpha_i$ must be addressed.
-3. **Incidental Parameter Problem**: In non-linear models with fixed $T$ as $N 	o \infty$, estimating $N$ parameters $\alpha_i$ yields inconsistent estimates for structural parameters $\beta$.
+2. **Subject-Specific Heterogeneity**: Unobserved heterogeneity $\alpha_i$ must be addressed.
+3. **Incidental Parameter Problem**: In non-linear models with fixed $T$ as $N \rightarrow \infty$, estimating $N$ parameters $\alpha_i$ yields inconsistent estimates for structural parameters $\beta$.
 
 ## Marginal vs. Conditional Models
 
@@ -54,7 +54,7 @@ Understanding the core distinction between modeling approaches is key:
 
 ::: {.columns}
 
-::: {.column width="50%"}
+::: {.column width="55%"}
 ### Conditional (GLMM / RE)
 - Models response **conditional on individual random effect**:
   $$E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} \beta_{\text{cond}} + u_i)$$
@@ -62,7 +62,7 @@ Understanding the core distinction between modeling approaches is key:
 - Subject-specific inference.
 :::
 
-::: {.column width="50%"}
+::: {.column width="40%"}
 ### Marginal (GEE)
 - Models the **population average**:
   $$E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} \beta_{\text{marg}})$$
@@ -124,7 +124,7 @@ $$	\text{Var}(\hat{\beta}) = M_0^{-1} M_1 M_0^{-1}$$
 $$\text{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N D_i^T V_i^{-1} (Y_i - \mu_i)(Y_i - \mu_i)^T V_i^{-1} D_i$$
 
 ::: {.callout-important}
-**Key Property**: As $N 	o \infty$, $\hat{ eta}$ remains consistent and standard errors are asymptotically correct, even with misspecified working correlation!
+**Key Property**: As $N \rightarrow \infty$, $\hat{\beta}$ remains consistent and standard errors are asymptotically correct, even with misspecified working correlation!
 :::
 
 ---
@@ -151,9 +151,6 @@ $$\text{where } M_0 = \sum_{i=1}^N D_i^T V_i^{-1} D_i, \quad M_1 = \sum_{i=1}^N 
 | **Correlation Robustness** | N/A | Sensitive to distributional misspecification | **Highly Robust (Sandwich SEs)** |
 | **Primary Use Case** | Within-unit causal identification | Individual heterogeneity / prediction | **Population policy effects & trends** |
 
----
-
-## GEE with Mundlak / Hybrid Transformations
 
 ## GEE with Mundlak / Hybrid Transformations
 
@@ -227,7 +224,7 @@ print(result.summary())
 
 ::: {.column width="50%"}
 ### Best Practices
-1. Choose $R( lpha)$ based on substantive theory (e.g., AR-1 for panel time-series).
+1. Choose $R(\alpha)$ based on substantive theory (e.g., AR-1 for panel time-series).
 2. Always report **robust (sandwich) standard errors**.
 3. Use **Hybrid/Mundlak formulations** when time-invariant confounding is a concern.
 4. Use **QIC** to compare competing working correlation structures.

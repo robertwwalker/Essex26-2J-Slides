@@ -1,0 +1,260 @@
+---
+title: "Dynamic Models for Compositional Data"
+subtitle: "Time Series, Panel Data & the \"Dynamic PIE\" Framework"
+author: "Whitten · Lipsmeyer · Philips · Rutherford & Collaborators"
+date: today
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: One or More Time Series"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  hiline = TRUE
+)
+library(xaringanthemer); library(kableExtra); library(tidyverse); library(skimr)
+```
+
+
+## What Is Compositional Data?
+
+Multivariate vectors of proportions that sum to a constant (1 or 100%). Each observation lives on the (J−1)-simplex.
+
+**Core properties**
+
+- **Constant-sum constraint** — any increase in one component must be offset by decreases in others
+- **Relative information** — only ratios between parts carry meaning; absolute scale is irrelevant
+- **Zero-sum trade-offs** — modeling must respect the mutually exclusive, competitive structure of the parts
+
+**Examples**
+
+- Party vote shares (Labour / Conservative / Liberal Democrat)
+- Government budget allocations across spending categories
+- Income quintile shares
+- Public opinion composition on Most Important Problem
+
+---
+
+## Why Standard Methods Fall Short
+
+1. **Redundant degree of freedom** — with J components summing to 1, J−1 determine the last; including all J creates perfect collinearity
+2. **Constraint violations** — OLS predictions are unconstrained and can exceed 1 or go negative
+3. **Ignored trade-off structure** — modeling each category against an omnibus "rest" misrepresents competition across all categories
+4. **Static-only priors** — earlier compositional methods (Katz & King 1999; Tomz, Tucker & Wittenberg 2002) had no dynamic structure, no lagged effects, no error-correction
+
+---
+
+## Core Methodology: The Dynamic PIE Framework
+
+**Step 1 — Additive log-ratio (ALR) transformation** *(Aitchison 1982)*
+
+Express J categories as J−1 log ratios relative to a baseline category J:
+
+$$s_{tj} = \ln\!\left(\frac{y_{tj}}{y_{tJ}}\right), \quad j = 1, \ldots, J-1$$
+
+Places the composition in unrestricted real space.
+
+**Step 2 — Error-correction model within seemingly unrelated regression (SUR)**
+
+$$\Delta s_{tj} = \alpha\, s_{t-1,j} + \gamma\, \Delta x_t + \delta\, x_{t-1} + \varepsilon_{tj}$$
+
+Estimated as a joint system via SUR to capture cross-equation error correlation.
+
+**Step 3 — Simulation-based inference**
+
+Draw 1,000 coefficient vectors from the multivariate normal posterior (CLARIFY; Tomz, Wittenberg & King 2003), apply counterfactual shocks, back-transform to proportions with confidence intervals.
+
+**Step 4 — Back-transformation**
+
+Inverse ALR returns all predictions to the simplex (positive, summing to 1). Displayed as change-from-baseline or predicted-proportion trajectories.
+
+---
+
+## Key Papers: Time-Series Foundations (2015–2016)
+
+**Philips, Rutherford & Whitten (2015)**  
+*Electoral Studies* 39: 264–274  
+First application in political science. Models monthly UK party vote shares using ECM-SUR.
+
+**Philips, Rutherford & Whitten (2016a)**  
+*American Journal of Political Science* 60(1): 268–283  
+The definitive methods paper. Addresses two prior gaps: non-dynamic compositional models and graphical tools that broke down for J > 3. Illustrates with UK party support (2004–2010) and US federal budget categories (1947–2009).
+
+**Philips, Rutherford & Whitten (2016b)**  
+*Stata Journal* 16(3): 662–677  
+Introduces `dynsimpie`, wrapping ECM-SUR estimation and CLARIFY simulation into a single command with built-in graphics.
+
+---
+
+## Key Papers: Extension to Panel / TSCS Data (2017–2019)
+
+**Lipsmeyer, Philips & Whitten (2017)**  
+*Journal of European Public Policy* 24(6): 912–930  
+First compositional panel application. Shows how immigration stocks alter welfare state spending trade-offs across European countries.
+
+**Lipsmeyer, Philips, Rutherford & Whitten (2019)**  
+*Political Science Research & Methods* 7(3): 523–540  
+Extends Dynamic PIE from single time series to time-series cross-sectional (TSCS) data. Innovations:
+
+- Unit fixed effects for stable cross-sectional differences
+- Contextual variables for cross-unit variation in composition levels
+- Spatial weighting matrix for cross-unit spillovers
+
+Illustrated with U.S. state budget data (50 states, developmental / allocational / redistributive / educational spending).
+
+---
+
+## Recent Advances (2020–2024)
+
+**Jung, Souza, Philips, Rutherford & Whitten (2020)**  
+*Stata Journal* 20(3): 584–603  
+Updates `dynsimpie` with `cfbplot`, `effectsplot`, and `dynsimpiecoef` postestimation commands; expanded model specification options.
+
+**Philips, Souza & Whitten (2020)**  
+*Political Science Research & Methods* 8(3): 509–525  
+Applies the compositional panel model to cross-national income quintile share data; traces globalization effects on distributional trade-offs.
+
+**Kagalwala, Philips & Whitten (2021)**  
+*Social Science Quarterly* 102(4): 1534–1552  
+Demonstrates the dynamic compositional approach on U.S. income share data; gains over piecemeal regression of inequality indices.
+
+**Lipsmeyer, Philips, Rutherford & Whitten (2024)**  
+*Social Science Quarterly* 105(4): 934–947  
+Economic shocks and partisan composition of state budgets.
+
+**Jokinsky, Lipsmeyer, Philips, Williams & Whitten (2024)**  
+*Social Science Quarterly* 105(4): 913–933  
+Compositional modeling of Most Important Problem public opinion.
+
+**Eastman, Junqueira, Kagalwala, Philips & Whitten (2024)**  
+*Social Science Quarterly* 105(4): 965–979  
+Introduces compositional volatility as a new estimand — modeling variance, not just mean, of simplex proportions over time.
+
+---
+
+## Computing Implementation: `dynsimpie`
+
+**Installation**
+
+```stata
+* Prerequisite
+net install clarify, from(https://gking.harvard.edu/clarify)
+
+* From SSC
+ssc install dynsimpie
+
+* Latest version
+net install dynsimpie, ///
+  from(https://raw.githubusercontent.com/andyphilips/dynsimpie/master/)
+```
+
+**Basic usage**
+
+```stata
+tsset time
+
+dynsimpie dv1 dv2 dv3,   ///
+  ivs(x1 x2 x3)          ///  independent variables
+  shockvar(x1)            ///  variable to shock
+  shockval(1)             ///  shock size (1 s.d.)
+  time(20) sims(1000)
+
+cfbplot         // change-from-baseline plot
+effectsplot     // predicted proportions over time
+dynsimpiecoef   // SUR coefficient plot
+```
+
+**What the command handles automatically**
+
+- ALR transformation of raw proportions or percents
+- Construction of lags and first differences
+- Joint SUR estimation via `sureg`
+- CLARIFY simulation and back-transformation to the simplex
+- 90% and 95% confidence intervals
+
+Source: <https://github.com/andyphilips/dynsimpie> · GPL v3
+
+---
+
+## Applications
+
+**Electoral politics**
+
+- UK monthly party vote shares (Labour / Conservative / Liberal Democrat), 2004–2010
+- Multi-party electoral competition across European democracies
+- Effects of economic evaluations and leader approval on vote-share composition
+
+**Government budgeting**
+
+- US federal budget: defense, welfare, social security, interest, other (1947–2009)
+- US state budgets: developmental / allocational / redistributive / educational spending (50 states)
+- Effects of partisanship, ideology, and economic shocks on budget trade-offs
+
+**Comparative policy**
+
+- European welfare state spending under immigration and integration pressure
+- Globalization effects on cross-national income quintile shares
+- Local government budgets by gender of chief executive (Funk & Philips 2019)
+
+**Public opinion**
+
+- Most Important Problem composition (economy / social / foreign policy)
+- Nativism and its consequences for multi-party support compositions
+
+---
+
+## Three Illustrative Cases
+
+**Case 1 — UK party vote shares (time series)**  
+*Dependent variable:* monthly proportions, Labour / Conservative / Liberal Democrat  
+*Shock:* +1 s.d. increase in Liberal Democrat leader approval  
+*Finding:* Immediate significant rise in Lib Dem support (~25%); symmetric declines in Labour and Conservative; long-run plateau significantly above baseline  
+*Source:* Philips, Rutherford & Whitten (2016a)
+
+**Case 2 — US federal budget (time series)**  
+*Dependent variable:* annual shares — defense, welfare, social security, interest, other, 1947–2009  
+*Shock:* −1 s.d. decrease in policy mood liberalism  
+*Finding:* Conservative mood reduces defense share (counterintuitive); significant or borderline-significant changes across all categories, demonstrating full interdependence  
+*Source:* Philips, Rutherford & Whitten (2016a)
+
+**Case 3 — US state budgets (panel)**  
+*Dependent variable:* developmental, allocational, redistributive, educational spending shares, 50 states  
+*Shock:* shift in partisan composition of state government  
+*Finding:* Partisanship significantly drives trade-offs across all four categories; spatial spillovers between neighboring states; unemployment and per capita income matter as contextual variables  
+*Source:* Lipsmeyer, Philips, Rutherford & Whitten (2019)
+
+---
+
+## Takeaways & Future Directions
+
+**What the programme delivers**
+
+- A complete toolkit: theory, Stata software, time-series and TSCS estimators, and extensive applied examples — all with open replication data
+- ALR transformation + ECM-SUR + CLARIFY simulation is the canonical pipeline
+- Results are interpretable as simplex-constrained predicted trajectories following a counterfactual shock
+
+**Scope beyond political science**
+
+The framework applies wherever proportions compete over time: economics (portfolio and budget shares), sociology (population composition), ecology (species abundance), public health (resource allocation).
+
+**Open research frontiers**
+
+- Bayesian estimation of compositional time series (cf. DARMA — Zheng et al.)
+- Cointegration testing for log-ratio series
+- Machine-learning extensions for high-dimensional compositions
+- Integration with large-N panel data and non-linear dynamics

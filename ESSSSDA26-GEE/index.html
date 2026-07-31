@@ -1158,22 +1158,22 @@ Robert W. Walker
 <h3 id="the-dilemma-in-non-linear-panel-models">The Dilemma in Non-Linear Panel Models</h3>
 <ol type="1">
 <li class="fragment"><strong>Serial Correlation</strong>: Repeated observations across time <span class="math inline">t = 1, \dots, T_i</span> within individual/unit <span class="math inline">i = 1, \dots, N</span> violate independence assumptions.</li>
-<li class="fragment"><strong>Subject-Specific Heterogeneity</strong>: Unobserved heterogeneity $ lpha_i$ must be addressed.</li>
-<li class="fragment"><strong>Incidental Parameter Problem</strong>: In non-linear models with fixed <span class="math inline">T</span> as <span class="math inline">N  o \infty</span>, estimating <span class="math inline">N</span> parameters <span class="math inline">\alpha_i</span> yields inconsistent estimates for structural parameters <span class="math inline">\beta</span>.</li>
+<li class="fragment"><strong>Subject-Specific Heterogeneity</strong>: Unobserved heterogeneity <span class="math inline">\alpha_i</span> must be addressed.</li>
+<li class="fragment"><strong>Incidental Parameter Problem</strong>: In non-linear models with fixed <span class="math inline">T</span> as <span class="math inline">N \rightarrow \infty</span>, estimating <span class="math inline">N</span> parameters <span class="math inline">\alpha_i</span> yields inconsistent estimates for structural parameters <span class="math inline">\beta</span>.</li>
 </ol>
 </section>
 <section id="marginal-vs.-conditional-models" class="slide level2">
 <h2>Marginal vs. Conditional Models</h2>
 <p>Understanding the core distinction between modeling approaches is key:</p>
 <div class="columns">
-<div class="column" style="width:50%;">
+<div class="column" style="width:55%;">
 <h3 id="conditional-glmm-re">Conditional (GLMM / RE)</h3>
 <ul>
 <li class="fragment">Models response <strong>conditional on individual random effect</strong>: <span class="math display">E[Y_{it} \mid X_{it}, u_i] = g^{-1}(X_{it} \beta_{\text{cond}} + u_i)</span></li>
 <li class="fragment"><strong>Interpretation</strong>: Effect of <span class="math inline">X</span> on a <em>specific individual’s</em> log-odds or rate.</li>
 <li class="fragment">Subject-specific inference.</li>
 </ul>
-</div><div class="column" style="width:50%;">
+</div><div class="column" style="width:40%;">
 <h3 id="marginal-gee">Marginal (GEE)</h3>
 <ul>
 <li class="fragment">Models the <strong>population average</strong>: <span class="math display">E[Y_{it} \mid X_{it}] = \mu_{it} = g^{-1}(X_{it} \beta_{\text{marg}})</span></li>
@@ -1233,7 +1233,7 @@ Robert W. Walker
 <p><strong>Important</strong></p>
 </div>
 <div class="callout-content">
-<p><strong>Key Property</strong>: As <span class="math inline">N     o \infty</span>, <span class="math inline">\hat{ eta}</span> remains consistent and standard errors are asymptotically correct, even with misspecified working correlation!</p>
+<p><strong>Key Property</strong>: As <span class="math inline">N \rightarrow \infty</span>, <span class="math inline">\hat{\beta}</span> remains consistent and standard errors are asymptotically correct, even with misspecified working correlation!</p>
 </div>
 </div>
 </div>
@@ -1340,10 +1340,7 @@ Robert W. Walker
 </tbody>
 </table>
 </section>
-<section id="gee-with-mundlak-hybrid-transformations" class="slide level2">
-<h2>GEE with Mundlak / Hybrid Transformations</h2>
-</section>
-<section id="gee-with-mundlak-hybrid-transformations-1" class="slide level2 scrollable">
+<section id="gee-with-mundlak-hybrid-transformations" class="slide level2 scrollable">
 <h2>GEE with Mundlak / Hybrid Transformations</h2>
 <p>Can GEE address time-invariant unobserved heterogeneity like Fixed Effects? <strong>Yes, via Hybrid / Mundlak Modeling!</strong></p>
 <h3 id="the-hybrid-gee-specification">The Hybrid GEE Specification</h3>
@@ -1413,7 +1410,7 @@ Robert W. Walker
 </div><div class="column" style="width:50%;">
 <h3 id="best-practices">Best Practices</h3>
 <ol type="1">
-<li class="fragment">Choose <span class="math inline">R( lpha)</span> based on substantive theory (e.g., AR-1 for panel time-series).</li>
+<li class="fragment">Choose <span class="math inline">R(\alpha)</span> based on substantive theory (e.g., AR-1 for panel time-series).</li>
 <li class="fragment">Always report <strong>robust (sandwich) standard errors</strong>.</li>
 <li class="fragment">Use <strong>Hybrid/Mundlak formulations</strong> when time-invariant confounding is a concern.</li>
 <li class="fragment">Use <strong>QIC</strong> to compare competing working correlation structures.</li>

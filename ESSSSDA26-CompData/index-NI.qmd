@@ -1,0 +1,353 @@
+---
+title: "Day 4: Cointegration"
+author: "Robert W. Walker"
+date: "July 23, 2026"
+format: 
+   revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: One or More Time Series"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: false
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  hiline = TRUE
+)
+library(xaringanthemer); library(kableExtra); library(tidyverse); library(skimr)
+```
+
+## On Reduced and Structural Forms and Systems of Equations
+
+What are structural forms and what are reduced forms?
+Are we familiar with what the *rank* and *order* conditions are?
+
+
+## Systems of Simultaneous Equations
+
+Which beg questions about identification as above.  Let's briefly discuss the system that they present.
+
+
+## Vector AutoRegression
+
+Choose a relevant set of lag lengths and write each variable in the system as a function of lags of itself and other variables to the chosen lengths.  The key insight is that this VAR is the reduced form to some more complicated as yet unspecified structural form.  But if the goal is to specify how variables related to one another and to use data to discover Granger causality and responses to impulse injected in the system.
+
+## On Granger Causation
+
+Granger causation\footnote{In the remainder of this discussion, when I use the word cause, I mean it in a Granger sense which may differ dramatically from more common understandings of causal.} in a panel data setting.  This is a rather complex topic because of heterogeneity.
+
+- An identical causal relationship could exist for each $i \in N$
+- No causal relationship could exist for any $i \in N$.
+- Something in between the above two extremes.
+
+Matching the theoretical claim and the empirical analysis here, like everywhere else, is absolutely crucial.  Also, in some ways, this is just our earliest ANOVA example but now we will use the lags of the dependent variable to establish the alternative hypotheses.
+
+## Implementation
+
+- Look at stationarity.  We want to make certain that this holds.
+- Test a hypothesis, many forms can be implied.
+
+Conditional on stationarity, the procedure goes like this.  For example, to test the hypothesis that, for all $i$, $x$ does not Granger cause $y$, we choose a lag length, call it $k$.  We then regress lags of $y$ and $k$ lags of $x$ on $y$ in a model with unit specific slopes and unit specific intercepts.  We do not include contemporaneous $x$ because Granger causality is all about temporal priority.  This is the unrestricted model.  The hypothesis implies the restriction that all the coefficients on all of the lagged $x$ are zero for each cross-section and for all $k$ lags of $x$.
+
+##
+
+In other words, the unrestricted model is:
+$$y_{it} = \rho_{i,1} y_{i,t-1} + \rho_{i,2} y_{i,t-2} + \ldots + \rho_{i,m} y_{i,t-m} + \beta_{i,1} x_{i,t-1} + \ldots + \beta_{i,k} x_{i,t-k} + \epsilon_{it}$$ while the restricted model is
+$$y_{it} = \rho_{i,1} y_{i,t-1} + \rho_{i,2} y_{i,t-2} + \ldots + \rho_{i,m} y_{i,t-m} + \epsilon_{it}$$
+because the null hypothesis implies that all the $\beta$ are zero for all lags $t-1$ to $t-k$ lags of $x$.
+
+## Backfilling the Lagged Dependent Variable problem
+
+Let's analyse this.  This will preview dynamic interpretation in panel settings also.  The long-run multiplier.
+
+## Let's Talk about simultaneous equations and systems of equations.
+
+## Stationarity conditions
+
+We normally restrict autoregressive models to stationary data, and then some constraints on the values of the parameters are required.
+
+### General condition for stationarity
+
+Complex roots of $1-\phi_1 z - \phi_2 z^2 - \dots - \phi_pz^p$ lie outside the unit circle on the complex plane.
+
+* For $p=1$: $-1<\phi_1<1$.
+* For $p=2$:\newline $-1<\phi_2<1\qquad \phi_2+\phi_1 < 1 \qquad \phi_2 -\phi_1 < 1$.
+* More complicated conditions hold for $p\ge3$.
+* Estimation software takes care of this.
+
+## Invertibility
+
+* Any MA( $q$ ) process can be written as an AR( $\infty$ ) process if we impose some constraints on the MA parameters.
+* Then the MA model is called "invertible".
+* Invertible models have some mathematical properties that make them easier to use in practice.
+* Invertibility of an ARIMA model is equivalent to forecastability of an ETS model.
+
+## Invertibility
+
+General condition for invertibility:
+  Complex roots of $1+\theta_1 z + \theta_2 z^2 + \dots + \theta_qz^q$ lie outside the unit circle on the complex plane.
+
+
+* For $q=1$: $-1<\theta_1<1$.
+* For $q=2$: $$-1<\theta_2<1 \qquad \theta_2+\theta_1 >-1 \qquad \theta_1 -\theta_2 < 1$$
+* More complicated conditions hold for $q\ge3$.
+* Estimation software takes care of this.
+
+
+## On Equilibrium
+
+What does equilibrium mean?  Equilibration?
+
+
+# Cointegration
+
+## The Problem with Differencing
+
+The notion of cointegration is a very important idea that comes out of the work of Hendry, Granger, and Engle.
+
+Start with a static regression model:
+
+$$Y_t = \beta_0 + \beta_1 X_t + \epsilon_t$$
+
+If we test for non-stationarity and find that both $Y_t$ and $X_t$ are non-stationary, then we need to difference both series: $(1 - L)Y_t$ and $(1 - L)X_t$.
+
+We can rewrite the regression model as:
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t + \epsilon_t$$
+
+::: {.callout-important}
+The problem: we are no longer able to make any inferences about the **long-run equilibrium** processes at work. Cointegration and Error Correction Models substantially bridge this gap.
+:::
+
+# Cointegration and Error Correction
+
+## The Core Idea
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t + \epsilon_t$$
+
+Imagine $Y_t$ and $X_t$ are both non-stationary, and we want to analyze the **long-run equilibrium** relationship between them.
+
+Engle and Granger brought together two fundamental ideas: **co-integration** and **error correction**.
+
+- The notion of co-integration involves a long-run relationship between two non-stationary variables.
+
+- Even if $Y_t$ and $X_t$ are both non-stationary, they may still have a linear and stationary relationship characterised by $(Y_t - cX_t)$.
+
+## The Engle–Granger Two-Step Process
+
+In their 1987 paper, Engle and Granger outlined the following process for assessing cointegration and, if found, estimating an error correction model:
+
+::: {.incremental}
+1. **Are the two variables of interest both non-stationary?**
+2. **If so, is a linear combination of them non-stationary?**
+   - Estimate a cointegrating regression: $Y_t = \hat{c}_0 + \hat{c}_1 X_t + \epsilon_t$
+   - Test whether the residuals $\hat{\epsilon}_t = Y_t - \hat{c}_0 + \hat{c}_1 X_t$ are stationary.
+3. **If $\hat{\epsilon}_t$ is stationary**, estimate an error correction model:
+$$\small (1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1}) + u_t$$
+   where $\alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1})$ is the **error correction mechanism**.
+4. Substitute $\hat{\epsilon}_t = Y_t - \hat{c}_0 + \hat{c}_1 X_t$ and run **OLS**. This is the **Engle–Granger two-step process**.
+:::
+
+## The Adjustment Parameter $\alpha$
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 + \hat{c}_1 X_{t-1}) + u_t$$
+
+Note that $|\alpha| < 1.0$ and $\alpha$ **should be negative**. Its magnitude tells us the **speed of adjustment** to shocks.
+
+> If $\alpha = -0.5$, then after a shock, half of it goes away in the first period, and then another half of the remaining shock goes away in each subsequent period.
+
+## Interpretation and Specification Notes
+
+In an error correction model such as
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - c_0 - c_1 X_{t-1}) + \epsilon_t$$
+
+the effect of $X$ on $Y$ involves two components:
+
+- **Short-run effect** — captured by $\beta_1$
+- **Adjustment/feedback effect** — captured by $\alpha$, indicating how much of the disequilibrium is corrected each period
+
+::: {.callout-note}
+### Notes on ECM specification
+- There can be **other independent variables** in the model specification.
+- There can be **more than one ECM** in the same model.
+:::
+
+## Alternative (Single-Step) Estimation
+
+The two-step process first obtains $\hat{\epsilon}_t$, then estimates:
+
+$$(1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha(Y_{t-1} - \hat{c}_0 - \hat{c}_1 X_{t-1}) + u_t$$
+
+where the ECM uses residuals from $Y_t = c_0 + c_1 X_t + \hat{\epsilon}_t$.
+
+Expanding the error correction term algebraically:
+
+$$\small (1 - L)Y_t = \beta_0 + \beta_1(1 - L)X_t - \alpha Y_{t-1} + \alpha\hat{c}_0 + \alpha\hat{c}_1 X_{t-1} + u_t$$
+
+$$\small (1 - L)Y_t = (\beta_0 + \alpha\hat{c}_0) + \beta_1(1 - L)X_t - \alpha Y_{t-1} + \alpha\hat{c}_1 X_{t-1} + u_t$$
+
+This reparameterisation can be **estimated in a single OLS step**.
+
+# Cointegration and Exogeneity
+
+## Three Types of Exogeneity
+
+Any time you have a co-integrated series, people will want to flip the causal arrow on you. It is possible that $X$ influences $Y$, giving rise to a **simultaneity bias**. This is addressed through exogeneity testing.
+
+There are three types of exogeneity:
+
+1. **Weak:** $X_t \rightarrow Y_t$ but $Y_t \not\rightarrow X_t$
+
+2. **Strong** (Granger non-causality): $X_t \rightarrow Y_t$ but $Y_t \not\rightarrow X_t$ *and* $Y_t \not\rightarrow X_{t-1}$. If instead $Y_t \rightarrow X_{t-1}$, we have **Granger causality**.
+
+3. **Super:** Important for forecasting. Rooted in the Lucas critique — if rational agents anticipate and offset policy innovation, parameters will not be stable over time.
+
+## Testing for Weak Exogeneity
+
+The test for weak exogeneity has **three parts**:
+
+1. **Develop a credible model of $X$** — the independent variable in question.
+
+2. **Add the ECM term** $\epsilon_{t-1}$ from the main model to the right-hand side of that $X$ model. If this is statistically **insignificant**, the first part of the test is passed.
+
+3. **Return to the original ECM** and add the residuals from step 1. Run a **Hausman test (F-test)** to see whether model fit has improved. If it has **not**, then we have weak exogeneity.
+
+## Granger Causality Testing
+
+A variable $X$ **Granger causes** $Y$ if you can improve your forecast of $Y$ using $X$ over and above a model of $Y$ explained by its own history. (Granger 1969)
+
+**Step 1** — Run a univariate model of $Y$ based on its own history:
+
+$$Y_t = \beta_0 + \beta_1 Y_{t-1} + \ldots + \beta_k Y_{t-k} + \epsilon_t$$
+
+**Step 2** — Add lags of $X$ and re-estimate:
+
+$$Y_t = \beta_0 + \beta_1 Y_{t-1} + \ldots + \beta_k Y_{t-k} + c_1 X_{t-1} + \ldots + c_k X_{t-k} + \epsilon_t$$
+
+Conduct an **F-test** to see whether fit has improved.
+
+**Step 3** — If fit has improved, then **$X$ Granger causes $Y$**.
+
+
+## Non-integrated ECM?
+
+de Boef and Keele [referenced in BFHP on p. 90] 
+
+## Multiple Cointegrating Vectors: Johansen
+
+The VECM or Vector Error Correction Model
+
+**Engle–Granger is limited to a single cointegrating vector.**
+Johansen (1988, 1991) provides a full-system maximum-likelihood approach.
+
+Start with a $k$-dimensional VAR($p$) in levels, then reparametrise as a
+**Vector Error-Correction Model (VECM)**:
+
+$$
+\Delta \mathbf{X}_t
+  = \boldsymbol{\Pi}\,\mathbf{X}_{t-1}
+  + \sum_{i=1}^{p-1}\boldsymbol{\Gamma}_i\,\Delta\mathbf{X}_{t-i}
+  + \boldsymbol{\varepsilon}_t,
+\qquad \boldsymbol{\varepsilon}_t \sim \mathcal{N}(\mathbf{0},\boldsymbol{\Sigma})
+$$
+
+The **long-run impact matrix** $\boldsymbol{\Pi}$ carries all information about
+cointegration via its rank $r$:
+
+$$
+\boldsymbol{\Pi} = \boldsymbol{\alpha}\boldsymbol{\beta}^\top
+$$
+
+| Symbol | Dimension | Interpretation |
+|--------|-----------|----------------|
+| $\boldsymbol{\beta}$ | $k \times r$ | Cointegrating vectors (long-run relationships) |
+| $\boldsymbol{\alpha}$ | $k \times r$ | Adjustment (loading) coefficients |
+
+---
+
+## Rank, Cointegration, and the Π Decomposition
+
+The **rank of $\boldsymbol{\Pi}$** determines the number of cointegrating relationships:
+
+| Rank $r$ | Implication |
+|----------|-------------|
+| $r = 0$ | No cointegration; $\boldsymbol{\Pi} = \mathbf{0}$ (pure VAR in differences) |
+| $0 < r < k$ | Exactly $r$ linearly independent cointegrating vectors |
+| $r = k$ | $\boldsymbol{\Pi}$ is full rank; all $k$ series are $I(0)$ |
+
+**Key properties of the decomposition $\boldsymbol{\Pi} = \boldsymbol{\alpha}\boldsymbol{\beta}^\top$:**
+
+- Each column of $\boldsymbol{\beta}$ defines a stationary linear combination
+  $\boldsymbol{\beta}_i^\top \mathbf{X}_{t-1} \sim I(0)$
+- Each row of $\boldsymbol{\alpha}$ measures the speed at which variable $j$
+  corrects toward equilibrium
+- Both $\boldsymbol{\alpha}$ and $\boldsymbol{\beta}$ are identified only up to an
+  invertible $r \times r$ rotation — **normalisation restrictions** are required
+
+---
+
+## The Two Test Statistics
+
+Johansen's approach solves a **reduced-rank regression** via canonical
+correlation between $\Delta\mathbf{X}_t$ and $\mathbf{X}_{t-1}$ (partialling out
+the lagged differences). This yields ordered eigenvalues
+$\hat{\lambda}_1 \geq \hat{\lambda}_2 \geq \cdots \geq \hat{\lambda}_k$.
+
+### Trace Statistic
+Tests $H_0: \operatorname{rank}(\boldsymbol{\Pi}) \leq r$ against
+$H_1: \operatorname{rank}(\boldsymbol{\Pi}) > r$
+
+$$
+\lambda_{\text{trace}}(r) = -T \sum_{i=r+1}^{k} \ln\!\left(1 - \hat{\lambda}_i\right)
+$$
+
+### Maximum Eigenvalue Statistic
+Tests $H_0: \operatorname{rank} = r$ against $H_1: \operatorname{rank} = r+1$
+
+$$
+\lambda_{\max}(r, r+1) = -T\ln\!\left(1 - \hat{\lambda}_{r+1}\right)
+$$
+
+- Both statistics follow non-standard distributions (functionals of Brownian
+  motion); **critical values depend on $k - r$ and the deterministic
+  specification** (Osterwald-Lenum 1992; MacKinnon–Haug–Michelis 1999)
+- Test sequentially: begin at $r = 0$ and increment until $H_0$ is not rejected
+
+---
+
+## Deterministic Terms and Practical Considerations
+
+Johansen (1994) defines **five canonical models** based on where
+constants and trends enter the VECM:
+
+| Case | Constant in $\boldsymbol{\beta}$? | Trend in $\boldsymbol{\beta}$? | Typical application |
+|------|:---------------------------------:|:------------------------------:|---------------------|
+| I    | No  | No  | Artificial; series have zero mean |
+| II   | Yes | No  | Series have non-zero mean, no trend |
+| III  | Unrestricted | No | Most common; series are trended, cointegrating relations are not |
+| IV   | Yes | Yes | Cointegrating relations have linear trends |
+| V    | Unrestricted | Unrestricted | Quadratic trends in levels (rare) |
+
+**Further practical steps:**
+
+1. **Lag selection** — use AIC/BIC/HQ on the unrestricted VAR before testing
+2. **Identification** — normalise $\boldsymbol{\beta}$ (e.g., $[\mathbf{I}_r \mid \mathbf{B}]$)
+   and impose economic theory restrictions; test overidentifying restrictions
+   via likelihood-ratio tests
+3. **Weak exogeneity** — rows of $\boldsymbol{\alpha}$ equal to zero imply the
+   corresponding variable does not respond to disequilibrium
+4. **Robustness** — trace and $\lambda_{\max}$ may disagree; check sensitivity
+   to lag length and deterministic specification

@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="twm_files/libs/clipboard/clipboard.min.js"></script>
+<script src="twm_files/libs/quarto-html/tabby.min.js"></script>
+<script src="twm_files/libs/quarto-html/popper.min.js"></script>
+<script src="twm_files/libs/quarto-html/tippy.umd.min.js"></script>
+<link href="twm_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="twm_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="twm_files/libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.8.25">
+
+  <meta name="author" content="Based on Badi H. Baltagi (2023) &amp; Jeffrey M. Wooldridge (2021)">
+  <meta name="dcterms.date" content="2026-07-31">
+  <title>The Two-Way Mundlak Estimator</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="twm_files/libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="twm_files/libs/revealjs/dist/reveal.css">
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      { color: #003b4f; background-color: #f1f3f5; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #003b4f; } /* Normal */
+    code span.al { color: #ad0000; } /* Alert */
+    code span.an { color: #5e5e5e; } /* Annotation */
+    code span.at { color: #657422; } /* Attribute */
+    code span.bn { color: #ad0000; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #003b4f; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #20794d; } /* Char */
+    code span.cn { color: #8f5902; } /* Constant */
+    code span.co { color: #5e5e5e; } /* Comment */
+    code span.cv { color: #5e5e5e; font-style: italic; } /* CommentVar */
+    code span.do { color: #5e5e5e; font-style: italic; } /* Documentation */
+    code span.dt { color: #ad0000; } /* DataType */
+    code span.dv { color: #ad0000; } /* DecVal */
+    code span.er { color: #ad0000; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #ad0000; } /* Float */
+    code span.fu { color: #4758ab; } /* Function */
+    code span.im { color: #00769e; } /* Import */
+    code span.in { color: #5e5e5e; } /* Information */
+    code span.kw { color: #003b4f; font-weight: bold; } /* Keyword */
+    code span.op { color: #5e5e5e; } /* Operator */
+    code span.ot { color: #003b4f; } /* Other */
+    code span.pp { color: #ad0000; } /* Preprocessor */
+    code span.sc { color: #5e5e5e; } /* SpecialChar */
+    code span.ss { color: #20794d; } /* SpecialString */
+    code span.st { color: #20794d; } /* String */
+    code span.va { color: #111111; } /* Variable */
+    code span.vs { color: #20794d; } /* VerbatimString */
+    code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="twm_files/libs/revealjs/dist/theme/quarto-99eeafcedac04850354b682963cedae3.css">
+  <link rel="stylesheet" href="styles.css">
+  <link href="twm_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="twm_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="twm_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="twm_files/libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
+  <link href="twm_files/libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
+  <link href="twm_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" class="quarto-title-block center">
+  <h1 class="title">The Two-Way Mundlak Estimator</h1>
+  <p class="subtitle">Theory, Equivalence, and Empirical Implementation in R and Stata</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Based on Badi H. Baltagi (2023) &amp; Jeffrey M. Wooldridge (2021) 
+</div>
+</div>
+</div>
+
+  <p class="date">2026-07-31</p>
+</section>
+<section id="executive-summary-overview" class="slide level2">
+<h2>1. Executive Summary &amp; Overview</h2>
+<h3 id="the-empirical-challenge-in-panel-data">The Empirical Challenge in Panel Data</h3>
+<p>When estimating panel data regressions with two-way unobserved heterogeneity:</p>
+<p><span class="math display">\[y_{it} = X_{it}\beta + Z_i\gamma + W_t\delta + \mu_i + \lambda_t + \epsilon_{it}\]</span></p>
+<ul>
+<li><strong>Two-Way Fixed Effects (TWFE):</strong>
+<ul>
+<li><strong>Advantage:</strong> Controls for arbitrary correlation between regressors <span class="math inline">\(X_{it}\)</span> and individual effects <span class="math inline">\(\mu_i\)</span> or time effects <span class="math inline">\(\lambda_t\)</span>.</li>
+<li><strong>Limitation:</strong> Drops time-invariant variables <span class="math inline">\(Z_i\)</span> (e.g., distance, gender, education) and individual-invariant variables <span class="math inline">\(W_t\)</span> (e.g., inflation, macro policy, oil prices).</li>
+</ul></li>
+<li><strong>Two-Way Random Effects (RE-GLS):</strong>
+<ul>
+<li><strong>Advantage:</strong> Retains <span class="math inline">\(Z_i\)</span> and <span class="math inline">\(W_t\)</span> and is efficient under orthogonality.</li>
+<li><strong>Limitation:</strong> Biased and inconsistent if <span class="math inline">\(\text{Cov}(X_{it}, \mu_i) \neq 0\)</span> or <span class="math inline">\(\text{Cov}(X_{it}, \lambda_t) \neq 0\)</span>.</li>
+</ul></li>
+</ul>
+</section>
+<section id="econometric-methodology-baltagi-2023" class="slide level2">
+<h2>2. Econometric Methodology: Baltagi (2023)</h2>
+<h3 id="the-two-way-mundlak-transformation">The Two-Way Mundlak Transformation</h3>
+<p>Following Mundlak (1978), <strong>Baltagi (2023)</strong> and <strong>Wooldridge (2021)</strong> model the unobserved individual and time effects as linear functions of the group averages of all time-varying regressors:</p>
+<p><span class="math display">\[\mu_i = \bar{X}_{i.}\theta_1 + u_i \quad \text{where } \bar{X}_{i.} = \frac{1}{T}\sum_{t=1}^T X_{it}\]</span></p>
+<p><span class="math display">\[\lambda_t = \bar{X}_{.t}\theta_2 + v_t \quad \text{where } \bar{X}_{.t} = \frac{1}{N}\sum_{i=1}^N X_{it}\]</span></p>
+<p>Substituting <span class="math inline">\(\mu_i\)</span> and <span class="math inline">\(\lambda_t\)</span> into the outcome equation yields the <strong>Two-Way Mundlak (TWM) Augmented Regression</strong>:</p>
+<p><span class="math display">\[y_{it} = X_{it}\beta + Z_i\gamma + W_t\delta + \bar{X}_{i.}\theta_1 + \bar{X}_{.t}\theta_2 + (u_i + v_t + \epsilon_{it})\]</span></p>
+</section>
+<section id="core-theoretical-contributions" class="slide level2">
+<h2>3. Core Theoretical Contributions</h2>
+<div class="callout callout-note callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<p><strong>Key Insights from Baltagi (2023)</strong></p>
+</div>
+<div class="callout-content">
+<ol type="1">
+<li><strong>Exact Equivalence (<span class="math inline">\(\hat{\beta}_{TWM} = \hat{\beta}_{TWFE}\)</span>):</strong> Estimating the augmented model via Pooled OLS or Random Effects GLS yields the <strong>exact same coefficient estimate</strong> <span class="math inline">\(\hat{\beta}\)</span> as the standard Two-Way Fixed Effects (TWFE) estimator.</li>
+<li><strong>Identification of Invariant Regressors:</strong> Unlike TWFE, the TWM estimator identifies <span class="math inline">\(\gamma\)</span> (for time-invariant <span class="math inline">\(Z_i\)</span>) and <span class="math inline">\(\delta\)</span> (for individual-invariant <span class="math inline">\(W_t\)</span>) while maintaining full robustness against endogeneity.</li>
+<li><strong>Hausman-Type Test for Two-Way Models:</strong> A simple joint <span class="math inline">\(F\)</span>-test testing <span class="math inline">\(H_0: \theta_1 = 0, \theta_2 = 0\)</span> is a generalized Hausman specification test (Kang 1985). If rejected, it confirms that random effects are correlated with regressors.</li>
+</ol>
+</div>
+</div>
+</div>
+</section>
+<section id="step-1-data-simulation-setup" class="slide level2">
+<h2>4. Step 1: Data Simulation Setup</h2>
+<div class="panel-tabset">
+<ul id="tabset-1" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-1-1">R Code</a></li><li><a href="#tabset-1-2">Stata code</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href=""></a><span class="fu">suppressPackageStartupMessages</span>({</span>
+<span id="cb1-2"><a href=""></a>  <span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href=""></a>  <span class="fu">library</span>(fixest)</span>
+<span id="cb1-4"><a href=""></a>  <span class="fu">library</span>(plm)</span>
+<span id="cb1-5"><a href=""></a>  <span class="fu">library</span>(car)</span>
+<span id="cb1-6"><a href=""></a>})</span>
+<span id="cb1-7"><a href=""></a></span>
+<span id="cb1-8"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb1-9"><a href=""></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb1-10"><a href=""></a>T_per <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb1-11"><a href=""></a>n_obs <span class="ot">&lt;-</span> N <span class="sc">*</span> T_per</span>
+<span id="cb1-12"><a href=""></a></span>
+<span id="cb1-13"><a href=""></a><span class="co"># Create panel structure</span></span>
+<span id="cb1-14"><a href=""></a>id <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="at">each =</span> T_per)</span>
+<span id="cb1-15"><a href=""></a>time <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>T_per, <span class="at">times =</span> N)</span>
+<span id="cb1-16"><a href=""></a></span>
+<span id="cb1-17"><a href=""></a><span class="co"># Draw unobserved individual (mu_i) and time (lambda_t) effects</span></span>
+<span id="cb1-18"><a href=""></a>mu_i <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">rnorm</span>(N, <span class="at">mean =</span> <span class="dv">2</span>, <span class="at">sd =</span> <span class="dv">1</span>), <span class="at">each =</span> T_per)</span>
+<span id="cb1-19"><a href=""></a>lambda_t <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">rnorm</span>(T_per, <span class="at">mean =</span> <span class="fl">0.5</span>, <span class="at">sd =</span> <span class="fl">0.5</span>), <span class="at">times =</span> N)</span>
+<span id="cb1-20"><a href=""></a></span>
+<span id="cb1-21"><a href=""></a><span class="co"># Generate time-invariant Z_i and individual-invariant W_t</span></span>
+<span id="cb1-22"><a href=""></a>Z_i <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">rnorm</span>(N, <span class="at">mean =</span> <span class="dv">5</span>, <span class="at">sd =</span> <span class="fl">1.5</span>), <span class="at">each =</span> T_per)</span>
+<span id="cb1-23"><a href=""></a>W_t <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">rnorm</span>(T_per, <span class="at">mean =</span> <span class="dv">10</span>, <span class="at">sd =</span> <span class="dv">2</span>), <span class="at">times =</span> N)</span>
+<span id="cb1-24"><a href=""></a></span>
+<span id="cb1-25"><a href=""></a><span class="co"># Generate endogenous regressor X_it correlated with mu_i and lambda_t</span></span>
+<span id="cb1-26"><a href=""></a>X_it <span class="ot">&lt;-</span> <span class="fl">0.7</span> <span class="sc">*</span> mu_i <span class="sc">+</span> <span class="fl">0.4</span> <span class="sc">*</span> lambda_t <span class="sc">+</span> <span class="fu">rnorm</span>(n_obs, <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb1-27"><a href=""></a></span>
+<span id="cb1-28"><a href=""></a><span class="co"># True parameters: beta = 1.5, gamma = 0.8, delta = -0.4</span></span>
+<span id="cb1-29"><a href=""></a>eps_it <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_obs, <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb1-30"><a href=""></a>y_it <span class="ot">&lt;-</span> <span class="fl">1.5</span> <span class="sc">*</span> X_it <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> Z_i <span class="sc">-</span> <span class="fl">0.4</span> <span class="sc">*</span> W_t <span class="sc">+</span> mu_i <span class="sc">+</span> lambda_t <span class="sc">+</span> eps_it</span>
+<span id="cb1-31"><a href=""></a></span>
+<span id="cb1-32"><a href=""></a><span class="co"># Construct Dataset and calculate individual and time means</span></span>
+<span id="cb1-33"><a href=""></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(id, time, y_it, X_it, Z_i, W_t) <span class="sc">%&gt;%</span></span>
+<span id="cb1-34"><a href=""></a>  <span class="fu">group_by</span>(id) <span class="sc">%&gt;%</span></span>
+<span id="cb1-35"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">X_bar_i =</span> <span class="fu">mean</span>(X_it)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-36"><a href=""></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-37"><a href=""></a>  <span class="fu">group_by</span>(time) <span class="sc">%&gt;%</span></span>
+<span id="cb1-38"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">X_bar_t =</span> <span class="fu">mean</span>(X_it)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-39"><a href=""></a>  <span class="fu">ungroup</span>()</span>
+<span id="cb1-40"><a href=""></a></span>
+<span id="cb1-41"><a href=""></a><span class="fu">head</span>(df, <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 8
+     id  time  y_it  X_it   Z_i   W_t X_bar_i X_bar_t
+  &lt;int&gt; &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+1     1     1 10.6   3.19  4.96  7.60    2.56    1.94
+2     1     2  6.92  2.42  4.96 14.1     2.56    1.86
+3     1     3  5.73  1.84  4.96 10.2     2.56    1.42
+4     1     4  8.79  1.86  4.96  9.83    2.56    1.90</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-1-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb3-1"><a href=""></a>* Clear workspace and <span class="kw">set</span> random <span class="dv">seed</span></span>
+<span id="cb3-2"><a href=""></a><span class="kw">clear</span> <span class="ot">all</span></span>
+<span id="cb3-3"><a href=""></a><span class="kw">set</span> <span class="dv">seed</span> 42</span>
+<span id="cb3-4"><a href=""></a></span>
+<span id="cb3-5"><a href=""></a>* Define observation <span class="fu">count</span> (100 individuals x 10 time periods)</span>
+<span id="cb3-6"><a href=""></a><span class="kw">set</span> <span class="kw">obs</span> 1000</span>
+<span id="cb3-7"><a href=""></a><span class="kw">gen</span> id = <span class="fu">ceil</span>(<span class="dt">_n</span> / 10)</span>
+<span id="cb3-8"><a href=""></a><span class="kw">bysort</span> id: <span class="kw">gen</span> time = <span class="dt">_n</span></span>
+<span id="cb3-9"><a href=""></a></span>
+<span id="cb3-10"><a href=""></a>* Draw individual (mu_i) and time (lambda_t) unobserved <span class="kw">effects</span></span>
+<span id="cb3-11"><a href=""></a><span class="kw">bysort</span> id: <span class="kw">gen</span> temp_mu = rnormal(2, 1) <span class="kw">if</span> <span class="dt">_n</span> == 1</span>
+<span id="cb3-12"><a href=""></a><span class="kw">bysort</span> id: <span class="kw">egen</span> mu_i = <span class="fu">max</span>(temp_mu)</span>
+<span id="cb3-13"><a href=""></a></span>
+<span id="cb3-14"><a href=""></a><span class="kw">bysort</span> time: <span class="kw">gen</span> temp_lam = rnormal(0.5, 0.5) <span class="kw">if</span> <span class="dt">_n</span> == 1</span>
+<span id="cb3-15"><a href=""></a><span class="kw">bysort</span> time: <span class="kw">egen</span> lambda_t = <span class="fu">max</span>(temp_lam)</span>
+<span id="cb3-16"><a href=""></a></span>
+<span id="cb3-17"><a href=""></a>* Generate Z_i (time-invariant) and W_t (individual-invariant)</span>
+<span id="cb3-18"><a href=""></a><span class="kw">bysort</span> id: <span class="kw">gen</span> temp_z = rnormal(5, 1.5) <span class="kw">if</span> <span class="dt">_n</span> == 1</span>
+<span id="cb3-19"><a href=""></a><span class="kw">bysort</span> id: <span class="kw">egen</span> Z_i = <span class="fu">max</span>(temp_z)</span>
+<span id="cb3-20"><a href=""></a></span>
+<span id="cb3-21"><a href=""></a><span class="kw">bysort</span> time: <span class="kw">gen</span> temp_w = rnormal(10, 2) <span class="kw">if</span> <span class="dt">_n</span> == 1</span>
+<span id="cb3-22"><a href=""></a><span class="kw">bysort</span> time: <span class="kw">egen</span> W_t = <span class="fu">max</span>(temp_w)</span>
+<span id="cb3-23"><a href=""></a></span>
+<span id="cb3-24"><a href=""></a>* Generate endogenous X_it and outcome y_it</span>
+<span id="cb3-25"><a href=""></a><span class="kw">gen</span> X_it = 0.7*mu_i + 0.4*lambda_t + rnormal(0, 1)</span>
+<span id="cb3-26"><a href=""></a><span class="kw">gen</span> eps_it = rnormal(0, 1)</span>
+<span id="cb3-27"><a href=""></a><span class="kw">gen</span> y_it = 1.5*X_it + 0.8*Z_i - 0.4*W_t + mu_i + lambda_t + eps_it</span>
+<span id="cb3-28"><a href=""></a></span>
+<span id="cb3-29"><a href=""></a>* Set panel structure and calculate <span class="fu">group</span> <span class="kw">means</span></span>
+<span id="cb3-30"><a href=""></a>xtset id time</span>
+<span id="cb3-31"><a href=""></a><span class="kw">bysort</span> id: <span class="kw">egen</span> X_bar_i = <span class="kw">mean</span>(X_it)</span>
+<span id="cb3-32"><a href=""></a><span class="kw">bysort</span> time: <span class="kw">egen</span> X_bar_t = <span class="kw">mean</span>(X_it)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="model-estimation-equivalence-demonstration" class="slide level2">
+<h2>5. Model Estimation &amp; Equivalence Demonstration</h2>
+<div class="panel-tabset">
+<ul id="tabset-2" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-2-1">Stata</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb4-1"><a href=""></a>* 1. Standard Two-Way Fixed Effects (TWFE)</span>
+<span id="cb4-2"><a href=""></a>reghdfe y_it X_it, absorb(id time)</span>
+<span id="cb4-3"><a href=""></a><span class="kw">estimates</span> <span class="kw">store</span> twfe</span>
+<span id="cb4-4"><a href=""></a></span>
+<span id="cb4-5"><a href=""></a>* 2. Two-Way Mundlak via Pooled OLS</span>
+<span id="cb4-6"><a href=""></a><span class="kw">reg</span> y_it X_it Z_i W_t X_bar_i X_bar_t, <span class="kw">vce</span>(<span class="kw">cluster</span> id)</span>
+<span id="cb4-7"><a href=""></a><span class="kw">estimates</span> <span class="kw">store</span> twm_ols</span>
+<span id="cb4-8"><a href=""></a></span>
+<span id="cb4-9"><a href=""></a>* 3. Two-Way Mundlak via Random Effects GLS</span>
+<span id="cb4-10"><a href=""></a><span class="kw">xtreg</span> y_it X_it Z_i W_t X_bar_i X_bar_t, re <span class="kw">vce</span>(<span class="kw">cluster</span> id)</span>
+<span id="cb4-11"><a href=""></a><span class="kw">estimates</span> <span class="kw">store</span> twm_re</span>
+<span id="cb4-12"><a href=""></a></span>
+<span id="cb4-13"><a href=""></a>* Print comparison <span class="kw">table</span> across models</span>
+<span id="cb4-14"><a href=""></a><span class="kw">estimates</span> <span class="kw">table</span> twfe twm_ols twm_re, b(%9.6f) se(%9.6f) <span class="co">///</span></span>
+<span id="cb4-15"><a href=""></a>    <span class="kw">keep</span>(X_it Z_i W_t X_bar_i X_bar_t)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="hausman-specification-test" class="slide level2">
+<h2>6. Hausman Specification Test</h2>
+<div class="panel-tabset">
+<ul id="tabset-3" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-3-1">R</a></li></ul>
+<div class="tab-content">
+<div id="tabset-3-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a><span class="co"># Joint F-test on the coefficients of group means theta_1 and theta_2</span></span>
+<span id="cb5-2"><a href=""></a><span class="co"># H0: theta_1 = 0 AND theta_2 = 0 (Unobserved effects uncorrelated with X)</span></span>
+<span id="cb5-3"><a href=""></a></span>
+<span id="cb5-4"><a href=""></a>f_test_res <span class="ot">&lt;-</span> <span class="fu">linearHypothesis</span>(fit_twm_ols, <span class="fu">c</span>(<span class="st">"X_bar_i = 0"</span>, <span class="st">"X_bar_t = 0"</span>))</span>
+<span id="cb5-5"><a href=""></a><span class="fu">print</span>(f_test_res)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Linear hypothesis test:
+X_bar_i = 0
+X_bar_t = 0
+
+Model 1: restricted model
+Model 2: y_it ~ X_it + Z_i + W_t + X_bar_i + X_bar_t
+
+  Res.Df    RSS Df Sum of Sq      F    Pr(&gt;F)    
+1    996 1782.8                                  
+2    994 1178.0  2    604.85 255.19 &lt; 2.2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+<h3 id="stata-1">Stata</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb7-1"><a href=""></a>* Run joint <span class="kw">test</span> <span class="kw">for</span> significance <span class="kw">of</span> the individual and time averages</span>
+<span id="cb7-2"><a href=""></a><span class="kw">reg</span> y_it X_it Z_i W_t X_bar_i X_bar_t, <span class="kw">vce</span>(<span class="kw">cluster</span> id)</span>
+<span id="cb7-3"><a href=""></a></span>
+<span id="cb7-4"><a href=""></a><span class="kw">test</span> X_bar_i X_bar_t</span>
+<span id="cb7-5"><a href=""></a></span>
+<span id="cb7-6"><a href=""></a>* Note: Rejecting H0 (<span class="kw">p</span> &lt; 0.05) indicates that RE orthogonality fails.</span>
+<span id="cb7-7"><a href=""></a>* The TWM <span class="kw">model</span> successfully corrects <span class="kw">for</span> <span class="kw">this</span> <span class="kw">correlation</span> <span class="kw">while</span> preserving Z_i and W_t.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="applied-empirical-example-gravity-model-of-trade" class="slide level2">
+<h2>7. Applied Empirical Example: Gravity Model of Trade</h2>
+<p>Consider estimating bilateral trade volume (<span class="math inline">\(\text{Trade}_{ijt}\)</span>) between exporter <span class="math inline">\(i\)</span> and importer <span class="math inline">\(j\)</span> in year <span class="math inline">\(t\)</span>:</p>
+<p><span class="math display">\[\ln(\text{Trade}_{ijt}) = \beta \cdot \text{FTA}_{ijt} + \psi_1 \ln(\text{GDP}_{it}) + \psi_2 \ln(\text{GDP}_{jt}) + \gamma \cdot \ln(\text{Distance}_{ij}) + \mu_{ij} + \lambda_t + \nu_{ijt}\]</span></p>
+<div class="columns">
+<div class="column" style="width:50%;">
+<h4 id="standard-twfe-approach">Standard TWFE Approach</h4>
+<ul>
+<li>Uses country-pair fixed effects <span class="math inline">\(\mu_{ij}\)</span> and year fixed effects <span class="math inline">\(\lambda_t\)</span>.</li>
+<li><strong>Drawback:</strong> <span class="math inline">\(\ln(\text{Distance}_{ij})\)</span>, common language, contiguity, and colonial ties are collinear with the pair fixed effects and are <strong>dropped</strong>.</li>
+<li>Prevents identification of any time-invariant determinant of trade.</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<h4 id="two-way-mundlak-solution">Two-Way Mundlak Solution</h4>
+<ul>
+<li>Include pair and year averages of every time-varying regressor: <span class="math inline">\(\overline{\text{FTA}}_{ij\cdot}\)</span>, <span class="math inline">\(\overline{\text{FTA}}_{\cdot t}\)</span>, and likewise for <span class="math inline">\(\ln\text{GDP}\)</span>.</li>
+<li><strong>Advantages:</strong></li>
+</ul>
+<ol type="1">
+<li><span class="math inline">\(\hat{\beta}_{\text{FTA}}\)</span> matches TWFE exactly.</li>
+<li><span class="math inline">\(\hat{\gamma}_{\text{Distance}}\)</span>, common language, contiguity, and colony effects are identified.</li>
+</ol>
+</div></div>
+</section>
+<section id="on-gravity" class="slide level2">
+<h2>7.1 On Gravity</h2>
+<p>The gravity model is the canonical application of two-way fixed effects in trade economics. Bilateral trade depends on variables that are essentially constant over time (distance, common language, colonial history, shared borders) together with variables that vary over time (free trade agreements, GDP).</p>
+<p>The standard two-way fixed effects estimator consistently estimates the effect of time-varying regressors but absorbs all time-invariant bilateral characteristics into the pair fixed effects.</p>
+<p>The two-way Mundlak estimator augments a pooled regression with the pair mean and year mean of <strong>every</strong> time-varying regressor. As established earlier, this reproduces the two-way fixed-effects coefficients on the time-varying regressors while simultaneously identifying the time-invariant regressors.</p>
+<div class="callout callout-important callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<p><strong>Balance matters for exact equivalence</strong></p>
+</div>
+<div class="callout-content">
+<p>The equality <span class="math inline">\(\hat\beta_{TWFE} = \hat\beta_{Mundlak}\)</span> relies on the pair mean and year mean summing to the same projection that two-way fixed effects removes. That additive decomposition is exact only for a <strong>balanced</strong> panel. On the raw, unbalanced version of the trade panel used below, the naive Mundlak regression gave <span class="math inline">\(\hat\beta_{\text{FTA}}=0.056\)</span> against <span class="math inline">\(\hat\beta_{TWFE}=0.154\)</span> under TWFE — a large, real discrepancy, not rounding noise. Restricting to a balanced sub-panel (every pair observed in every year) restores equivalence to numerical precision. The simulated example in Sections 4–6 avoids this issue because that panel is balanced by construction; real bilateral trade panels rarely are, so it has to be handled explicitly here.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="data" class="slide level2">
+<h2>7.2 Data</h2>
+<p>The example uses the <strong>CEPII Gravity dataset</strong> (Conte, Cotterlaz &amp; Mayer), a standard bilateral panel of trade flows and gravity covariates spanning 1948–2021 for nearly all country pairs.</p>
+<p>Starting from the raw file, a working panel is built by:</p>
+<ul>
+<li>using <strong>BACI</strong> bilateral trade flows (<code>tradeflow_baci</code>) — the trade-flow variable in the file with the best, most consistent coverage,</li>
+<li>dropping self-pairs,</li>
+<li>restricting to <strong>2010–2019</strong> and to the country pairs observed in <strong>every year</strong> of that window, so the panel is balanced (see the callout above),</li>
+<li>keeping GDP of the origin and destination country as time-varying controls, and distance, common language, contiguity, and colonial history as time-invariant characteristics.</li>
+</ul>
+<p>This yields <strong>189,020 observations</strong> on <strong>18,902 country pairs</strong> over 10 years. The filtering is done once by <a href="prepare_gravity_subset.R"><code>prepare_gravity_subset.R</code></a>, which writes the resulting panel to <code>gravity_twm.csv</code>.</p>
+<div class="panel-tabset">
+<ul id="tabset-4" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-4-1">R</a></li><li><a href="#tabset-4-2">Stata</a></li></ul>
+<div class="tab-content">
+<div id="tabset-4-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href=""></a><span class="fu">library</span>(fixest)</span>
+<span id="cb8-2"><a href=""></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb8-3"><a href=""></a><span class="fu">library</span>(modelsummary)</span>
+<span id="cb8-4"><a href=""></a></span>
+<span id="cb8-5"><a href=""></a>trade <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"gravity_twm.csv"</span>)</span>
+<span id="cb8-6"><a href=""></a></span>
+<span id="cb8-7"><a href=""></a><span class="fu">glimpse</span>(trade)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 189,020
+Columns: 12
+$ pair            &lt;chr&gt; "AFG_AGO", "AFG_AGO", "AFG_AGO", "AFG_AGO", "AFG_AGO",…
+$ iso3_o          &lt;chr&gt; "AFG", "AFG", "AFG", "AFG", "AFG", "AFG", "AFG", "AFG"…
+$ iso3_d          &lt;chr&gt; "AGO", "AGO", "AGO", "AGO", "AGO", "AGO", "AGO", "AGO"…
+$ year            &lt;int&gt; 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, …
+$ log_trade       &lt;dbl&gt; 6.4547283, 5.6148092, 6.9101554, 4.5845694, 4.3829387,…
+$ fta             &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ log_distance    &lt;dbl&gt; 8.934982, 8.934982, 8.934982, 8.934982, 8.934982, 8.93…
+$ common_language &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ contiguity      &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ colony          &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ log_gdp_o       &lt;dbl&gt; 16.58414, 16.69864, 16.83627, 16.82661, 16.81375, 16.7…
+$ log_gdp_d       &lt;dbl&gt; 18.22796, 18.46101, 18.56341, 18.63723, 18.65794, 18.4…</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-4-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb10-1"><a href=""></a>* Built once from the raw CEPII Gravity.csv <span class="kw">by</span> prepare_gravity_subset.R</span>
+<span id="cb10-2"><a href=""></a>import delimited <span class="st">"gravity_twm.csv"</span>, <span class="kw">clear</span></span>
+<span id="cb10-3"><a href=""></a><span class="kw">describe</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="two-way-fixed-effects-benchmark" class="slide level2">
+<h2>7.3 Two-Way Fixed Effects Benchmark</h2>
+<p>The benchmark specification estimates</p>
+<p><span class="math display">\[\ln(\text{Trade}_{ijt}) = \beta\, FTA_{ijt} + \psi_1 \ln(GDP)_{it} + \psi_2 \ln(GDP)_{jt} + \alpha_{ij} + \gamma_t + \varepsilon_{ijt}\]</span></p>
+<p>Distance and the other time-invariant bilateral characteristics are absorbed into the pair effects <span class="math inline">\(\alpha_{ij}\)</span> and dropped from the output.</p>
+<div class="panel-tabset">
+<ul id="tabset-5" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-5-1">R</a></li><li><a href="#tabset-5-2">Stata</a></li></ul>
+<div class="tab-content">
+<div id="tabset-5-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href=""></a>twfe <span class="ot">&lt;-</span> <span class="fu">feols</span>(log_trade <span class="sc">~</span> fta <span class="sc">+</span> log_gdp_o <span class="sc">+</span> log_gdp_d <span class="sc">|</span> pair <span class="sc">+</span> year,</span>
+<span id="cb11-2"><a href=""></a>              <span class="at">cluster =</span> <span class="sc">~</span>pair, <span class="at">data =</span> trade)</span>
+<span id="cb11-3"><a href=""></a></span>
+<span id="cb11-4"><a href=""></a><span class="fu">etable</span>(twfe)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                              twfe
+Dependent Var.:          log_trade
+                                  
+fta               0.0411. (0.0239)
+log_gdp_o       0.2649*** (0.0308)
+log_gdp_d       0.4635*** (0.0284)
+Fixed-Effects:  ------------------
+pair                           Yes
+year                           Yes
+_______________ __________________
+S.E.: Clustered           by: pair
+Observations               189,020
+R2                         0.92125
+Within R2                  0.00451
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-5-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb13-1"><a href=""></a>reghdfe log_trade fta log_gdp_o log_gdp_d, absorb(pair <span class="fu">year</span>) <span class="kw">vce</span>(<span class="kw">cluster</span> pair)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="constructing-the-two-way-mundlak-variables" class="slide level2">
+<h2>7.4 Constructing the Two-Way Mundlak Variables</h2>
+<p>For <strong>every</strong> time-varying regressor (<span class="math inline">\(FTA\)</span>, <span class="math inline">\(\ln GDP_o\)</span>, <span class="math inline">\(\ln GDP_d\)</span>), the pair mean <span class="math inline">\(\bar x_{i\cdot}\)</span> and year mean <span class="math inline">\(\bar x_{\cdot t}\)</span> are computed and added to the pooled regression. Omitting the means for any one time-varying regressor breaks exact equivalence for all coefficients, not only that regressor’s own.</p>
+<div class="panel-tabset">
+<ul id="tabset-6" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-6-1">R</a></li><li><a href="#tabset-6-2">Stata</a></li></ul>
+<div class="tab-content">
+<div id="tabset-6-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href=""></a>trade_m <span class="ot">&lt;-</span> trade <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href=""></a>  <span class="fu">group_by</span>(pair) <span class="sc">|&gt;</span></span>
+<span id="cb14-3"><a href=""></a>  <span class="fu">mutate</span>(</span>
+<span id="cb14-4"><a href=""></a>    <span class="at">fta_pair       =</span> <span class="fu">mean</span>(fta),</span>
+<span id="cb14-5"><a href=""></a>    <span class="at">log_gdp_o_pair =</span> <span class="fu">mean</span>(log_gdp_o),</span>
+<span id="cb14-6"><a href=""></a>    <span class="at">log_gdp_d_pair =</span> <span class="fu">mean</span>(log_gdp_d)</span>
+<span id="cb14-7"><a href=""></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb14-8"><a href=""></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb14-9"><a href=""></a>  <span class="fu">group_by</span>(year) <span class="sc">|&gt;</span></span>
+<span id="cb14-10"><a href=""></a>  <span class="fu">mutate</span>(</span>
+<span id="cb14-11"><a href=""></a>    <span class="at">fta_year       =</span> <span class="fu">mean</span>(fta),</span>
+<span id="cb14-12"><a href=""></a>    <span class="at">log_gdp_o_year =</span> <span class="fu">mean</span>(log_gdp_o),</span>
+<span id="cb14-13"><a href=""></a>    <span class="at">log_gdp_d_year =</span> <span class="fu">mean</span>(log_gdp_d)</span>
+<span id="cb14-14"><a href=""></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb14-15"><a href=""></a>  <span class="fu">ungroup</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+<div id="tabset-6-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb15-1"><a href=""></a><span class="kw">egen</span> fta_pair       = <span class="kw">mean</span>(fta),       <span class="kw">by</span>(pair)</span>
+<span id="cb15-2"><a href=""></a><span class="kw">egen</span> log_gdp_o_pair = <span class="kw">mean</span>(log_gdp_o), <span class="kw">by</span>(pair)</span>
+<span id="cb15-3"><a href=""></a><span class="kw">egen</span> log_gdp_d_pair = <span class="kw">mean</span>(log_gdp_d), <span class="kw">by</span>(pair)</span>
+<span id="cb15-4"><a href=""></a></span>
+<span id="cb15-5"><a href=""></a><span class="kw">egen</span> fta_year       = <span class="kw">mean</span>(fta),       <span class="kw">by</span>(<span class="fu">year</span>)</span>
+<span id="cb15-6"><a href=""></a><span class="kw">egen</span> log_gdp_o_year = <span class="kw">mean</span>(log_gdp_o), <span class="kw">by</span>(<span class="fu">year</span>)</span>
+<span id="cb15-7"><a href=""></a><span class="kw">egen</span> log_gdp_d_year = <span class="kw">mean</span>(log_gdp_d), <span class="kw">by</span>(<span class="fu">year</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="two-way-mundlak-estimator" class="slide level2">
+<h2>7.5 Two-Way Mundlak Estimator</h2>
+<p>The augmented regression is</p>
+<p><span class="math display">\[\ln(\text{Trade}) = \beta\, FTA + \theta_1\overline{FTA}_{ij\cdot} + \theta_2\overline{FTA}_{\cdot t} + \psi_1 \ln GDP_i + \dots + \delta_1 \ln\text{Distance} + \delta_2\,\text{Language} + \delta_3\,\text{Contiguity} + \delta_4\,\text{Colony} + \varepsilon\]</span></p>
+<p>No pair or year fixed effects are included here — the Mundlak means substitute for both, which is exactly what makes distance, language, contiguity, and colony identifiable.</p>
+<div class="panel-tabset">
+<ul id="tabset-7" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-7-1">R</a></li><li><a href="#tabset-7-2">Stata</a></li></ul>
+<div class="tab-content">
+<div id="tabset-7-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href=""></a>mundlak <span class="ot">&lt;-</span> <span class="fu">feols</span>(</span>
+<span id="cb16-2"><a href=""></a>  log_trade <span class="sc">~</span> fta <span class="sc">+</span> fta_pair <span class="sc">+</span> fta_year <span class="sc">+</span></span>
+<span id="cb16-3"><a href=""></a>    log_gdp_o <span class="sc">+</span> log_gdp_o_pair <span class="sc">+</span> log_gdp_o_year <span class="sc">+</span></span>
+<span id="cb16-4"><a href=""></a>    log_gdp_d <span class="sc">+</span> log_gdp_d_pair <span class="sc">+</span> log_gdp_d_year <span class="sc">+</span></span>
+<span id="cb16-5"><a href=""></a>    log_distance <span class="sc">+</span> common_language <span class="sc">+</span> contiguity <span class="sc">+</span> colony,</span>
+<span id="cb16-6"><a href=""></a>  <span class="at">cluster =</span> <span class="sc">~</span>pair, <span class="at">data =</span> trade_m</span>
+<span id="cb16-7"><a href=""></a>)</span>
+<span id="cb16-8"><a href=""></a></span>
+<span id="cb16-9"><a href=""></a><span class="fu">etable</span>(mundlak)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                           mundlak
+Dependent Var.:          log_trade
+                                  
+Constant         -29.57*** (1.402)
+fta               0.0411. (0.0239)
+fta_pair        0.7498*** (0.0428)
+fta_year        -1.136*** (0.2312)
+log_gdp_o       0.2650*** (0.0309)
+log_gdp_o_pair  0.9300*** (0.0316)
+log_gdp_o_year       4.053 (3.184)
+log_gdp_d       0.4635*** (0.0284)
+log_gdp_d_pair  0.4376*** (0.0290)
+log_gdp_d_year      -3.571 (3.161)
+log_distance    -1.060*** (0.0186)
+common_language 0.6393*** (0.0398)
+contiguity      0.9199*** (0.0871)
+colony          0.8934*** (0.0556)
+_______________ __________________
+S.E.: Clustered           by: pair
+Observations               189,020
+R2                         0.66630
+Adj. R2                    0.66627
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-7-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb18-1"><a href=""></a><span class="kw">reg</span> log_trade fta fta_pair fta_year <span class="co">///</span></span>
+<span id="cb18-2"><a href=""></a>    log_gdp_o log_gdp_o_pair log_gdp_o_year <span class="co">///</span></span>
+<span id="cb18-3"><a href=""></a>    log_gdp_d log_gdp_d_pair log_gdp_d_year <span class="co">///</span></span>
+<span id="cb18-4"><a href=""></a>    log_distance common_language contiguity colony, <span class="kw">vce</span>(<span class="kw">cluster</span> pair)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="comparing-estimates" class="slide level2">
+<h2>7.6 Comparing Estimates</h2>
+<p>The key theoretical prediction is that</p>
+<p><span class="math display">\[\hat\beta_{TWFE} = \hat\beta_{Mundlak}\]</span></p>
+<div class="panel-tabset">
+<ul id="tabset-8" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-8-1">R</a></li><li><a href="#tabset-8-2">Stata</a></li></ul>
+<div class="tab-content">
+<div id="tabset-8-1">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href=""></a><span class="fu">modelsummary</span>(</span>
+<span id="cb19-2"><a href=""></a>  <span class="fu">list</span>(<span class="st">"TWFE"</span> <span class="ot">=</span> twfe, <span class="st">"Two-Way Mundlak"</span> <span class="ot">=</span> mundlak),</span>
+<span id="cb19-3"><a href=""></a>  <span class="at">coef_map =</span> <span class="fu">c</span>(<span class="at">fta =</span> <span class="st">"FTA"</span>, <span class="at">log_gdp_o =</span> <span class="st">"log(GDP origin)"</span>,</span>
+<span id="cb19-4"><a href=""></a>               <span class="at">log_gdp_d =</span> <span class="st">"log(GDP destination)"</span>,</span>
+<span id="cb19-5"><a href=""></a>               <span class="at">log_distance =</span> <span class="st">"log(Distance)"</span>,</span>
+<span id="cb19-6"><a href=""></a>               <span class="at">common_language =</span> <span class="st">"Common language"</span>,</span>
+<span id="cb19-7"><a href=""></a>               <span class="at">contiguity =</span> <span class="st">"Contiguity"</span>, <span class="at">colony =</span> <span class="st">"Colonial ties"</span>),</span>
+<span id="cb19-8"><a href=""></a>  <span class="at">stars =</span> <span class="cn">TRUE</span></span>
+<span id="cb19-9"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<!-- preamble start -->
+
+    <script src="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tinytable.js"></script>
+
+    <script>
+      // Create table-specific functions using external factory
+      const tableFns_c5ierivhlchsoq60mkeu = TinyTable.createTableFunctions("tinytable_c5ierivhlchsoq60mkeu");
+      // tinytable span after
+      window.addEventListener('load', function () {
+          var cellsToStyle = [
+            // tinytable style arrays after
+          { positions: [ { i: '24', j: 2 }, { i: '24', j: 3 } ], css_id: 'tinytable_css_scfspnqsivyrsh3dzz4v',}, 
+          { positions: [ { i: '14', j: 2 }, { i: '14', j: 3 } ], css_id: 'tinytable_css_1e7vamvrq7r3yrw126ft',}, 
+          { positions: [ { i: '1', j: 2 }, { i: '2', j: 2 }, { i: '3', j: 2 }, { i: '4', j: 2 }, { i: '5', j: 2 }, { i: '6', j: 2 }, { i: '7', j: 2 }, { i: '8', j: 2 }, { i: '9', j: 2 }, { i: '10', j: 2 }, { i: '11', j: 2 }, { i: '12', j: 2 }, { i: '13', j: 2 }, { i: '15', j: 2 }, { i: '16', j: 2 }, { i: '17', j: 2 }, { i: '18', j: 2 }, { i: '19', j: 2 }, { i: '20', j: 2 }, { i: '21', j: 2 }, { i: '22', j: 2 }, { i: '23', j: 2 }, { i: '1', j: 3 }, { i: '2', j: 3 }, { i: '3', j: 3 }, { i: '4', j: 3 }, { i: '5', j: 3 }, { i: '6', j: 3 }, { i: '7', j: 3 }, { i: '8', j: 3 }, { i: '9', j: 3 }, { i: '10', j: 3 }, { i: '11', j: 3 }, { i: '12', j: 3 }, { i: '13', j: 3 }, { i: '15', j: 3 }, { i: '16', j: 3 }, { i: '17', j: 3 }, { i: '18', j: 3 }, { i: '19', j: 3 }, { i: '20', j: 3 }, { i: '21', j: 3 }, { i: '22', j: 3 }, { i: '23', j: 3 } ], css_id: 'tinytable_css_xmnrewjzr7ao5fp0tj3f',}, 
+          { positions: [ { i: '0', j: 2 }, { i: '0', j: 3 } ], css_id: 'tinytable_css_z1dwagwasxvdewylz1z1',}, 
+          { positions: [ { i: '24', j: 1 } ], css_id: 'tinytable_css_voxf0jio97enay5ribbu',}, 
+          { positions: [ { i: '14', j: 1 } ], css_id: 'tinytable_css_39mqpcq1bvm249smlv9b',}, 
+          { positions: [ { i: '1', j: 1 }, { i: '2', j: 1 }, { i: '3', j: 1 }, { i: '4', j: 1 }, { i: '5', j: 1 }, { i: '6', j: 1 }, { i: '7', j: 1 }, { i: '8', j: 1 }, { i: '9', j: 1 }, { i: '10', j: 1 }, { i: '11', j: 1 }, { i: '12', j: 1 }, { i: '13', j: 1 }, { i: '15', j: 1 }, { i: '16', j: 1 }, { i: '17', j: 1 }, { i: '18', j: 1 }, { i: '19', j: 1 }, { i: '20', j: 1 }, { i: '21', j: 1 }, { i: '22', j: 1 }, { i: '23', j: 1 } ], css_id: 'tinytable_css_8zaw6o4bkny1dd5izeqm',}, 
+          { positions: [ { i: '0', j: 1 } ], css_id: 'tinytable_css_xer45gfwuko4dmwrzszs',}, 
+          ];
+
+          // Loop over the arrays to style the cells
+          cellsToStyle.forEach(function (group) {
+              group.positions.forEach(function (cell) {
+                  tableFns_c5ierivhlchsoq60mkeu.styleCell(cell.i, cell.j, group.css_id);
+              });
+          });
+      });
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tinytable.css">
+    <style>
+    /* tinytable css entries after */
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_scfspnqsivyrsh3dzz4v, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_scfspnqsivyrsh3dzz4v {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.08em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: center }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_1e7vamvrq7r3yrw126ft, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_1e7vamvrq7r3yrw126ft {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: center }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_xmnrewjzr7ao5fp0tj3f, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_xmnrewjzr7ao5fp0tj3f { text-align: center }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_z1dwagwasxvdewylz1z1, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_z1dwagwasxvdewylz1z1 {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 1; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.08em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: center }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_voxf0jio97enay5ribbu, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_voxf0jio97enay5ribbu {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.08em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: left }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_39mqpcq1bvm249smlv9b, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_39mqpcq1bvm249smlv9b {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: left }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_8zaw6o4bkny1dd5izeqm, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_8zaw6o4bkny1dd5izeqm { text-align: left }
+    #tinytable_c5ierivhlchsoq60mkeu td.tinytable_css_xer45gfwuko4dmwrzszs, #tinytable_c5ierivhlchsoq60mkeu th.tinytable_css_xer45gfwuko4dmwrzszs {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 1; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.08em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: left }
+    </style>
+    <div class="container">
+      <table class="tinytable" id="tinytable_c5ierivhlchsoq60mkeu" style="width: auto; margin-left: auto; margin-right: auto;" data-quarto-disable-processing="true">
+        
+        <thead>
+              <tr>
+                <th scope="col" data-row="0" data-col="1"> </th>
+                <th scope="col" data-row="0" data-col="2">TWFE</th>
+                <th scope="col" data-row="0" data-col="3">Two-Way Mundlak</th>
+              </tr>
+        </thead>
+        <tfoot><tr><td colspan="3">+ p &lt; 0.1, * p &lt; 0.05, ** p &lt; 0.01, *** p &lt; 0.001</td></tr></tfoot>
+        <tbody>
+                <tr>
+                  <td data-row="1" data-col="1">FTA</td>
+                  <td data-row="1" data-col="2">0.041+</td>
+                  <td data-row="1" data-col="3">0.041+</td>
+                </tr>
+                <tr>
+                  <td data-row="2" data-col="1"></td>
+                  <td data-row="2" data-col="2">(0.024)</td>
+                  <td data-row="2" data-col="3">(0.024)</td>
+                </tr>
+                <tr>
+                  <td data-row="3" data-col="1">log(GDP origin)</td>
+                  <td data-row="3" data-col="2">0.265***</td>
+                  <td data-row="3" data-col="3">0.265***</td>
+                </tr>
+                <tr>
+                  <td data-row="4" data-col="1"></td>
+                  <td data-row="4" data-col="2">(0.031)</td>
+                  <td data-row="4" data-col="3">(0.031)</td>
+                </tr>
+                <tr>
+                  <td data-row="5" data-col="1">log(GDP destination)</td>
+                  <td data-row="5" data-col="2">0.464***</td>
+                  <td data-row="5" data-col="3">0.464***</td>
+                </tr>
+                <tr>
+                  <td data-row="6" data-col="1"></td>
+                  <td data-row="6" data-col="2">(0.028)</td>
+                  <td data-row="6" data-col="3">(0.028)</td>
+                </tr>
+                <tr>
+                  <td data-row="7" data-col="1">log(Distance)</td>
+                  <td data-row="7" data-col="2"></td>
+                  <td data-row="7" data-col="3">-1.060***</td>
+                </tr>
+                <tr>
+                  <td data-row="8" data-col="1"></td>
+                  <td data-row="8" data-col="2"></td>
+                  <td data-row="8" data-col="3">(0.019)</td>
+                </tr>
+                <tr>
+                  <td data-row="9" data-col="1">Common language</td>
+                  <td data-row="9" data-col="2"></td>
+                  <td data-row="9" data-col="3">0.639***</td>
+                </tr>
+                <tr>
+                  <td data-row="10" data-col="1"></td>
+                  <td data-row="10" data-col="2"></td>
+                  <td data-row="10" data-col="3">(0.040)</td>
+                </tr>
+                <tr>
+                  <td data-row="11" data-col="1">Contiguity</td>
+                  <td data-row="11" data-col="2"></td>
+                  <td data-row="11" data-col="3">0.920***</td>
+                </tr>
+                <tr>
+                  <td data-row="12" data-col="1"></td>
+                  <td data-row="12" data-col="2"></td>
+                  <td data-row="12" data-col="3">(0.087)</td>
+                </tr>
+                <tr>
+                  <td data-row="13" data-col="1">Colonial ties</td>
+                  <td data-row="13" data-col="2"></td>
+                  <td data-row="13" data-col="3">0.893***</td>
+                </tr>
+                <tr>
+                  <td data-row="14" data-col="1"></td>
+                  <td data-row="14" data-col="2"></td>
+                  <td data-row="14" data-col="3">(0.056)</td>
+                </tr>
+                <tr>
+                  <td data-row="15" data-col="1">Num.Obs.</td>
+                  <td data-row="15" data-col="2">189020</td>
+                  <td data-row="15" data-col="3">189020</td>
+                </tr>
+                <tr>
+                  <td data-row="16" data-col="1">R2</td>
+                  <td data-row="16" data-col="2">0.921</td>
+                  <td data-row="16" data-col="3">0.666</td>
+                </tr>
+                <tr>
+                  <td data-row="17" data-col="1">R2 Adj.</td>
+                  <td data-row="17" data-col="2">0.912</td>
+                  <td data-row="17" data-col="3">0.666</td>
+                </tr>
+                <tr>
+                  <td data-row="18" data-col="1">R2 Within</td>
+                  <td data-row="18" data-col="2">0.005</td>
+                  <td data-row="18" data-col="3"></td>
+                </tr>
+                <tr>
+                  <td data-row="19" data-col="1">R2 Within Adj.</td>
+                  <td data-row="19" data-col="2">0.004</td>
+                  <td data-row="19" data-col="3"></td>
+                </tr>
+                <tr>
+                  <td data-row="20" data-col="1">AIC</td>
+                  <td data-row="20" data-col="2">577228.7</td>
+                  <td data-row="20" data-col="3">812363.4</td>
+                </tr>
+                <tr>
+                  <td data-row="21" data-col="1">BIC</td>
+                  <td data-row="21" data-col="2">769198.4</td>
+                  <td data-row="21" data-col="3">812505.5</td>
+                </tr>
+                <tr>
+                  <td data-row="22" data-col="1">RMSE</td>
+                  <td data-row="22" data-col="2">1.01</td>
+                  <td data-row="22" data-col="3">2.07</td>
+                </tr>
+                <tr>
+                  <td data-row="23" data-col="1">FE: pair</td>
+                  <td data-row="23" data-col="2">X</td>
+                  <td data-row="23" data-col="3"></td>
+                </tr>
+                <tr>
+                  <td data-row="24" data-col="1">FE: year</td>
+                  <td data-row="24" data-col="2">X</td>
+                  <td data-row="24" data-col="3"></td>
+                </tr>
+        </tbody>
+      </table>
+    </div>
+<!-- hack to avoid NA insertion in last line -->
+</div>
+</div>
+</div>
+<div id="tabset-8-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource stata number-lines code-with-copy"><code class="sourceCode stata"><span id="cb20-1"><a href=""></a>eststo <span class="kw">clear</span></span>
+<span id="cb20-2"><a href=""></a></span>
+<span id="cb20-3"><a href=""></a>reghdfe log_trade fta log_gdp_o log_gdp_d, absorb(pair <span class="fu">year</span>) <span class="kw">vce</span>(<span class="kw">cluster</span> pair)</span>
+<span id="cb20-4"><a href=""></a>eststo twfe</span>
+<span id="cb20-5"><a href=""></a></span>
+<span id="cb20-6"><a href=""></a><span class="kw">reg</span> log_trade fta fta_pair fta_year <span class="co">///</span></span>
+<span id="cb20-7"><a href=""></a>    log_gdp_o log_gdp_o_pair log_gdp_o_year <span class="co">///</span></span>
+<span id="cb20-8"><a href=""></a>    log_gdp_d log_gdp_d_pair log_gdp_d_year <span class="co">///</span></span>
+<span id="cb20-9"><a href=""></a>    log_distance common_language contiguity colony, <span class="kw">vce</span>(<span class="kw">cluster</span> pair)</span>
+<span id="cb20-10"><a href=""></a>eststo mundlak</span>
+<span id="cb20-11"><a href=""></a></span>
+<span id="cb20-12"><a href=""></a>esttab twfe mundlak, <span class="kw">keep</span>(fta log_gdp_o log_gdp_d)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="interpretation" class="slide level2">
+<h2>7.7 Interpretation</h2>
+<p>On the balanced 2010–2019 CEPII panel (189,020 observations, 18,902 pairs):</p>
+<ul>
+<li><span class="math inline">\(\hat\beta_{\text{FTA}}\)</span> is <strong>0.0411</strong> under TWFE and <strong>0.0411</strong> under the Two-Way Mundlak estimator — the same to four significant figures, and both only marginally significant (<span class="math inline">\(p&lt;0.1\)</span>) once GDP is controlled for.</li>
+<li>The GDP elasticities match exactly across estimators too (<span class="math inline">\(\hat\psi_{\text{origin}} \approx 0.265\)</span>, <span class="math inline">\(\hat\psi_{\text{destination}} \approx 0.464\)</span> under both), confirming the equivalence holds for every time-varying regressor, not just the one of headline interest.</li>
+<li>The Mundlak estimator additionally recovers statistically significant coefficients on the time-invariant characteristics that TWFE cannot identify: log-distance (<span class="math inline">\(-1.06\)</span>, close to the canonical gravity elasticity of <span class="math inline">\(-1\)</span>), common language (<span class="math inline">\(+0.64\)</span>), contiguity (<span class="math inline">\(+0.92\)</span>), and colonial ties (<span class="math inline">\(+0.89\)</span>) — all with the sign gravity theory predicts.</li>
+<li>The joint Wald test <span class="math inline">\(H_0: \theta_1=\theta_2=0\)</span> on the FTA pair and year means is rejected (<span class="math inline">\(p \approx 10^{-77}\)</span>) — the Hausman-type diagnostic from Section 6 — confirming the unobserved pair and year effects are correlated with FTA status, exactly the situation where a random-effects model without the Mundlak correction would be biased.</li>
+</ul>
+<p>The two-way Mundlak estimator preserves the identifying assumptions of the fixed-effects model while recovering coefficients fixed effects cannot identify — provided, as shown above, that every time-varying regressor’s own pair and year means are included and the panel is balanced.</p>
+</section>
+<section id="summary-key-takeaways" class="slide level2">
+<h2>8. Summary &amp; Key Takeaways</h2>
+<ol type="1">
+<li><strong>Theoretical Equivalence:</strong></li>
+</ol>
+<ul>
+<li>Baltagi (2023) proves that augmenting a panel regression with time and individual averages of regressors makes Random Effects GLS and Pooled OLS augmented with the appropriate unit and time Mundlak means becomes numerically identical to the two-way fixed-effects estimator for all time-varying regressors.</li>
+</ul>
+<ol start="2" type="1">
+<li><strong>Identification Advantage:</strong></li>
+</ol>
+<ul>
+<li>Time-invariant variables (<span class="math inline">\(Z_i\)</span>) and individual-invariant variables (<span class="math inline">\(W_t\)</span>) are retained, solving a major practical constraint of TWFE.</li>
+</ul>
+<ol start="3" type="1">
+<li><strong>Diagnostic Testing:</strong></li>
+</ol>
+<ul>
+<li>The Mundlak joint <span class="math inline">\(F\)</span>-test on <span class="math inline">\((\bar{X}_{i.}, \bar{X}_{.t})\)</span> provides a straightforward Hausman-type specification test for two-way panel models.</li>
+</ul>
+<ol start="4" type="1">
+<li><strong>Implementation:</strong></li>
+</ol>
+<ul>
+<li>Seamless to implement in both R (<code>fixest</code>, <code>plm</code>, <code>lm</code>) and Stata (<code>reghdfe</code>, <code>xtreg</code>, <code>reg</code>).</li>
+</ul>
+</section>
+<section id="references" class="slide level2">
+<h2>References</h2>
+<ul>
+<li><strong>Baltagi, B. H. (2023).</strong> <em>The Two-way Mundlak Estimator.</em> Center for Policy Research Working Paper No.&nbsp;256, Syracuse University.</li>
+<li><strong>Mundlak, Y. (1978).</strong> On the pooling of time series and cross section data. <em>Econometrica</em>, 46(1), 69–85.</li>
+<li><strong>Wooldridge, J. M. (2021).</strong> Two-way fixed effects, the two-way Mundlak regression, and Difference-in-Differences estimators. <em>SSR Working Paper</em>.</li>
+<li><strong>Kang, S. (1985).</strong> A note on the equivalence of specification tests in the two-way error component model. <em>Economics Letters</em>, 17(4), 341–343.</li>
+</ul>
+
+</section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<div class="footer footer-default">
+
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="twm_files/libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="twm_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="twm_files/libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/search/search.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="twm_files/libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': true,
+'previewLinksAuto': true,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleChalkboard(event)\"><kbd>b</kbd> Toggle Chalkboard</a></li>\n<li class=\"slide-tool-item\" data-item=\"6\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleNotesCanvas(event)\"><kbd>c</kbd> Toggle Notes Canvas</a></li>\n<li class=\"slide-tool-item\" data-item=\"7\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.downloadDrawings(event)\"><kbd>d</kbd> Download Drawings</a></li>\n<li class=\"slide-tool-item\" data-item=\"8\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'chalkboard': {"buttons":true},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: false,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'slide',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1280,
+
+        height: 720,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 0.1,
+
+        math: {
+          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    
+    <script>
+      // htmlwidgets need to know to resize themselves when slides are shown/hidden.
+      // Fire the "slideenter" event (handled by htmlwidgets.js) when the current
+      // slide changes (different for each slide format).
+      (function () {
+        // dispatch for htmlwidgets
+        function fireSlideEnter() {
+          const event = window.document.createEvent("Event");
+          event.initEvent("slideenter", true, true);
+          window.document.dispatchEvent(event);
+        }
+
+        function fireSlideChanged(previousSlide, currentSlide) {
+          fireSlideEnter();
+
+          // dispatch for shiny
+          if (window.jQuery) {
+            if (previousSlide) {
+              window.jQuery(previousSlide).trigger("hidden");
+            }
+            if (currentSlide) {
+              window.jQuery(currentSlide).trigger("shown");
+            }
+          }
+        }
+
+        // hookup for slidy
+        if (window.w3c_slidy) {
+          window.w3c_slidy.add_observer(function (slide_num) {
+            // slide_num starts at position 1
+            fireSlideChanged(null, w3c_slidy.slides[slide_num - 1]);
+          });
+        }
+
+      })();
+    </script>
+
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp('/' + window.location.host + '/');
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>

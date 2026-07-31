@@ -1,0 +1,524 @@
+---
+title: "The Two-Way Mundlak Estimator"
+subtitle: "Theory, Equivalence, and Empirical Implementation in R and Stata"
+author: "Based on Badi H. Baltagi (2023) & Jeffrey M. Wooldridge (2021)"
+date: "2026-07-31"
+format:
+  revealjs:
+     theme: [custom.scss]
+     scrollable: true
+     logo: AGSMlogo.jpeg
+     footer: "ESSSSDA26-2J: A Two-Way Mundlak"
+     multiplex:
+       url: 'https://multiplex-5adl.onrender.com'
+     self-contained: true
+     html-math-method: katex
+     incremental: true
+     slide-number: c/t
+     transition: zoom
+     preview-links: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## 1. Executive Summary & Overview
+
+### The Empirical Challenge in Panel Data
+When estimating panel data regressions with two-way unobserved heterogeneity:
+
+$$y_{it} = X_{it}\beta + Z_i\gamma + W_t\delta + \mu_i + \lambda_t + \epsilon_{it}$$
+
+* **Two-Way Fixed Effects (TWFE):**
+  * **Advantage:** Controls for arbitrary correlation between regressors $X_{it}$ and individual effects $\mu_i$ or time effects $\lambda_t$.
+  * **Limitation:** Drops time-invariant variables $Z_i$ (e.g., distance, gender, education) and individual-invariant variables $W_t$ (e.g., inflation, macro policy, oil prices).
+* **Two-Way Random Effects (RE-GLS):**
+  * **Advantage:** Retains $Z_i$ and $W_t$ and is efficient under orthogonality.
+  * **Limitation:** Biased and inconsistent if $\text{Cov}(X_{it}, \mu_i) \neq 0$ or $\text{Cov}(X_{it}, \lambda_t) \neq 0$.
+
+---
+
+## 2. Econometric Methodology: Baltagi (2023)
+
+### The Two-Way Mundlak Transformation
+Following Mundlak (1978), **Baltagi (2023)** and **Wooldridge (2021)** model the unobserved individual and time effects as linear functions of the group averages of all time-varying regressors:
+
+$$\mu_i = \bar{X}_{i.}\theta_1 + u_i \quad \text{where } \bar{X}_{i.} = \frac{1}{T}\sum_{t=1}^T X_{it}$$
+
+$$\lambda_t = \bar{X}_{.t}\theta_2 + v_t \quad \text{where } \bar{X}_{.t} = \frac{1}{N}\sum_{i=1}^N X_{it}$$
+
+Substituting $\mu_i$ and $\lambda_t$ into the outcome equation yields the **Two-Way Mundlak (TWM) Augmented Regression**:
+
+$$y_{it} = X_{it}\beta + Z_i\gamma + W_t\delta + \bar{X}_{i.}\theta_1 + \bar{X}_{.t}\theta_2 + (u_i + v_t + \epsilon_{it})$$
+
+---
+
+## 3. Core Theoretical Contributions
+
+::: {.callout-note}
+### Key Insights from Baltagi (2023)
+
+1. **Exact Equivalence ($\hat{\beta}_{TWM} = \hat{\beta}_{TWFE}$):**
+   Estimating the augmented model via Pooled OLS or Random Effects GLS yields the **exact same coefficient estimate** $\hat{\beta}$ as the standard Two-Way Fixed Effects (TWFE) estimator.
+2. **Identification of Invariant Regressors:**
+   Unlike TWFE, the TWM estimator identifies $\gamma$ (for time-invariant $Z_i$) and $\delta$ (for individual-invariant $W_t$) while maintaining full robustness against endogeneity.
+3. **Hausman-Type Test for Two-Way Models:**
+   A simple joint $F$-test testing $H_0: \theta_1 = 0, \theta_2 = 0$ is a generalized Hausman specification test (Kang 1985). If rejected, it confirms that random effects are correlated with regressors.
+:::
+
+---
+
+## 4. Step 1: Data Simulation Setup
+
+::: {.panel-tabset}
+
+### R Code
+
+```{r}
+#| label: data-simulation-r
+#| echo: true
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(fixest)
+  library(plm)
+  library(car)
+})
+
+set.seed(42)
+N <- 100
+T_per <- 10
+n_obs <- N * T_per
+
+# Create panel structure
+id <- rep(1:N, each = T_per)
+time <- rep(1:T_per, times = N)
+
+# Draw unobserved individual (mu_i) and time (lambda_t) effects
+mu_i <- rep(rnorm(N, mean = 2, sd = 1), each = T_per)
+lambda_t <- rep(rnorm(T_per, mean = 0.5, sd = 0.5), times = N)
+
+# Generate time-invariant Z_i and individual-invariant W_t
+Z_i <- rep(rnorm(N, mean = 5, sd = 1.5), each = T_per)
+W_t <- rep(rnorm(T_per, mean = 10, sd = 2), times = N)
+
+# Generate endogenous regressor X_it correlated with mu_i and lambda_t
+X_it <- 0.7 * mu_i + 0.4 * lambda_t + rnorm(n_obs, mean = 0, sd = 1)
+
+# True parameters: beta = 1.5, gamma = 0.8, delta = -0.4
+eps_it <- rnorm(n_obs, mean = 0, sd = 1)
+y_it <- 1.5 * X_it + 0.8 * Z_i - 0.4 * W_t + mu_i + lambda_t + eps_it
+
+# Construct Dataset and calculate individual and time means
+df <- data.frame(id, time, y_it, X_it, Z_i, W_t) %>%
+  group_by(id) %>%
+  mutate(X_bar_i = mean(X_it)) %>%
+  ungroup() %>%
+  group_by(time) %>%
+  mutate(X_bar_t = mean(X_it)) %>%
+  ungroup()
+
+head(df, 4)
+```
+
+### Stata code
+
+```stata
+* Clear workspace and set random seed
+clear all
+set seed 42
+
+* Define observation count (100 individuals x 10 time periods)
+set obs 1000
+gen id = ceil(_n / 10)
+bysort id: gen time = _n
+
+* Draw individual (mu_i) and time (lambda_t) unobserved effects
+bysort id: gen temp_mu = rnormal(2, 1) if _n == 1
+bysort id: egen mu_i = max(temp_mu)
+
+bysort time: gen temp_lam = rnormal(0.5, 0.5) if _n == 1
+bysort time: egen lambda_t = max(temp_lam)
+
+* Generate Z_i (time-invariant) and W_t (individual-invariant)
+bysort id: gen temp_z = rnormal(5, 1.5) if _n == 1
+bysort id: egen Z_i = max(temp_z)
+
+bysort time: gen temp_w = rnormal(10, 2) if _n == 1
+bysort time: egen W_t = max(temp_w)
+
+* Generate endogenous X_it and outcome y_it
+gen X_it = 0.7*mu_i + 0.4*lambda_t + rnormal(0, 1)
+gen eps_it = rnormal(0, 1)
+gen y_it = 1.5*X_it + 0.8*Z_i - 0.4*W_t + mu_i + lambda_t + eps_it
+
+* Set panel structure and calculate group means
+xtset id time
+bysort id: egen X_bar_i = mean(X_it)
+bysort time: egen X_bar_t = mean(X_it)
+```
+
+:::
+
+## 5. Model Estimation & Equivalence Demonstration
+
+::: {.panel-tabset}
+
+```{r}
+#| label: model-estimation-r
+#| echo: true
+
+# 1. Standard Two-Way Fixed Effects (TWFE) - drops Z_i and W_t
+fit_twfe <- feols(y_it ~ X_it | id + time, data = df)
+
+# 2. Two-Way Mundlak via Pooled OLS
+fit_twm_ols <- lm(y_it ~ X_it + Z_i + W_t + X_bar_i + X_bar_t, data = df)
+
+# 3. Two-Way Mundlak via Random Effects GLS (plm)
+fit_twm_re <- plm(y_it ~ X_it + Z_i + W_t + X_bar_i + X_bar_t, 
+                  data = df, model = "random", effect = "twoways", 
+                  index = c("id", "time"))
+
+# Compare Point Estimates
+results_tab <- data.frame(
+  Estimator = c("TWFE (fixest)", "TWM Pooled OLS", "TWM RE-GLS"),
+  `Beta (X_it)` = c(coef(fit_twfe)["X_it"], 
+                    coef(fit_twm_ols)["X_it"], 
+                    coef(fit_twm_re)["X_it"]),
+  `Gamma (Z_i)` = c(NA, coef(fit_twm_ols)["Z_i"], coef(fit_twm_re)["Z_i"]),
+  `Delta (W_t)` = c(NA, coef(fit_twm_ols)["W_t"], coef(fit_twm_re)["W_t"])
+)
+
+knitr::kable(results_tab, digits = 6, caption = "Estimator Equivalence & Parameter Recovery")
+```
+
+### Stata
+
+```stata
+* 1. Standard Two-Way Fixed Effects (TWFE)
+reghdfe y_it X_it, absorb(id time)
+estimates store twfe
+
+* 2. Two-Way Mundlak via Pooled OLS
+reg y_it X_it Z_i W_t X_bar_i X_bar_t, vce(cluster id)
+estimates store twm_ols
+
+* 3. Two-Way Mundlak via Random Effects GLS
+xtreg y_it X_it Z_i W_t X_bar_i X_bar_t, re vce(cluster id)
+estimates store twm_re
+
+* Print comparison table across models
+estimates table twfe twm_ols twm_re, b(%9.6f) se(%9.6f) ///
+    keep(X_it Z_i W_t X_bar_i X_bar_t)
+```
+
+:::
+
+## 6. Hausman Specification Test
+
+::: {.panel-tabset}
+
+## R
+
+```{r}
+#| label: specification-test-r
+#| echo: true
+
+# Joint F-test on the coefficients of group means theta_1 and theta_2
+# H0: theta_1 = 0 AND theta_2 = 0 (Unobserved effects uncorrelated with X)
+
+f_test_res <- linearHypothesis(fit_twm_ols, c("X_bar_i = 0", "X_bar_t = 0"))
+print(f_test_res)
+```
+
+### Stata
+
+```stata
+* Run joint test for significance of the individual and time averages
+reg y_it X_it Z_i W_t X_bar_i X_bar_t, vce(cluster id)
+
+test X_bar_i X_bar_t
+
+* Note: Rejecting H0 (p < 0.05) indicates that RE orthogonality fails.
+* The TWM model successfully corrects for this correlation while preserving Z_i and W_t.
+```
+
+:::
+
+
+
+## 7. Applied Empirical Example: Gravity Model of Trade
+
+Consider estimating bilateral trade volume ($\text{Trade}_{ijt}$) between exporter $i$ and importer $j$ in year $t$:
+
+$$\ln(\text{Trade}_{ijt}) = \beta \cdot \text{FTA}_{ijt} + \psi_1 \ln(\text{GDP}_{it}) + \psi_2 \ln(\text{GDP}_{jt}) + \gamma \cdot \ln(\text{Distance}_{ij}) + \mu_{ij} + \lambda_t + \nu_{ijt}$$
+
+::: {.columns}
+
+::: {.column width="50%"}
+
+#### Standard TWFE Approach
+
+* Uses country-pair fixed effects $\mu_{ij}$ and year fixed effects $\lambda_t$.
+* **Drawback:** $\ln(\text{Distance}_{ij})$, common language, contiguity, and colonial ties are collinear with the pair fixed effects and are **dropped**.
+* Prevents identification of any time-invariant determinant of trade.
+:::
+
+::: {.column width="50%"}
+
+#### Two-Way Mundlak Solution
+
+* Include pair and year averages of every time-varying regressor: $\overline{\text{FTA}}_{ij\cdot}$, $\overline{\text{FTA}}_{\cdot t}$, and likewise for $\ln\text{GDP}$.
+* **Advantages:**
+1. $\hat{\beta}_{\text{FTA}}$ matches TWFE exactly.
+2. $\hat{\gamma}_{\text{Distance}}$, common language, contiguity, and colony effects are identified.
+
+:::
+
+:::
+
+## 7.1 On Gravity
+
+The gravity model is the canonical application of two-way fixed effects in trade economics. Bilateral trade depends on variables that are essentially constant over time (distance, common language, colonial history, shared borders) together with variables that vary over time (free trade agreements, GDP).
+
+The standard two-way fixed effects estimator consistently estimates the effect of time-varying regressors but absorbs all time-invariant bilateral characteristics into the pair fixed effects.
+
+The two-way Mundlak estimator augments a pooled regression with the pair mean and year mean of **every** time-varying regressor. As established earlier, this reproduces the two-way fixed-effects coefficients on the time-varying regressors while simultaneously identifying the time-invariant regressors.
+
+::: {.callout-important}
+### Balance matters for exact equivalence
+The equality $\hat\beta_{TWFE} = \hat\beta_{Mundlak}$ relies on the pair mean and year mean summing to the same projection that two-way fixed effects removes. That additive decomposition is exact only for a **balanced** panel. On the raw, unbalanced version of the trade panel used below, the naive Mundlak regression gave $\hat\beta_{\text{FTA}}=0.056$ against $\hat\beta_{TWFE}=0.154$ under TWFE — a large, real discrepancy, not rounding noise. Restricting to a balanced sub-panel (every pair observed in every year) restores equivalence to numerical precision. The simulated example in Sections 4–6 avoids this issue because that panel is balanced by construction; real bilateral trade panels rarely are, so it has to be handled explicitly here.
+:::
+
+## 7.2 Data
+
+The example uses the **CEPII Gravity dataset** (Conte, Cotterlaz & Mayer), a standard bilateral panel of trade flows and gravity covariates spanning 1948–2021 for nearly all country pairs.
+
+Starting from the raw file, a working panel is built by:
+
+* using **BACI** bilateral trade flows (`tradeflow_baci`) — the trade-flow variable in the file with the best, most consistent coverage,
+* dropping self-pairs,
+* restricting to **2010–2019** and to the country pairs observed in **every year** of that window, so the panel is balanced (see the callout above),
+* keeping GDP of the origin and destination country as time-varying controls, and distance, common language, contiguity, and colonial history as time-invariant characteristics.
+
+This yields **189,020 observations** on **18,902 country pairs** over 10 years. The filtering is done once by [`prepare_gravity_subset.R`](prepare_gravity_subset.R), which writes the resulting panel to `gravity_twm.csv`.
+
+::: {.panel-tabset}
+
+### R
+
+```{r}
+#| label: load-gravity-r
+#| message: false
+#| warning: false
+
+library(fixest)
+library(dplyr)
+library(modelsummary)
+
+trade <- read.csv("gravity_twm.csv")
+
+glimpse(trade)
+```
+
+### Stata
+
+```stata
+* Built once from the raw CEPII Gravity.csv by prepare_gravity_subset.R
+import delimited "gravity_twm.csv", clear
+describe
+```
+:::
+
+## 7.3 Two-Way Fixed Effects Benchmark
+
+The benchmark specification estimates
+
+$$\ln(\text{Trade}_{ijt}) = \beta\, FTA_{ijt} + \psi_1 \ln(GDP)_{it} + \psi_2 \ln(GDP)_{jt} + \alpha_{ij} + \gamma_t + \varepsilon_{ijt}$$
+
+Distance and the other time-invariant bilateral characteristics are absorbed into the pair effects $\alpha_{ij}$ and dropped from the output.
+
+::: {.panel-tabset}
+
+### R
+
+```{r}
+#| label: twfe-gravity-r
+
+twfe <- feols(log_trade ~ fta + log_gdp_o + log_gdp_d | pair + year,
+              cluster = ~pair, data = trade)
+
+etable(twfe)
+```
+
+### Stata
+
+```stata
+reghdfe log_trade fta log_gdp_o log_gdp_d, absorb(pair year) vce(cluster pair)
+```
+
+:::
+
+## 7.4 Constructing the Two-Way Mundlak Variables
+
+For **every** time-varying regressor ($FTA$, $\ln GDP_o$, $\ln GDP_d$), the pair mean $\bar x_{i\cdot}$ and year mean $\bar x_{\cdot t}$ are computed and added to the pooled regression. Omitting the means for any one time-varying regressor breaks exact equivalence for all coefficients, not only that regressor's own.
+
+::: {.panel-tabset}
+
+### R
+
+```{r}
+#| label: mundlak-vars-r
+
+trade_m <- trade |>
+  group_by(pair) |>
+  mutate(
+    fta_pair       = mean(fta),
+    log_gdp_o_pair = mean(log_gdp_o),
+    log_gdp_d_pair = mean(log_gdp_d)
+  ) |>
+  ungroup() |>
+  group_by(year) |>
+  mutate(
+    fta_year       = mean(fta),
+    log_gdp_o_year = mean(log_gdp_o),
+    log_gdp_d_year = mean(log_gdp_d)
+  ) |>
+  ungroup()
+```
+
+### Stata
+
+```stata
+egen fta_pair       = mean(fta),       by(pair)
+egen log_gdp_o_pair = mean(log_gdp_o), by(pair)
+egen log_gdp_d_pair = mean(log_gdp_d), by(pair)
+
+egen fta_year       = mean(fta),       by(year)
+egen log_gdp_o_year = mean(log_gdp_o), by(year)
+egen log_gdp_d_year = mean(log_gdp_d), by(year)
+```
+
+:::
+
+## 7.5 Two-Way Mundlak Estimator
+
+The augmented regression is
+
+$$\ln(\text{Trade}) = \beta\, FTA + \theta_1\overline{FTA}_{ij\cdot} + \theta_2\overline{FTA}_{\cdot t} + \psi_1 \ln GDP_i + \dots + \delta_1 \ln\text{Distance} + \delta_2\,\text{Language} + \delta_3\,\text{Contiguity} + \delta_4\,\text{Colony} + \varepsilon$$
+
+No pair or year fixed effects are included here — the Mundlak means substitute for both, which is exactly what makes distance, language, contiguity, and colony identifiable.
+
+::: {.panel-tabset}
+
+### R
+
+```{r}
+#| label: mundlak-model-r
+
+mundlak <- feols(
+  log_trade ~ fta + fta_pair + fta_year +
+    log_gdp_o + log_gdp_o_pair + log_gdp_o_year +
+    log_gdp_d + log_gdp_d_pair + log_gdp_d_year +
+    log_distance + common_language + contiguity + colony,
+  cluster = ~pair, data = trade_m
+)
+
+etable(mundlak)
+```
+
+### Stata
+
+```stata
+reg log_trade fta fta_pair fta_year ///
+    log_gdp_o log_gdp_o_pair log_gdp_o_year ///
+    log_gdp_d log_gdp_d_pair log_gdp_d_year ///
+    log_distance common_language contiguity colony, vce(cluster pair)
+```
+
+:::
+
+## 7.6 Comparing Estimates
+
+The key theoretical prediction is that
+
+$$\hat\beta_{TWFE} = \hat\beta_{Mundlak}$$
+
+::: {.panel-tabset}
+
+### R
+
+```{r}
+#| label: compare-gravity-r
+
+modelsummary(
+  list("TWFE" = twfe, "Two-Way Mundlak" = mundlak),
+  coef_map = c(fta = "FTA", log_gdp_o = "log(GDP origin)",
+               log_gdp_d = "log(GDP destination)",
+               log_distance = "log(Distance)",
+               common_language = "Common language",
+               contiguity = "Contiguity", colony = "Colonial ties"),
+  stars = TRUE
+)
+```
+
+### Stata
+
+```stata
+eststo clear
+
+reghdfe log_trade fta log_gdp_o log_gdp_d, absorb(pair year) vce(cluster pair)
+eststo twfe
+
+reg log_trade fta fta_pair fta_year ///
+    log_gdp_o log_gdp_o_pair log_gdp_o_year ///
+    log_gdp_d log_gdp_d_pair log_gdp_d_year ///
+    log_distance common_language contiguity colony, vce(cluster pair)
+eststo mundlak
+
+esttab twfe mundlak, keep(fta log_gdp_o log_gdp_d)
+```
+:::
+
+## 7.7 Interpretation
+
+On the balanced 2010–2019 CEPII panel (189,020 observations, 18,902 pairs):
+
+* $\hat\beta_{\text{FTA}}$ is **0.0411** under TWFE and **0.0411** under the Two-Way Mundlak estimator — the same to four significant figures, and both only marginally significant ($p<0.1$) once GDP is controlled for.
+* The GDP elasticities match exactly across estimators too ($\hat\psi_{\text{origin}} \approx 0.265$, $\hat\psi_{\text{destination}} \approx 0.464$ under both), confirming the equivalence holds for every time-varying regressor, not just the one of headline interest.
+* The Mundlak estimator additionally recovers statistically significant coefficients on the time-invariant characteristics that TWFE cannot identify: log-distance ($-1.06$, close to the canonical gravity elasticity of $-1$), common language ($+0.64$), contiguity ($+0.92$), and colonial ties ($+0.89$) — all with the sign gravity theory predicts.
+* The joint Wald test $H_0: \theta_1=\theta_2=0$ on the FTA pair and year means is rejected ($p \approx 10^{-77}$) — the Hausman-type diagnostic from Section 6 — confirming the unobserved pair and year effects are correlated with FTA status, exactly the situation where a random-effects model without the Mundlak correction would be biased.
+
+The two-way Mundlak estimator preserves the identifying assumptions of the fixed-effects model while recovering coefficients fixed effects cannot identify — provided, as shown above, that every time-varying regressor's own pair and year means are included and the panel is balanced.
+
+---
+
+## 8. Summary & Key Takeaways
+
+1. **Theoretical Equivalence:**
+* Baltagi (2023) proves that augmenting a panel regression with time and individual averages of regressors makes Random Effects GLS and Pooled OLS augmented with the appropriate unit and time Mundlak means becomes numerically identical to the two-way fixed-effects estimator for all time-varying regressors.
+
+
+2. **Identification Advantage:**
+* Time-invariant variables ($Z_i$) and individual-invariant variables ($W_t$) are retained, solving a major practical constraint of TWFE.
+
+
+3. **Diagnostic Testing:**
+* The Mundlak joint $F$-test on $(\bar{X}_{i.}, \bar{X}_{.t})$ provides a straightforward Hausman-type specification test for two-way panel models.
+
+
+4. **Implementation:**
+* Seamless to implement in both R (`fixest`, `plm`, `lm`) and Stata (`reghdfe`, `xtreg`, `reg`).
+
+
+
+---
+
+## References
+
+* **Baltagi, B. H. (2023).** *The Two-way Mundlak Estimator.* Center for Policy Research Working Paper No. 256, Syracuse University.
+* **Mundlak, Y. (1978).** On the pooling of time series and cross section data. *Econometrica*, 46(1), 69–85.
+* **Wooldridge, J. M. (2021).** Two-way fixed effects, the two-way Mundlak regression, and Difference-in-Differences estimators. *SSR Working Paper*.
+* **Kang, S. (1985).** A note on the equivalence of specification tests in the two-way error component model. *Economics Letters*, 17(4), 341–343.
+
